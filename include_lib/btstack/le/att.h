@@ -87,7 +87,7 @@ extern "C" {
         charact_report_t characteristic;
         u16 service_index;
         u16 characteristic_index;
-    } search_result_t;
+    } search_result_t;  // uuid搜索表
 
     typedef struct {
         u16 handle;//descriptor's handle

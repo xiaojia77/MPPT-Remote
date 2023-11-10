@@ -160,8 +160,8 @@ typedef struct {
     u8   address[6];    //peer_address
     s8   rssi;          //range:-127 ~128 dbm
     u8   length;        //广播包长度
-    u8   data[0];       //广播包内容
-} adv_report_t;
+    u8   data[0];       //广播包内容  零长数组
+} adv_report_t;  //扫描结果
 
 typedef struct {
     //base info
@@ -187,7 +187,7 @@ typedef enum {
     REMOTE_TYPE_UNKNOWN  = 0,//未查询or查询对方未响应
     REMOTE_TYPE_ANDROID,  //安卓系统
     REMOTE_TYPE_IOS,//ios系统
-} remote_type_e;
+} remote_type_e;    //系统选择
 
 /*************************************************************************************************/
 /*!
@@ -340,7 +340,7 @@ void user_client_set_search_complete(void);
  *
  *  \param      [out] address    类型对应地址.
  *  \param      [in] type        ble_type
- *           (eg:1.STATIC_DEVICE_ADDR.
+ *              (eg:1.STATIC_DEVICE_ADDR.
  *               2.NON_RESOLVABLE_PRIVATE_ADDR.
  *               3.RESOLVABLE_PRIVATE_ADDR).
  *

@@ -116,11 +116,11 @@ extern void uart_db_regiest_recieve_callback(void *rx_cb);
 
 //-------------------------------------------------------------------------------------
 //输入passkey 加密
-#define PASSKEY_ENABLE                     0
+#define PASSKEY_ENABLE                     1
 
 static const sm_cfg_t trans_sm_init_config =  //密码认证
 {
-    .slave_security_auto_req = 0,
+    .slave_security_auto_req = 1,
     .slave_set_wait_security = 0,
 
 #if PASSKEY_ENABLE

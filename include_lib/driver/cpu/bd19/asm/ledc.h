@@ -30,7 +30,6 @@ struct ledc_platform_data {
     void (*cbfun)(void);//中断回调函数
 };
 
-
 #define LEDC_PLATFORM_DATA_BEGIN(data) \
 	const struct ledc_platform_data data = {
 
@@ -39,3 +38,6 @@ struct ledc_platform_data {
 
 #endif
 
+void ledc_init(const struct ledc_platform_data *arg);
+void ledc_rgb_to_buf(u8 r, u8 g, u8 b, u8 *buf, int idx);
+void ledc_send_rgbbuf(u8 index, u8 *rgbbuf, u32 led_num, u16 again_cnt);

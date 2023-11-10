@@ -39,7 +39,22 @@
         "le_client_demo.h": "c",
         "*.ld": "c",
         "le_gatt_common.h": "c",
-        "btcontroller_config.h": "c"
+        "btcontroller_config.h": "c",
+        "ble_multi.h": "c",
+        "custom_cfg.h": "c",
+        "rcsp_bluetooth.h": "c",
+        "3th_profile_api.h": "c",
+        "btstack_event.h": "c",
+        "jl_rcsp_api.h": "c",
+        "btcontroller_modules.h": "c",
+        "ledc.h": "c",
+        "app_comm_bt.h": "c",
+        "app_power_manage.h": "c",
+        "spi.h": "c",
+        "lcd7789.h": "c",
+        "list.h": "c",
+        "vm.h": "c",
+        "lcd_data.h": "c"
     },
     "C_Cpp.dimInactiveRegions": true
 }

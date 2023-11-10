@@ -9,8 +9,8 @@
 //搜索匹配连接方式
 typedef enum {
     CLI_CREAT_BY_ADDRESS = 0,//指定地址创建连接
-    CLI_CREAT_BY_NAME,//指定设备名称创建连接
-    CLI_CREAT_BY_TAG,//匹配厂家标识创建连接
+    CLI_CREAT_BY_NAME,       //指定设备名称创建连接
+    CLI_CREAT_BY_TAG,        //匹配厂家标识创建连接
 } cli_creat_mode_e;
 
 //主机事件

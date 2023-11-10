@@ -18,6 +18,12 @@
 #include "le_client_demo.h"
 #include "app_comm_bt.h"
 
+
+
+
+#include "asm/ledc.h"
+#include "asm/spi.h"
+
 #define LOG_TAG_CONST       MULTI_CONN
 #define LOG_TAG             "[MULTI_CONN]"
 #define LOG_ERROR_ENABLE
@@ -27,11 +33,40 @@
 #define LOG_CLI_ENABLE
 #include "debug.h"
 
+#include "lcd7789.h"
+
 
 #if CONFIG_APP_MULTI
 
 static u8 is_app_multi_active = 0;
 //---------------------------------------------------------------------
+// static u8 ledc_buf[3 * 1] __attribute__((aligned(4)));
+// LEDC_PLATFORM_DATA_BEGIN(ledc_data)
+//     .index = 0,
+//     .port = IO_PORTA_04,
+//     .idle_level = 0,
+//     .out_inv = 0,
+//     .bit_inv = 0,
+//     .t_unit = t_2us,
+//     .t1h_cnt = 250,
+//     .t1l_cnt = 50,
+//     .t0h_cnt = 100,
+//     .t0l_cnt = 50,
+//     .t_rest_cnt = 20,
+//     .cbfun = NULL,
+// LEDC_PLATFORM_DATA_END()
+// void test_handle()
+// {
+//     ledc_send_rgbbuf(0, ledc_buf, 1, 0);
+//    
+// }
+//
+    // printf("*************  ledc test  **************\n");
+    // ledc_init(&ledc_data);
+    // ledc_rgb_to_buf(0xf0,0,0X0F,ledc_buf,0);
+
+    
+    // sys_timer_add(NULL,test_handle, 1500);
 
 //----------------------------------------------------------------------------
 void multi_set_soft_poweroff(void)
@@ -56,8 +91,10 @@ void multi_set_soft_poweroff(void)
 #endif
 }
 
+
 static void multi_app_start()
 {
+    uint8_t i;
     log_info("=======================================");
     log_info("-----------multi_conn demo-------------");
     log_info("=======================================");
@@ -76,8 +113,12 @@ static void multi_app_start()
 #if TCFG_USER_BLE_ENABLE
     btstack_ble_start_before_init(NULL, 0);
 #endif
-
     btstack_init();
+
+    spi_open(SPI1);
+    ST7789Lcd_Init();
+    for(i=0;i<10;i++)MenuData.index[i] = 1;
+    main_menu();
 
 #endif
     /* 按键消息使能 */
@@ -148,52 +189,53 @@ static void multi_key_event_handler(struct sys_event *event)
     u8 event_type = 0;
     u8 key_value = 0;
 
-    if (event->arg == (void *)DEVICE_EVENT_FROM_KEY) {
+    if (event->arg == (void *)DEVICE_EVENT_FROM_KEY)
+     {
         event_type = event->u.key.event;
         key_value = event->u.key.value;
         log_info("app_key_evnet: %d,%d\n", event_type, key_value);
 
+        if( Menu_Tab[MenuData.current_id].current_operation != NULL) Menu_Tab[MenuData.current_id].current_operation(key_value);
+//         if (event_type == KEY_EVENT_TRIPLE_CLICK
+//             && (key_value == TCFG_ADKEY_VALUE3 || key_value == TCFG_ADKEY_VALUE0)) {
+//             //for test
+//             multi_set_soft_poweroff();
+//             return;
+//         }
 
-        if (event_type == KEY_EVENT_TRIPLE_CLICK
-            && (key_value == TCFG_ADKEY_VALUE3 || key_value == TCFG_ADKEY_VALUE0)) {
-            //for test
-            multi_set_soft_poweroff();
-            return;
-        }
+//         if (event_type == KEY_EVENT_CLICK && key_value == TCFG_ADKEY_VALUE0) {
 
-        if (event_type == KEY_EVENT_CLICK && key_value == TCFG_ADKEY_VALUE0) {
-
-#if TCFG_USER_BLE_ENABLE
-#if CONFIG_BT_GATT_CLIENT_NUM
-            multi_client_clear_pair();
-#endif
-#if CONFIG_BT_GATT_SERVER_NUM
-            multi_server_clear_pair();
-#endif
-#endif
-        }
+// #if TCFG_USER_BLE_ENABLE
+// #if CONFIG_BT_GATT_CLIENT_NUM
+//             multi_client_clear_pair();
+// #endif
+// #if CONFIG_BT_GATT_SERVER_NUM
+//             multi_server_clear_pair();
+// #endif
+// #endif
+//         }
 
 
-        if (event_type == KEY_EVENT_DOUBLE_CLICK && key_value == TCFG_ADKEY_VALUE0) {
-#if TCFG_USER_EDR_ENABLE
-            //for test
-            static u8 edr_en = 1;
-            edr_en = !edr_en;
-            bt_comm_edr_mode_enable(edr_en);
-#endif
-        }
+//         if (event_type == KEY_EVENT_DOUBLE_CLICK && key_value == TCFG_ADKEY_VALUE0) {
+// #if TCFG_USER_EDR_ENABLE
+//             //for test
+//             static u8 edr_en = 1;
+//             edr_en = !edr_en;
+//             bt_comm_edr_mode_enable(edr_en);
+// #endif
+//         }
 
-        if (event_type == KEY_EVENT_LONG && key_value == TCFG_ADKEY_VALUE0) {
-            //for test
-            //r_printf("ble_list_clear_all\n");
-            //ble_list_clear_all();
-#if TCFG_USER_BLE_ENABLE
-            static u8 en_value = 1;
-            en_value = !en_value;
-            ble_module_enable(en_value);
-#endif
-            return;
-        }
+//         if (event_type == KEY_EVENT_LONG && key_value == TCFG_ADKEY_VALUE0) {
+//             //for test
+//             //r_printf("ble_list_clear_all\n");
+//             //ble_list_clear_all();
+// #if TCFG_USER_BLE_ENABLE
+//             static u8 en_value = 1;
+//             en_value = !en_value;
+//             ble_module_enable(en_value);
+// #endif
+//             return;
+//         }
 
     }
 }

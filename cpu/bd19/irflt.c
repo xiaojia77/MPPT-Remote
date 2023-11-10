@@ -63,10 +63,12 @@ void timer_ir_isr(void)
     /* putchar('0' + (cap/10)); */
     /* putchar('0' + (cap%10)); */
 
-    if (cap <= 1) {
+    if (cap <= 1)  // 0 码
+    {
         ir_code.wData >>= 1;
         ir_code.bState++;
-    } else if (cap == 2) {
+    } else if (cap == 2)  // 1码
+    {
         ir_code.wData >>= 1;
         ir_code.wData |= 0x8000;
         ir_code.bState++;
@@ -138,7 +140,7 @@ u8 get_irflt_value(void)
 
 static u8 ir_io_level = 0;
 static u8 ir_io = 0;
-void ir_input_io_sel(u8 port)
+void ir_input_io_sel(u8 port) //输入IO设置
 {
     ir_io = port;
 
@@ -154,9 +156,10 @@ void ir_input_io_sel(u8 port)
 
 void ir_output_timer_sel()
 {
+
 }
 
-static void ir_timeout(void *priv)
+static void ir_timeout(void *priv) //超时
 {
     ir_code.boverflow++;
     if (ir_code.boverflow > 56) { //56*2ms ~= 112ms

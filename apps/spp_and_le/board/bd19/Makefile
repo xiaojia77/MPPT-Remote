@@ -377,6 +377,7 @@ c_SRC_FILES := \
 	../../../../apps/spp_and_le/examples/multi_conn/ble_multi.c \
 	../../../../apps/spp_and_le/examples/multi_conn/ble_multi_central.c \
 	../../../../apps/spp_and_le/examples/multi_conn/ble_multi_peripheral.c \
+	../../../../apps/spp_and_le/examples/multi_conn/lcd7789.c \
 	../../../../apps/spp_and_le/examples/nonconn_24g/app_nonconn_24g.c \
 	../../../../apps/spp_and_le/examples/nonconn_24g/ble_24g_deal.c \
 	../../../../apps/spp_and_le/examples/trans_data/app_spp_and_le.c \

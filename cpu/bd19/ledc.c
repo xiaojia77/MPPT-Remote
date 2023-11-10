@@ -19,14 +19,16 @@ static OS_SEM ledc1_sem;
 ___interrupt
 void ledc_isr(void)
 {
-    if (JL_LEDC0->CON & BIT(7)) {
+    if (JL_LEDC0->CON & BIT(7))
+    {
         JL_LEDC0->CON |= BIT(6);
         os_sem_post(&ledc0_sem);
         if (ledc0_isr_cbfun) {
             ledc0_isr_cbfun();
         }
     }
-    if (JL_LEDC1->CON & BIT(7)) {
+    if (JL_LEDC1->CON & BIT(7)) 
+    {
         JL_LEDC1->CON |= BIT(6);
         os_sem_post(&ledc1_sem);
         if (ledc1_isr_cbfun) {
@@ -90,13 +92,14 @@ void ledc_init(const struct ledc_platform_data *arg)
 void ledc_rgb_to_buf(u8 r, u8 g, u8 b, u8 *buf, int idx)
 {
     buf = buf + idx * 3;
-    buf[2] = b;
-    buf[1] = r;
-    buf[0] = g;
+    buf[2] = r;
+    buf[1] = g;
+    buf[0] = b;
 }
 
 void ledc_send_rgbbuf(u8 index, u8 *rgbbuf, u32 led_num, u16 again_cnt)
 {
+    
     if (!led_num) {
         return;
     }
@@ -158,12 +161,12 @@ void ledc_test(void)
     u16 sec_num = 5;//循环发送的次数，用于一条大灯带又分为几条效果一样的小灯带
     extern void wdt_clear();
     while (1) {
-        wdt_clear();
-        os_time_dly(1);
+        wdt_clear();    //清除看门狗
+        os_time_dly(1); //延迟10MS
         r_val += 1;
         g_val += 1;
         b_val += 1;
-        ledc_rgb_to_buf(r_val, g_val, b_val, ledc_test_buf, 0);
+        ledc_rgb_to_buf(r_val, g_val, b_val, ledc_test_buf, 0); //写缓存里面
 #if 0
         ledc_send_rgbbuf(0, ledc_test_buf, 1, sec_num - 1);
 #else

@@ -430,18 +430,17 @@ static u8 __just_conn_handle_role(u16 conn_handle)
 //处理协议栈sm事件消息
 void __ble_comm_cbk_sm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)
 {
-    if (STACK_IS_SUPPORT_SM_PAIR()) {
-
+    if (STACK_IS_SUPPORT_SM_PAIR()) 
+    {
         /* log_info("%s\n", __FUNCTION__); */
         CLR_HANDLER_ROLE();
-
         /* if(gatt_control_block->sm_config->sm_cb_packet_handler){ */
         /* if(0 == gatt_control_block->sm_config->sm_cb_packet_handler(packet_type,channel,packet,size)){ */
         /* return; */
         /* } */
         /* } */
-
-        switch (packet_type) {
+        switch (packet_type) 
+        {
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
             case SM_EVENT_JUST_WORKS_REQUEST:
@@ -705,7 +704,7 @@ static void __ble_comm_cbk_passkey_input(u32 *key, u16 conn_handle)
 void ble_profile_init(void)
 {
     log_info("%s\n", __FUNCTION__);
-    CLR_HANDLER_ROLE();
+    CLR_HANDLER_ROLE(); 
 
     if (!gatt_control_block) {
         log_error("gatt_control_block is null!!!\n");
