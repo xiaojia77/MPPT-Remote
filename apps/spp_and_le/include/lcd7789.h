@@ -38,13 +38,14 @@ typedef struct
 {
     uint8_t mac[6]; // 10
     int8_t rssi; //强度；
+    uint8_t useflag;
     uint8_t Timeout; //超时清除
 }Bl_Adv_Rp_t;
 
 typedef struct 
 {
     uint8_t Ir_Onflag;  //IR控制
-    uint8_t Ble_Onflag; //关闭蓝牙广播
+    uint8_t Ble_Onflag; //蓝牙通信
 
     uint8_t Bat_Volatage;
     uint8_t Charge_Volatage;
@@ -68,7 +69,9 @@ void Lcd_Address_Set(unsigned short int x_start,unsigned short int y_start,unsig
 void PutPixel(uint x_start,uint y_start,uint color);
 void Lcd_Show24x24(uint8_t x,uint8_t y,uint8_t *p);
 void Lcd_Show16x24(uint8_t x,uint8_t y,uint8_t *p);
+void Lcd_Show8x16(uint8_t x,uint8_t y,uint8_t *p);
 void Lcd_printf24x24(uint8_t x,uint8_t y,uint8_t *str);
+void Lcd_printf16x16(uint8_t x,uint8_t y,uint8_t *str);  //must be string
 void Lcd_Clear24x24(uint8_t x,uint8_t y);
 
 
@@ -105,12 +108,14 @@ static Menu_Tab_t const Menu_Tab[10]=
     {MAIN_MENU,NULL,6,main_menu_operation,main_menu}, //主菜单 次级菜单
 
     {CHAEGE_SET_MENU,MAIN_MENU,4,menu_select,charge_set_menu}, // 次级菜单
-    {DISCHAR_SET_MENU,MAIN_MENU,5,menu_select,dischar_set_menu},
+    {DISCHAR_SET_MENU,MAIN_MENU,6,menu_select,dischar_set_menu},
     {IRORBLE_SET_MENU,MAIN_MENU,2,IRorBL_set_operation,IRorBL_set_menu},
     {BL_CON_SET_MENU,MAIN_MENU,13,bl_con_set_operation,bl_con_set_menu},
     {BL_ATCON_SET_MENU,MAIN_MENU,13,menu_select,bl_ATcon_set_menu},
     {VERSION_CHECK_MENU,MAIN_MENU,5,menu_select,Version_Check_menu},
 };
 
+uint8_t BL_Find_Mac_RepAddr(Bl_Adv_Rp_t *adv,uint8_t len,uint8_t *mac);
+uint8_t BL_Check_NonAddr(Bl_Adv_Rp_t *adv,uint8_t len);
 
 #endif

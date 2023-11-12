@@ -78,6 +78,22 @@ void Lcd_Show16x24(uint8_t x,uint8_t y,uint8_t *p)
 {
     uint8_t i,j,k;
     uint8_t temp; //缓存
+    Lcd_Address_Set(x,y,x+15,y+23);
+    for(i=0;i<48;i++)
+    {
+        temp = *p++;
+        for(k=0;k<8;k++)
+        {         
+            if(temp&0x80)Lcd_WriteRgbData(BLUE);
+            else Lcd_WriteRgbData(BLACK);
+            temp <<= 1;
+        }
+    }
+}
+void Lcd_Show8x16(uint8_t x,uint8_t y,uint8_t *p)
+{
+    uint8_t i,j,k;
+    uint8_t temp; //缓存
     Lcd_Address_Set(x,y,x+7,y+15);
     for(i=0;i<16;i++)
     {
@@ -113,12 +129,45 @@ void Lcd_printf24x24(uint8_t x,uint8_t y,uint8_t *str)  //must be string
              SearchData[0]= str[0];
              SearchData[1]= 0;
              w = strstr(DotTbl24AsciiString,SearchData);
-             Lcd_Show16x24(x,y,DotTbl12Ascii[ w-DotTbl24AsciiString ]);
+             Lcd_Show16x24(x,y,DotTbl24Ascii[ w-DotTbl24AsciiString ]);
+             x+=16;
+             str++;
+        }
+    }
+}
+
+void Lcd_printf16x16(uint8_t x,uint8_t y,uint8_t *str)  //must be string
+{
+    uint8_t SearchData[4]={0,0,0};
+    char *w;
+    while(*str)
+    {
+        if(*str&0x80) //汉字
+        {
+            // SearchData[0]= str[0];
+            // SearchData[1]= str[1];
+            // SearchData[2]= str[2];
+            // SearchData[3]= 0;
+            // w = strstr(DotTbl24String,SearchData);
+            // if(!w)return;
+            // Lcd_Show24x24(x,y,DotTbl24[ w-DotTbl24String ]);
+            // x+=24;
+            // str+=3;
+        }
+        else 
+        {
+             SearchData[0]= str[0];
+             SearchData[1]= 0;
+             w = strstr(DotTbl16AsciiString,SearchData);
+             Lcd_Show8x16(x,y,DotTbl16Ascii[ w-DotTbl16AsciiString ]);
              x+=8;
              str++;
         }
     }
 }
+
+
+
 void Lcd_Clear24x24(uint8_t x,uint8_t y)
 {
     uint8_t i,j,k;
@@ -259,12 +308,12 @@ void menu_select_display()
 void BL_menu_select_display()
 {
    uint8_t i;
-   for(i=1;i<=13;i++)Lcd_printf24x24(5,16+16*i," ");
+   for(i=1;i<=13;i++)Lcd_printf16x16(5,16+16*i," ");
 
     //限制下标长度
    if(!MenuData.index[MenuData.current_id] ) MenuData.index[MenuData.current_id] = 1 ; 
    if(MenuData.index[MenuData.current_id] > 13 ) MenuData.index[MenuData.current_id] = 13 ;
-   Lcd_printf24x24(5,16+16*MenuData.index[MenuData.current_id],">");
+   Lcd_printf16x16(5,16+16*MenuData.index[MenuData.current_id],">");
    
 }
 
@@ -333,15 +382,16 @@ void charge_set_menu()
 {
     Lcd_Clear(BLACK);
     Lcd_printf24x24(120-24*3,0,"充电参数设置");
-    Lcd_printf24x24(30,30,"电池规格3.2v");
-    Lcd_printf24x24(30,60,"恒压电压3.65v");
-    Lcd_printf24x24(30,90,"恒流电流10a");
-    Lcd_printf24x24(30,120,"充电电流16a");
+    if(roter_data.Bat_Volatage)Lcd_printf24x24(30,30,"电池规格3.7v");
+    else Lcd_printf24x24(30,30,"电池规格3.2v");
+    Lcd_printf24x24(30,90,"涓流电流10a");
+    Lcd_printf24x24(30,60,"充电电流16a");
     Lcd_printf24x24(5,30*MenuData.index[MenuData.current_id],"＞");
 }
 
 void charge_menu_operation(uint8_t key)
 {
+    static uint8_t fsm;
     switch (key)
     {
         case 0: // 上
@@ -358,9 +408,46 @@ void charge_menu_operation(uint8_t key)
             MenuData.current_id =  Menu_Tab[MenuData.current_id].up_id;
             Menu_Tab[MenuData.current_id].display_operation();
             break;
-        case 3: // →
+        case 3: // → 
+            switch(MenuData.index[MenuData.current_id])
+            {
+                case 1:
+                    if(roter_data.Bat_Volatage)
+                    {
+                        roter_data.Bat_Volatage = 0;
+                        Lcd_printf24x24(30,30,"电池规格3.2v");
+                    }
+                    else
+                    {
+                        roter_data.Bat_Volatage = 1;
+                        Lcd_printf24x24(30,30,"电池规格3.2v");
+                    }
+                    break;
+                case 2:
+                    break;
+                case 3:
+                    break;
+                    
+            }
+            //sys_timer_add();
           /*  MenuData.current_id = MenuData.index[MenuData.current_id]; //切换到下级菜单
             if( Menu_Tab[MenuData.current_id].current_operation != NULL)Menu_Tab[MenuData.current_id].display_operation();*/
+            break;
+    }
+
+    switch (fsm)
+    {
+        case 1:
+            switch (key)  //数字输入
+            {
+                case 0:
+                    break;
+                
+                default:
+                    break;
+            }
+            break;
+        default:
             break;
     }
 }
@@ -369,12 +456,12 @@ void dischar_set_menu()
 {
     Lcd_Clear(BLACK);
     Lcd_printf24x24(120-24*3,0,"放电参数设置");
-    Lcd_printf24x24(30,30,"低压保护2.60v");
-    Lcd_printf24x24(30,60,"电流设置：100%");
-    Lcd_printf24x24(30,90,"放电曲线设置");
-    Lcd_printf24x24(30,120,"");
-    Lcd_printf24x24(30,150,"");
-    Lcd_printf24x24(30,180,"");
+    Lcd_printf24x24(30,30,"低压保护:2.60v");
+    Lcd_printf24x24(30,60,"电流设置:100%");
+    Lcd_printf24x24(30,90,"雷达感应:100%");
+    Lcd_printf24x24(30,120,"雷达时间:15s");
+    Lcd_printf24x24(30,150,"亮度设置:100%");
+    Lcd_printf24x24(30,180,"放电曲线设置");
     Lcd_printf24x24(5,30*MenuData.index[MenuData.current_id],"＞");
 }
 
@@ -435,9 +522,9 @@ void bl_con_info_display()
 {
     uint8_t i; 
     char str[30];
-    for(i=1;i<=13;i++)
+    for(i=0;i<13;i++)
     {
-        sprintf(str,"%x %x %x %x %x %x rssi:%d",
+        sprintf(str,"%02x %02x %02x %02x %02x %02x rssi:%d",
         roter_data.bl_adv_rp[i].mac[0],
         roter_data.bl_adv_rp[i].mac[1],
         roter_data.bl_adv_rp[i].mac[2],
@@ -445,9 +532,7 @@ void bl_con_info_display()
         roter_data.bl_adv_rp[i].mac[4],
         roter_data.bl_adv_rp[i].mac[5],
         roter_data.bl_adv_rp[i].rssi);
-        Lcd_printf24x24(16,16+16*i,str);
-        
-       //  log_info("str = %s",str);
+        Lcd_printf16x16(16,16+16*(i+1),str);
     }
 }
 void bl_con_set_menu()
@@ -456,7 +541,7 @@ void bl_con_set_menu()
    
     Lcd_Clear(BLACK);
     Lcd_printf24x24(120-24*3,0,"蓝牙指定连接");
-    Lcd_printf24x24(5,16+16*MenuData.index[MenuData.current_id],">");
+    Lcd_printf16x16(5,16+16*MenuData.index[MenuData.current_id],">");
     bl_con_info_display();
     bl_con_menu_timer = sys_timer_add(NULL,bl_con_info_display,1000);
 }
@@ -505,14 +590,21 @@ void Version_Check_menu()
 uint8_t BL_Find_Mac_RepAddr(Bl_Adv_Rp_t *adv,uint8_t len,uint8_t *mac)  
 {
     uint32_t i,j;
+    uint8_t isok = 1;
     for(i=0;i<len;i++)
     {
+        isok = 1;
         for(j=0;j<6;j++)
         {
-            if(adv[i].mac[j] != mac[j])break;
+            if(adv[i].mac[j] != mac[j])
+            {
+                isok = 0;
+                break;
+            }
         }
-        return i;   
+        if(isok)return i;
     }
+    return 255;
 }
 
 //查找空地址
@@ -521,7 +613,19 @@ uint8_t BL_Check_NonAddr(Bl_Adv_Rp_t *adv,uint8_t len)
     uint32_t i,j;
     for(i=0;i<len;i++)
     {
-       if(adv[i].mac[j])break; 
+       if(adv[i].useflag == 0)return i;   
     }
-    return i;   
+    return 255;
+}
+
+uint8_t BL_Timeout_Check(Bl_Adv_Rp_t *adv,uint8_t len)
+{
+    uint32_t i;
+    for(i=0;i<len;i++) //C
+    {
+        if(++adv[i].Timeout>5)
+        {
+
+        }
+    }
 }

@@ -33,6 +33,8 @@
 #include "le_client_demo.h"
 #include "gatt_common/le_gatt_common.h"
 
+#include "lcd7789.h"
+
 
 
 
@@ -209,6 +211,7 @@ static const client_match_cfg_t multi_match_device_table[] =
 //带绑定的设备搜索
 static client_match_cfg_t *multi_bond_device_table;
 static u16  bond_device_table_cnt;
+uint32_t const bl_ckey[4]= {12,34,56,78};
 
 //测试write数据操作
 static void multi_client_test_write(void)
@@ -219,16 +222,37 @@ static void multi_client_test_write(void)
 
     u16 tmp_handle;
 
-    uint32_t const key[4]= {12,34,56,78};
+    
+    
+      //通过+MAC地址来改变密钥 
 
+    uint32_t encry_key[4] ;
+
+    encry_key[0] = bl_ckey[0];
+    encry_key[1] = bl_ckey[1];
+    encry_key[2] = bl_ckey[2];
+    encry_key[3] = bl_ckey[3];
+
+    encry_key[0] += roter_data.bl_connect_addr[0];
+    encry_key[1] += roter_data.bl_connect_addr[1];
+    encry_key[2] += roter_data.bl_connect_addr[2];
+    encry_key[3] += roter_data.bl_connect_addr[3];
+    encry_key[0] += roter_data.bl_connect_addr[4];
+    encry_key[1] += roter_data.bl_connect_addr[5];
+
+    
     uint8_t data[8]  =
     {
         0xAA,0x01,0x01,0x02,0x03,0x04,0xff,0xff
     };
 
-    btea(data,2,key); //加密数据
+    btea(data,2,encry_key); //加密数据
 
-    count++;
+//    put_buf(roter_data.bl_connect_addr, 6);
+//    put_buf(encry_key, 16);
+//    put_buf(data,8);
+
+//     count++;
     for (i = 0; i < SUPPORT_MAX_GATT_CLIENT; i++) 
     {
         tmp_handle = ble_comm_dev_get_handle(i, GATT_ROLE_CLIENT); //获取连接的handle
@@ -564,7 +588,6 @@ static int multi_client_event_packet_handler(int event, u8 *packet, u16 size, u8
 
         }
         break;
-
         case GATT_COMM_EVENT_GATT_SEARCH_MATCH_UUID: 
         {
             opt_handle_t *opt_hdl = packet;
@@ -596,6 +619,31 @@ static int multi_client_event_packet_handler(int event, u8 *packet, u16 size, u8
         case GATT_COMM_EVENT_CLIENT_STATE:
             log_info("client_state: handle=%02x,%02x\n", little_endian_read_16(packet, 1), packet[0]);
             break;
+
+        case GATT_COMM_EVENT_SM_PASSKEY_INPUT: 
+        {
+            u32 *key = little_endian_read_32(packet, 2);
+
+            u32 key_t ;
+            uint8_t data[8]  =
+            {
+                0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+            };
+
+            for(int i=0;i<6;i++)
+            {
+                data[i] = roter_data.bl_connect_addr[i];
+            }
+
+            btea(data,2,bl_ckey);
+
+            key_t = little_endian_read_32(data,0);
+
+
+            *key = key_t%999999;
+          //  *key = 777777;
+            r_printf("input_key:%6u\n", *key);
+        }
 
         default:
             break;

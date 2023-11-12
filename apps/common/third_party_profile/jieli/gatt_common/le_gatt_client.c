@@ -819,7 +819,7 @@ static bool __resolve_adv_report(adv_report_t *report_pt, u16 len)
     u32 tmp32;
     client_match_cfg_t *match_cfg = NULL;
 
-
+    if(report_pt->rssi<-99)return false;
         // 指定地址连接
         if (__check_device_is_match(report_pt->event_type, CLI_CREAT_BY_ADDRESS, report_pt->address, 6, &match_cfg))
          {
@@ -872,10 +872,31 @@ static bool __resolve_adv_report(adv_report_t *report_pt, u16 len)
             adv_data_pt[length - 1] = 0;;
             log_info("remoter_name:%s ,rssi:%d\n", adv_data_pt, report_pt->rssi);
             log_info_hexdump(report_pt->address, 6);
+
+            uint8_t location;
+            location = BL_Find_Mac_RepAddr(roter_data.bl_adv_rp,13,report_pt->address) ;
+            log_info("location:%d", location);
+            if(location !=255)
+            {
+                memcpy(roter_data.bl_adv_rp[location].mac,report_pt->address, 6);
+                roter_data.bl_adv_rp[location].rssi = report_pt->rssi;  
+            }
+            else
+            {
+               location =  BL_Check_NonAddr(roter_data.bl_adv_rp,13);
+               
+               if(location !=255)
+               {
+                     memcpy(roter_data.bl_adv_rp[location].mac,report_pt->address, 6);
+                    roter_data.bl_adv_rp[location].rssi = report_pt->rssi;  
+                   roter_data.bl_adv_rp[location].useflag = 1;
+               }
+
+            }
             
-            memcpy(roter_data.bl_adv_rp[roter_data.bl_cnt].mac,report_pt->address, 6);
-            roter_data.bl_adv_rp[roter_data.bl_cnt].rssi = report_pt->rssi;  
-            if(++roter_data.bl_cnt  >13) roter_data.bl_cnt =  0;
+            // memcpy(roter_data.bl_adv_rp[roter_data.bl_cnt].mac,report_pt->address, 6);
+            // roter_data.bl_adv_rp[roter_data.bl_cnt].rssi = report_pt->rssi;  
+            // if(++roter_data.bl_cnt  >13) roter_data.bl_cnt =  0;
 
             adv_data_pt[length - 1] = tmp32;
 
@@ -1098,10 +1119,12 @@ static void __gatt_client_report_adv_data(adv_report_t *report_pt, u16 len)
     if (find_tag && __this->scan_conn_config && __this->scan_conn_config->creat_auto_do) 
     {
         ble_gatt_client_scan_enable(0);
-        if (ble_gatt_client_create_connection_request(report_pt->address, report_pt->address_type, 0)) {
+        if (ble_gatt_client_create_connection_request(report_pt->address, report_pt->address_type, 0)) 
+        {
             log_info("creat fail,scan again!!!\n");
             ble_gatt_client_scan_enable(1);
         }
+        memcpy(roter_data.bl_connect_addr,report_pt->address, 6); //把数组放到MAC地址中
     } 
     else
     {
@@ -1123,7 +1146,7 @@ static void __gatt_client_report_adv_data(adv_report_t *report_pt, u16 len)
 void ble_gatt_client_passkey_input(u32 *key, u16 conn_handle)
 {
     u16 tmp_val[3];
-    *key = 123456; //default key
+    *key = 888888; //default key
     tmp_val[0] = conn_handle;
     little_endian_store_32(&tmp_val, 2, (u32)key);
     __gatt_client_event_callback_handler(GATT_COMM_EVENT_SM_PASSKEY_INPUT, tmp_val, 6, 0);
@@ -1213,7 +1236,6 @@ void ble_gatt_client_sm_packet(uint8_t packet_type, uint16_t channel, uint8_t *p
         break;
     }
 }
-
 
 static const char *const client_phy_result[] = {
     "None",
@@ -1470,13 +1492,16 @@ int ble_gatt_client_connetion_update_set(u16 conn_handle, const struct conn_upda
  *  \note      会执行自动配置scan 打开
  */
 /*************************************************************************************************/
-void ble_gatt_client_module_enable(u8 en)
+void ble_gatt_client_module_enable(u8 en)  // client 开关
 {
     log_info("mode_en:%d\n", en);
-    if (en) {
+    if (en) 
+    {
         __this->scan_ctrl_en = 1;
         __gatt_client_check_auto_scan();
-    } else {
+    } 
+    else
+    {
         ble_gatt_client_scan_enable(0);
         __this->scan_ctrl_en = 0;
         ble_gatt_client_disconnect_all();
@@ -1577,8 +1602,6 @@ void ble_gatt_just_search_profile_stop(u16 conn_handle)
         __this->just_search_handle = 0;
     }
 }
-
-
 
 /*************************************************************************************************/
 /*!

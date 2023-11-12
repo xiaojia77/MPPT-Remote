@@ -103,13 +103,17 @@ static void key_driver_scan(void *_scan_para)
     /*     printf(">>>cur_key_value: %d\n", cur_key_value); */
     /* } */
 
-    if (cur_key_value != NO_KEY) {
+    if (cur_key_value != NO_KEY)
+    {
         is_key_active = 35;      //35*10Ms
-    } else if (is_key_active) {
+    } 
+    else if (is_key_active) 
+    {
         is_key_active --;
     }
 //===== 按键消抖处理
-    if (cur_key_value != scan_para->filter_value && scan_para->filter_time) {	//当前按键值与上一次按键值如果不相等, 重新消抖处理, 注意filter_time != 0;
+    if (cur_key_value != scan_para->filter_value && scan_para->filter_time) //当前按键值与上一次按键值如果不相等, 重新消抖处理, 注意filter_time != 0;
+    {	
         scan_para->filter_cnt = 0; 		//消抖次数清0, 重新开始消抖
         scan_para->filter_value = cur_key_value;	//记录上一次的按键值
         return; 		//第一次检测, 返回不做处理
