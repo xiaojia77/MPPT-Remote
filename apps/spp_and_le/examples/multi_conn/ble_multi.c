@@ -58,7 +58,7 @@ extern const char *bt_get_local_name();
 extern void clr_wdt(void);
 //------------------------------------------------------
 //输入passkey 加密
-#define PASSKEY_ENABLE                     1
+#define PASSKEY_ENABLE                     0
 
 static const sm_cfg_t sm_init_config = {
     .master_security_auto_req = 1,

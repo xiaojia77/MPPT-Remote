@@ -851,7 +851,8 @@ static bool __resolve_adv_report(adv_report_t *report_pt, u16 len)
         ad_type = *adv_data_pt++;
         i += (length + 1);
 
-        switch (ad_type) {
+        switch (ad_type) 
+        {
         case HCI_EIR_DATATYPE_FLAGS:
             /* log_info("flags:%02x\n",adv_data_pt[0]); */
             break;
@@ -887,9 +888,11 @@ static bool __resolve_adv_report(adv_report_t *report_pt, u16 len)
                
                if(location !=255)
                {
-                     memcpy(roter_data.bl_adv_rp[location].mac,report_pt->address, 6);
+                    memcpy(roter_data.bl_adv_rp[location].mac,report_pt->address, 6);
                     roter_data.bl_adv_rp[location].rssi = report_pt->rssi;  
-                   roter_data.bl_adv_rp[location].useflag = 1;
+                    roter_data.bl_adv_rp[location].useflag = 1;
+                  //  if(roter_data.bl_cnt)
+                    roter_data.bl_cnt++;
                }
 
             }
@@ -1414,7 +1417,8 @@ void ble_gatt_client_cbk_packet_handler(uint8_t packet_type, uint16_t channel, u
             log_info("---HCI_EVENT_VENDOR_REMOTE_TEST\n");
             break;
 
-        case HCI_EVENT_ENCRYPTION_CHANGE: {
+        case HCI_EVENT_ENCRYPTION_CHANGE: 
+        {
             tmp_val[0] = little_endian_read_16(packet, 3);
             tmp_val[1] = packet[2] | (__this->client_encrypt_process << 8);
             log_info("HCI_EVENT_ENCRYPTION_CHANGE= %d,%04x\n", packet[2], tmp_val[0]);
@@ -1435,7 +1439,6 @@ void ble_gatt_client_cbk_packet_handler(uint8_t packet_type, uint16_t channel, u
                     ble_comm_set_connection_data_phy(tmp_val[0], CONN_SET_2M_PHY, CONN_SET_2M_PHY, CONN_SET_PHY_OPTIONS_NONE);
                 }
             }
-
         }
         break;
         }

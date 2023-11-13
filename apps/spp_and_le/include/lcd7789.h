@@ -51,6 +51,15 @@ typedef struct
     uint8_t Charge_Volatage;
     uint8_t Charge_Power_Max;
     uint8_t Charge_Current_Max;
+    float Trickle_Current; //涓流电流
+
+    float Low_voltage_Protect; //低压保护电压
+    uint8_t current_gear; // 0 - 20 电压挡位
+    uint8_t Ledar_Dly_Time; // 0 - 20 电压挡位
+    uint8_t Ledar_Pwm; // 0 - 20 电压挡位
+    uint8_t Led_Set_Pwm;
+    
+
 
     Bl_Adv_Rp_t bl_adv_rp[14]; //蓝牙报告
     uint8_t bl_cnt;
@@ -70,7 +79,7 @@ void PutPixel(uint x_start,uint y_start,uint color);
 void Lcd_Show24x24(uint8_t x,uint8_t y,uint8_t *p);
 void Lcd_Show16x24(uint8_t x,uint8_t y,uint8_t *p);
 void Lcd_Show8x16(uint8_t x,uint8_t y,uint8_t *p);
-void Lcd_printf24x24(uint8_t x,uint8_t y,uint8_t *str);
+void Lcd_printf24x24(uint8_t x,uint8_t y,uint8_t *format,...);
 void Lcd_printf16x16(uint8_t x,uint8_t y,uint8_t *str);  //must be string
 void Lcd_Clear24x24(uint8_t x,uint8_t y);
 
@@ -84,6 +93,10 @@ void main_menu_operation(uint8_t key);
 void charge_set_menu(void);
 void charge_menu_operation(uint8_t key);
 void dischar_set_menu(void);
+void dischar_set_operation(uint8_t key);
+
+void dischar_curve_set_menu(void);
+
 void IRorBL_set_menu(void);
 void IRorBL_set_operation(uint8_t key);
 void bl_con_set_menu(void);
@@ -101,18 +114,24 @@ enum
     BL_ATCON_SET_MENU,
     VERSION_CHECK_MENU,
 
+    DISCHAR_CURVE_SET_MENU,
+
 }Menu_Tab_e;
 
 static Menu_Tab_t const Menu_Tab[10]=
 {
     {MAIN_MENU,NULL,6,main_menu_operation,main_menu}, //主菜单 次级菜单
 
-    {CHAEGE_SET_MENU,MAIN_MENU,4,menu_select,charge_set_menu}, // 次级菜单
-    {DISCHAR_SET_MENU,MAIN_MENU,6,menu_select,dischar_set_menu},
+    {CHAEGE_SET_MENU,MAIN_MENU,4,charge_menu_operation,charge_set_menu}, // 次级菜单
+    {DISCHAR_SET_MENU,MAIN_MENU,6,dischar_set_operation,dischar_set_menu},
     {IRORBLE_SET_MENU,MAIN_MENU,2,IRorBL_set_operation,IRorBL_set_menu},
     {BL_CON_SET_MENU,MAIN_MENU,13,bl_con_set_operation,bl_con_set_menu},
     {BL_ATCON_SET_MENU,MAIN_MENU,13,menu_select,bl_ATcon_set_menu},
     {VERSION_CHECK_MENU,MAIN_MENU,5,menu_select,Version_Check_menu},
+
+    {DISCHAR_CURVE_SET_MENU,DISCHAR_SET_MENU,5,menu_select,dischar_curve_set_menu}
+
+
 };
 
 uint8_t BL_Find_Mac_RepAddr(Bl_Adv_Rp_t *adv,uint8_t len,uint8_t *mac);

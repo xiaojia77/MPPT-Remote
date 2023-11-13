@@ -118,6 +118,15 @@ static void multi_app_start()
     spi_open(SPI1);
     ST7789Lcd_Init();
     for(i=0;i<10;i++)MenuData.index[i] = 1;
+    roter_data.Charge_Current_Max = 20;
+    roter_data.Charge_Power_Max = 75;
+    roter_data.Trickle_Current = 0.5;
+
+    roter_data.current_gear = 20;
+    roter_data.Ledar_Dly_Time = 15;
+    roter_data.Ledar_Pwm = 10;
+    roter_data.Led_Set_Pwm = 100;
+    roter_data.Low_voltage_Protect = 2.65;
     main_menu();
 
 #endif

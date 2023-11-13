@@ -54,7 +54,10 @@
         "lcd7789.h": "c",
         "list.h": "c",
         "vm.h": "c",
-        "lcd_data.h": "c"
+        "lcd_data.h": "c",
+        "stdarg.h": "c",
+        "stdlib.h": "c",
+        "stdio.h": "c"
     },
     "C_Cpp.dimInactiveRegions": true
 }
