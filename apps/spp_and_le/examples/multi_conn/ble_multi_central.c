@@ -68,12 +68,13 @@
 #define SET_CREAT_CONN_TIMEOUT    8000 //(unit:ms)
 
 //配对信息表
-#define CLIENT_PAIR_BOND_ENABLE    CONFIG_BT_SM_SUPPORT_ENABLE
+#define CLIENT_PAIR_BOND_ENABLE    1 //CONFIG_BT_SM_SUPPORT_ENABLE
 #define CLIENT_PAIR_BOND_TAG       0x56
 
 #define DELTA 0x9e3779b9
 #define MX (((z>>5^y<<2) + (y>>3^z<<4)) ^ ((sum^y) + (key[(p&3)^e] ^ z)))
- 
+uint32_t const bl_ckey[4]= {12,34,56,78}; 
+
 void btea(uint32_t *v, int n, uint32_t const key[4])
 {
     uint32_t y, z, sum;
@@ -154,8 +155,8 @@ static u16 multi_ble_client_write_handle;
 //---------------------------------------------------------------------------
 //指定搜索uuid
 //指定搜索uuid
-static const target_uuid_t  jl_multi_search_uuid_table[] = {
-
+static const target_uuid_t  jl_multi_search_uuid_table[] = 
+{
     // for uuid16
     // PRIMARY_SERVICE, ae30
     // CHARACTERISTIC,  ae01, WRITE_WITHOUT_RESPONSE | DYNAMIC,
@@ -165,35 +166,11 @@ static const target_uuid_t  jl_multi_search_uuid_table[] = {
         .characteristic_uuid16 = 0xae01,
         .opt_type = ATT_PROPERTY_WRITE_WITHOUT_RESPONSE,
     },
-
     {
         .services_uuid16 = 0xae30,
         .characteristic_uuid16 = 0xae02,
         .opt_type = ATT_PROPERTY_NOTIFY,
     },
-
-    //for uuid128,sample
-    //	PRIMARY_SERVICE, 0000F530-1212-EFDE-1523-785FEABCD123
-    //	CHARACTERISTIC,  0000F531-1212-EFDE-1523-785FEABCD123, NOTIFY,
-    //	CHARACTERISTIC,  0000F532-1212-EFDE-1523-785FEABCD123, WRITE_WITHOUT_RESPONSE | DYNAMIC,
-    /*
-    	{
-    		.services_uuid16 = 0,
-    		.services_uuid128 =       {0x00,0x00,0xF5,0x30 ,0x12,0x12 ,0xEF, 0xDE ,0x15,0x23 ,0x78,0x5F,0xEA ,0xBC,0xD1,0x23} ,
-    		.characteristic_uuid16 = 0,
-    		.characteristic_uuid128 = {0x00,0x00,0xF5,0x31 ,0x12,0x12 ,0xEF, 0xDE ,0x15,0x23 ,0x78,0x5F,0xEA ,0xBC,0xD1,0x23},
-    		.opt_type = ATT_PROPERTY_NOTIFY,
-    	},
-
-    	{
-    		.services_uuid16 = 0,
-    		.services_uuid128 =       {0x00,0x00,0xF5,0x30 ,0x12,0x12 ,0xEF, 0xDE ,0x15,0x23 ,0x78,0x5F,0xEA ,0xBC,0xD1,0x23} ,
-    		.characteristic_uuid16 = 0,
-    		.characteristic_uuid128 = {0x00,0x00,0xF5,0x32 ,0x12,0x12 ,0xEF, 0xDE ,0x15,0x23 ,0x78,0x5F,0xEA ,0xBC,0xD1,0x23},
-    		.opt_type = ATT_PROPERTY_WRITE_WITHOUT_RESPONSE,
-    	},
-    */
-
 };
 
 //配置多个扫描匹配设备
@@ -210,60 +187,185 @@ static const client_match_cfg_t multi_match_device_table[] =
 
 //带绑定的设备搜索
 static client_match_cfg_t *multi_bond_device_table;
-static u16  bond_device_table_cnt;
-uint32_t const bl_ckey[4]= {12,34,56,78};
+static u16  bond_device_table_cnt; // 绑定表计数
 
-//测试write数据操作
-static void multi_client_test_write(void)
+#define DATA_PACKET_MAX 512  // MTU最大值
+
+static inline u8 make_packet_data(u8 *buf, u16 offset, u8 data_type, u8 *data, u8 data_len)
 {
-#if MULTI_TEST_WRITE_SEND_DATA //测试写数据 
-    static u32 count = 0;
-    int i, ret = 0;
+    if (DATA_PACKET_MAX - offset < data_len + 2) {
+        return offset + data_len + 2;
+    }
 
-    u16 tmp_handle;
+    buf[0] = data_len + 1;
+    buf[1] = data_type;
+    memcpy(buf + 2, data, data_len);
+    return data_len + 2;
+}
 
-    
-    
-      //通过+MAC地址来改变密钥 
+static inline u8 make_packet_val(u8 *buf, u16 offset, u8 data_type, u32 val, u8 val_size)
+{
+    if (DATA_PACKET_MAX - offset < val_size + 2) {
+         return offset + val_size + 2;
+    }
 
-    uint32_t encry_key[4] ;
+    buf[0] = val_size + 1;
+    buf[1] = data_type;
+    memcpy(buf + 2, &val, val_size);
+    return val_size + 2;
+}
+//测试write数据操作
 
-    encry_key[0] = bl_ckey[0];
-    encry_key[1] = bl_ckey[1];
-    encry_key[2] = bl_ckey[2];
-    encry_key[3] = bl_ckey[3];
+void Get_Mppt_Report(void) // 获取MPPT 信息的指令
+{
+    uint32_t i, ret = 0;
+    uint32_t encry_key[4] ;     //通过+MAC地址来改变密钥
+    uint16_t offset = 0;
+    uint16_t tmp_handle;
 
-    encry_key[0] += roter_data.bl_connect_addr[0];
-    encry_key[1] += roter_data.bl_connect_addr[1];
-    encry_key[2] += roter_data.bl_connect_addr[2];
-    encry_key[3] += roter_data.bl_connect_addr[3];
-    encry_key[0] += roter_data.bl_connect_addr[4];
-    encry_key[1] += roter_data.bl_connect_addr[5];
-
-    
-    uint8_t data[8]  =
+    uint8_t data[8]  = //发送查询指令
     {
-        0xAA,0x01,0x01,0x02,0x03,0x04,0xff,0xff
+        0XBB,0X55,0x00,0x00,0x00,0x00,0x00,0x00
     };
+    for(i=0;i<4;i++) encry_key[i] = bl_ckey[i];
+    for(i=0;i<6;i++) encry_key[i%4] += RoterData.Ble_Connect_Mac[i];
 
+    data[0] = 0xBB; //包头
+    data[1] = 0X55;//包尾
+
+    put_buf(RoterData.Ble_Connect_Mac,6); // 蓝牙地址
+    put_buf(encry_key,16); // 加密密钥
+
+    put_buf(data,8);
     btea(data,2,encry_key); //加密数据
+    put_buf(data,8);
 
-//    put_buf(roter_data.bl_connect_addr, 6);
-//    put_buf(encry_key, 16);
-//    put_buf(data,8);
-
-//     count++;
     for (i = 0; i < SUPPORT_MAX_GATT_CLIENT; i++) 
     {
         tmp_handle = ble_comm_dev_get_handle(i, GATT_ROLE_CLIENT); //获取连接的handle
         if (tmp_handle && multi_ble_client_write_handle) 
         {
-            ret = ble_comm_att_send_data(tmp_handle, multi_ble_client_write_handle, &data, 8, ATT_OP_WRITE_WITHOUT_RESPOND);
+            ret = ble_comm_att_send_data(tmp_handle, multi_ble_client_write_handle, data, 8, ATT_OP_WRITE_WITHOUT_RESPOND);
             log_info("test_write:%04x,%d", tmp_handle, ret);
         }
     }
+}
 
-#endif
+static void Mppt_Set_Para_Send(void) // 发MPPT的设置参数
+{
+    uint32_t i, ret = 0;
+
+    uint8_t *data = malloc(200);
+    uint32_t encry_key[4] ;     //通过+MAC地址来改变密钥
+    uint16_t offset = 0;
+    uint16_t tmp_handle;
+
+    uint16_t const Curv_Data[16]=
+    {
+        {60*60*1,90},{60*60*2,80},{60*60*3,70},{60*60*4,60},
+        {60*60*5,50},{60*60*6,40},{60*60*7,30},{60*60*8,20},
+    };
+
+    for(i=0;i<4;i++) encry_key[i] = bl_ckey[i]; // 密码获取
+    for(i=0;i<6;i++) encry_key[i%4] += RoterData.Ble_Connect_Mac[i]; //加密密钥
+
+    data[offset++] = 0xAA; //包头
+    offset += make_packet_val(&data[offset],offset,0x01,10000,4); // 发10A
+    offset += make_packet_val(&data[offset],offset,0x02,50000,4); // 发5A  0.5C;
+    offset += make_packet_val(&data[offset],offset,0x03,50000,4); // 发50W 
+    offset += make_packet_val(&data[offset],offset,0x04,500,4);   // 发500mah
+    offset += make_packet_val(&data[offset],offset,0x05,2600,4);  // 发2600MV
+    offset += make_packet_val(&data[offset],offset,0x06,20,4);    // 发20挡位
+    offset += make_packet_val(&data[offset],offset,0x07,10,4);    // 雷达10%
+    offset += make_packet_val(&data[offset],offset,0x08,10,4);    // 雷达延迟15S
+    offset += make_packet_val(&data[offset],offset,0x09,10,4);    // 默认亮度100%
+    offset += make_packet_val(&data[offset],offset,0x0A,0,4);     // 曲线模式0 pwm模式
+    offset += make_packet_data(&data[offset],offset,0x0b,&Curv_Data,32);   // 默认亮度100%
+    data[offset++] = 0X55;//包尾
+    for(i=0;i<offset%4;i++)
+    {
+        data[offset] = 0;//补0
+        offset++;
+    }
+    log_info("Data len:%d",offset);
+    put_buf(RoterData.Ble_Connect_Mac,6); // 蓝牙地址
+    put_buf(encry_key,16);                // 加密密钥
+  
+    put_buf(data,offset);           //打印原始数据
+    btea(data,offset/4 ,encry_key); //加密数据
+    put_buf(data,offset);
+
+    for (i = 0; i < SUPPORT_MAX_GATT_CLIENT; i++) 
+    {
+        tmp_handle = ble_comm_dev_get_handle(i, GATT_ROLE_CLIENT); //获取连接的handle
+        if (tmp_handle && multi_ble_client_write_handle) 
+        {
+            ret = ble_comm_att_send_data(tmp_handle, multi_ble_client_write_handle, data, offset , ATT_OP_WRITE_WITHOUT_RESPOND);
+            log_info("test_write:%04x,%d", tmp_handle, ret);
+        }
+    }
+    
+   free(data);
+}
+
+void Mppt_Data_Decode(u8 *packet,u16 size) // MPPT 信息解码
+{
+    uint8_t *data = malloc(100);
+    uint32_t i,encry_key[4],temp;     //通过+MAC地址来改变密钥
+    u8 command;
+    u8 data_i = 0 , next_len;
+    uint16_t data_position = 0;
+
+
+    if(size < 8)return ; //数据长度不够直接退出
+
+    for(i=0;i<4;i++) encry_key[i] = bl_ckey[i];
+    for(i=0;i<6;i++) encry_key[i%4] += RoterData.Ble_Connect_Mac[i];
+
+    put_buf(RoterData.Ble_Connect_Mac,6); // 蓝牙地址
+    put_buf(encry_key,16); // 加密密钥
+
+    memcpy(data,packet,size);
+    put_buf(data,size);
+    btea(data,-(size/4),encry_key); //加密数据
+    put_buf(data,size);
+
+    if(data[data_i++] == 0xBB)
+    {
+        log_info("find data head 0xbb\r\n");
+        while(data_i<size)
+        {
+            next_len = data[data_i] + 1; //长度
+            if(!next_len)break; //非法数据 
+            command = data[data_i + 1];  //命令
+            data_position = data_i + 2;
+            log_info("cmd:%d next_len:%d ",command,next_len);
+            switch (command)
+            {
+                case 0x01:
+                    temp = little_endian_read_32(&data[data_position],0);     
+                    log_info("charge capcity data:%dMA/H ",temp);
+                    break;
+                case 0x02:
+                    temp = little_endian_read_32(&data[data_position],0);     
+                    log_info("charge current data:%dMA ",temp);
+                    break;
+                case 0x03: 
+                    temp = little_endian_read_32(&data[data_position],0);  
+                    log_info("charge power:%dW ",temp);
+                    break;
+                case 0x04:
+                    temp = little_endian_read_16(&data[data_position],0);  
+                    log_info("Bat resistance :%dR ",temp);
+                    break;
+                default:    
+                    break;
+            }
+            data_i = data_i+next_len;
+        }
+    }
+
+    free(data);
 }
 
 //配置扫描匹配连接的设备，已经连上后搜索匹配的profile uuid
@@ -422,7 +524,6 @@ static int multi_client_pair_vm_do(struct ctl_pair_info_t *info, u8 rw_flag)
 
     return ret;
 }
-
 //清配对信息
 int multi_client_clear_pair(void)
 {
@@ -444,12 +545,12 @@ static int multi_client_event_packet_handler(int event, u8 *packet, u16 size, u8
     /* log_info("event: %02x,size= %d\n",event,size); */
     switch (event) 
     {
-        case GATT_COMM_EVENT_GATT_DATA_REPORT: 
+        case GATT_COMM_EVENT_GATT_DATA_REPORT:  // service数据接收
         {
             att_data_report_t *report_data = (void *)packet;
             log_info("data_report:hdl=%04x,pk_type=%02x,size=%d\n", report_data->conn_handle, report_data->packet_type, report_data->blob_length);
-            put_buf(report_data->blob, report_data->blob_length);
-
+            put_buf(report_data->blob, report_data->blob_length);   
+            Mppt_Data_Decode(report_data->blob,report_data->blob_length); // MPPT数据解析
             switch (report_data->packet_type) 
             {
                 case GATT_EVENT_NOTIFICATION://notify
@@ -466,18 +567,18 @@ static int multi_client_event_packet_handler(int event, u8 *packet, u16 size, u8
         }
         break;
 
-        case GATT_COMM_EVENT_CAN_SEND_NOW:
+        case GATT_COMM_EVENT_CAN_SEND_NOW: // 可以发数据通知
             break;
-
-        case GATT_COMM_EVENT_CONNECTION_COMPLETE:
+ 
+        case GATT_COMM_EVENT_CONNECTION_COMPLETE: // 连接完成通知
             log_info("connection_handle:%04x\n", little_endian_read_16(packet, 0));
             log_info("con_interval = %d\n", little_endian_read_16(ext_param, 14 + 0));
             log_info("con_latency = %d\n", little_endian_read_16(ext_param, 14 + 2));
             log_info("cnn_timeout = %d\n", little_endian_read_16(ext_param, 14 + 4));
-            log_info("peer_address_info:");
-            put_buf(&ext_param[7], 7);
+            log_info("peer_address_info:"); put_buf(&ext_param[7], 7); // MAC 地址
+           
 
-            memcpy(cur_conn_info.peer_address_info, &ext_param[7], 7);
+            memcpy(cur_conn_info.peer_address_info, &ext_param[7], 7); // 当前连接的MAC地址
             cur_conn_info.conn_handle =   little_endian_read_16(packet, 0);
             cur_conn_info.conn_interval = little_endian_read_16(ext_param, 14 + 0);
             cur_conn_info.conn_latency =  little_endian_read_16(ext_param, 14 + 2);
@@ -486,11 +587,11 @@ static int multi_client_event_packet_handler(int event, u8 *packet, u16 size, u8
             cur_conn_info.head_tag = 0;
             break;
 
-        case GATT_COMM_EVENT_DISCONNECT_COMPLETE:
+        case GATT_COMM_EVENT_DISCONNECT_COMPLETE: //蓝牙断开连接 
             log_info("disconnect_handle:%04x,reason= %02x\n", little_endian_read_16(packet, 0), packet[2]);
             break;
     
-        case GATT_COMM_EVENT_ENCRYPTION_CHANGE:
+        case GATT_COMM_EVENT_ENCRYPTION_CHANGE:   //蓝牙加密完成
             log_info("ENCRYPTION_CHANGE:handle=%04x,state=%d,process =%d", little_endian_read_16(packet, 0), packet[2], packet[3]);
 
             if (packet[3] == LINK_ENCRYPTION_RECONNECT) 
@@ -509,51 +610,55 @@ static int multi_client_event_packet_handler(int event, u8 *packet, u16 size, u8
     #endif
             break;
 
-        case GATT_COMM_EVENT_CONNECTION_UPDATE_COMPLETE:
+        case GATT_COMM_EVENT_CONNECTION_UPDATE_COMPLETE: // 链路参数更新完成
             log_info("conn_param update_complete:%04x\n", little_endian_read_16(packet, 0));
             log_info("update_interval = %d\n", little_endian_read_16(ext_param, 6 + 0));
             log_info("update_latency = %d\n",  little_endian_read_16(ext_param, 6 + 2));
             log_info("update_timeout = %d\n",  little_endian_read_16(ext_param, 6 + 4));
 
-            if (cur_conn_info.conn_handle == little_endian_read_16(packet, 0)) {
+            if (cur_conn_info.conn_handle == little_endian_read_16(packet, 0)) 
+            {
                 cur_conn_info.conn_interval = little_endian_read_16(ext_param, 6 + 0);
                 cur_conn_info.conn_latency =  little_endian_read_16(ext_param, 6 + 2);
                 cur_conn_info.conn_timeout =  little_endian_read_16(ext_param, 6 + 4);
             }
 
-    #if CLIENT_PAIR_BOND_ENABLE
-            if (cur_conn_info.conn_handle == little_endian_read_16(packet, 0)) 
-            {
-                if (cur_conn_info.pair_flag) 
+            #if CLIENT_PAIR_BOND_ENABLE
+                if (cur_conn_info.conn_handle == little_endian_read_16(packet, 0)) 
                 {
-                    log_info("update_cur_conn\n");
-                    multi_client_pair_vm_do(&cur_conn_info, 1);
-                }
-            } 
-            else 
-            {
-                struct ctl_pair_info_t tmp_conn_info;
-                for (int i = 0; i < SUPPORT_MAX_GATT_CLIENT; i++) 
-                {
-                    if (record_bond_info[i].pair_flag && record_bond_info[i].conn_handle == little_endian_read_16(packet, 0))
+                    if (cur_conn_info.pair_flag) 
                     {
-                        log_info("update_record_conn\n");
-                        memcpy(&tmp_conn_info, &record_bond_info[i], sizeof(struct ctl_pair_info_t));
-                        tmp_conn_info.conn_interval = little_endian_read_16(ext_param, 6 + 0);
-                        tmp_conn_info.conn_latency =  little_endian_read_16(ext_param, 6 + 2);
-                        tmp_conn_info.conn_timeout =  little_endian_read_16(ext_param, 6 + 4);
-                        multi_client_pair_vm_do(&tmp_conn_info, 1);
-                        break;
+                        log_info("update_cur_conn\n");
+                        multi_client_pair_vm_do(&cur_conn_info, 1);
+                    }
+                } 
+                else 
+                {
+                    struct ctl_pair_info_t tmp_conn_info;
+                    for (int i = 0; i < SUPPORT_MAX_GATT_CLIENT; i++) 
+                    {
+                        if (record_bond_info[i].pair_flag && record_bond_info[i].conn_handle == little_endian_read_16(packet, 0))
+                        {
+                            log_info("update_record_conn\n");
+                            memcpy(&tmp_conn_info, &record_bond_info[i], sizeof(struct ctl_pair_info_t));
+                            tmp_conn_info.conn_interval = little_endian_read_16(ext_param, 6 + 0);
+                            tmp_conn_info.conn_latency =  little_endian_read_16(ext_param, 6 + 2);
+                            tmp_conn_info.conn_timeout =  little_endian_read_16(ext_param, 6 + 4);
+                            multi_client_pair_vm_do(&tmp_conn_info, 1);
+                            break;
+                        }
                     }
                 }
-            }
-    #endif
+            #endif
+
             break;
 
-        case GATT_COMM_EVENT_SCAN_DEV_MATCH: {
+        case GATT_COMM_EVENT_SCAN_DEV_MATCH:   // 扫描到匹配的设备
+        {
             log_info("match_dev:addr_type= %d\n", packet[0]);
             put_buf(&packet[1], 6);
-            if (packet[8] == 2) {
+            if (packet[8] == 2)
+            {
                 log_info("is TEST_BOX\n");
             }
             client_match_cfg_t *match_cfg = ext_param;
@@ -571,34 +676,37 @@ static int multi_client_event_packet_handler(int event, u8 *packet, u16 size, u8
             cur_conn_info.pair_flag = 0;
             cur_conn_info.match_dev_id = packet[9];
 
-    #if CLIENT_PAIR_BOND_ENABLE
-            if (packet[9] < SUPPORT_MAX_GATT_CLIENT) {
-                /*记录表回连，使用记录的连接参数建立*/
-                r_printf("match bond,reconnect\n");
-                multi_scan_conn_config_set(&record_bond_info[packet[9]]);
-                if (!multi_pair_reconnect_search_profile) {
-                    multil_client_bond_config.search_uuid_count = 0;//set no search
-                }
-            } else {
-                /*记录表回连，使用记录的连接参数建立*/
-                r_printf("match config\n");
-                multi_scan_conn_config_set(NULL);
-            }
-    #endif
+            #if CLIENT_PAIR_BOND_ENABLE
+                    if (packet[9] < SUPPORT_MAX_GATT_CLIENT) {
+                        /*记录表回连，使用记录的连接参数建立*/
+                        r_printf("match bond,reconnect\n");
+                        multi_scan_conn_config_set(&record_bond_info[packet[9]]);
+                        if (!multi_pair_reconnect_search_profile) {
+                            multil_client_bond_config.search_uuid_count = 0;//set no search
+                        }
+                    } else {
+                        /*记录表回连，使用记录的连接参数建立*/
+                        r_printf("match config\n");
+                        multi_scan_conn_config_set(NULL);
+                    }
+            #endif
 
         }
         break;
-        case GATT_COMM_EVENT_GATT_SEARCH_MATCH_UUID: 
+        case GATT_COMM_EVENT_GATT_SEARCH_MATCH_UUID:  // 找到对应的UUID
         {
             opt_handle_t *opt_hdl = packet;
+            
             log_info("match:server_uuid= %04x,charactc_uuid= %04x,value_handle= %04x\n", \
                     opt_hdl->search_uuid->services_uuid16, opt_hdl->search_uuid->characteristic_uuid16, opt_hdl->value_handle);
-    #if MULTI_TEST_WRITE_SEND_DATA
-            //for test
-            if (opt_hdl->search_uuid->characteristic_uuid16 == 0xae01) {
-                multi_ble_client_write_handle = opt_hdl->value_handle;
-            }
-    #endif
+
+            #if MULTI_TEST_WRITE_SEND_DATA
+                    //for test
+                    if (opt_hdl->search_uuid->characteristic_uuid16 == 0xae01)  // 这里就配置写handle就好了
+                    {
+                        multi_ble_client_write_handle = opt_hdl->value_handle;
+                    }
+            #endif
         }
         break;
 
@@ -609,18 +717,18 @@ static int multi_client_event_packet_handler(int event, u8 *packet, u16 size, u8
 
         case GATT_COMM_EVENT_GATT_SEARCH_PROFILE_COMPLETE:
 
-    #if CLIENT_PAIR_BOND_ENABLE
-            if (!multi_pair_reconnect_search_profile) {
-                multil_client_bond_config.search_uuid_count = (sizeof(jl_multi_search_uuid_table) / sizeof(target_uuid_t));//recover
-            }
-    #endif
+        #if CLIENT_PAIR_BOND_ENABLE
+                if (!multi_pair_reconnect_search_profile) {
+                    multil_client_bond_config.search_uuid_count = (sizeof(jl_multi_search_uuid_table) / sizeof(target_uuid_t));//recover
+                }
+        #endif
             break;
 
         case GATT_COMM_EVENT_CLIENT_STATE:
             log_info("client_state: handle=%02x,%02x\n", little_endian_read_16(packet, 1), packet[0]);
             break;
 
-        case GATT_COMM_EVENT_SM_PASSKEY_INPUT: 
+        case GATT_COMM_EVENT_SM_PASSKEY_INPUT: // 密钥输入
         {
             u32 *key = little_endian_read_32(packet, 2);
 
@@ -630,10 +738,7 @@ static int multi_client_event_packet_handler(int event, u8 *packet, u16 size, u8
                 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
             };
 
-            for(int i=0;i<6;i++)
-            {
-                data[i] = roter_data.bl_connect_addr[i];
-            }
+            for(int i=0;i<6;i++)data[i] = RoterData.Ble_Connect_Mac[i];
 
             btea(data,2,bl_ckey);
 
@@ -649,6 +754,7 @@ static int multi_client_event_packet_handler(int event, u8 *packet, u16 size, u8
             break;
     }
     return 0;
+
 }
 
 //scan参数设置
@@ -684,38 +790,42 @@ void multi_client_init(void)
     log_info("%s", __FUNCTION__);
     int i;
 
-#if CLIENT_PAIR_BOND_ENABLE
-    if (!multi_bond_device_table) {
-        int table_size = sizeof(multi_match_device_table) + sizeof(client_match_cfg_t) * SUPPORT_MAX_GATT_CLIENT;
-        bond_device_table_cnt = multil_client_search_config.match_devices_count + SUPPORT_MAX_GATT_CLIENT;
-        multi_bond_device_table = malloc(table_size);
-        ASSERT(multi_bond_device_table != NULL, "%s,malloc fail!", __func__);
-        memset(multi_bond_device_table, 0, table_size);
-    }
+    #if CLIENT_PAIR_BOND_ENABLE
+        if (!multi_bond_device_table)
+         {
+            int table_size = sizeof(multi_match_device_table) + sizeof(client_match_cfg_t) * SUPPORT_MAX_GATT_CLIENT;
+            bond_device_table_cnt = multil_client_search_config.match_devices_count + SUPPORT_MAX_GATT_CLIENT;
+            multi_bond_device_table = malloc(table_size);
+            ASSERT(multi_bond_device_table != NULL, "%s,malloc fail!", __func__);
+            memset(multi_bond_device_table, 0, table_size);
+        }
 
-    if (0 == multi_client_pair_vm_do(NULL, 0)) {
-        log_info("client already bond dev");
-    }
+        if (0 == multi_client_pair_vm_do(NULL, 0))
+        {
+            log_info("client already bond dev");
+        }
 
-    if (multi_sm_master_pair_redo) {
-        sm_set_master_pair_redo(multi_sm_master_pair_redo);
-    }
+        if (multi_sm_master_pair_redo) 
+        {
+            sm_set_master_pair_redo(multi_sm_master_pair_redo);
+        }
 
-#else
-    ble_gatt_client_set_search_config(&multil_client_search_config);
-#endif
+    #else
+        ble_gatt_client_set_search_config(&multil_client_search_config);
+    #endif
 
     multi_scan_conn_config_set(NULL);
 
-#if MULTI_TEST_WRITE_SEND_DATA  //测试写数据
-    sys_timer_add(0, multi_client_test_write, 500);
-#endif
+    #if MULTI_TEST_WRITE_SEND_DATA  //测试写数据
+        sys_timer_add(0, Mppt_Set_Para_Send, 1500);
+    #endif
 }
 
 //multi exit
 void multi_client_exit(void)
 {
-    if (!multi_bond_device_table) {
+    if (!multi_bond_device_table) 
+    {
         free(multi_bond_device_table);
         multi_bond_device_table = NULL;
     }

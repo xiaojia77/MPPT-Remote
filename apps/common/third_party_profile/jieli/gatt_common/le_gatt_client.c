@@ -106,7 +106,7 @@ bool ble_comm_need_wait_encryption(u8 role);
  *  \note
  */
 /*************************************************************************************************/
-static int __gatt_client_event_callback_handler(int event, u8 *packet, u16 size, u8 *ext_param)
+static int __gatt_client_event_callback_handler(int event, u8 *packet, u16 size, u8 *ext_param) // 事件回调输出接口
 {
     if (__this->client_config->event_packet_handler) {
 
@@ -126,7 +126,7 @@ static int __gatt_client_event_callback_handler(int event, u8 *packet, u16 size,
  *  \note
  */
 /*************************************************************************************************/
-static void __gatt_client_set_work_state(u16 conn_handle, ble_state_e state, u8 report_en)
+static void __gatt_client_set_work_state(u16 conn_handle, ble_state_e state, u8 report_en) // 设置 连接和 未连接状态
 {
     u8 packet_buf[4];
 
@@ -160,7 +160,7 @@ static void __gatt_client_set_work_state(u16 conn_handle, ble_state_e state, u8 
  *  \note
  */
 /*************************************************************************************************/
-static void __gatt_client_timeout_handler(int type_id)
+static void __gatt_client_timeout_handler(int type_id) // 连接超时检测  返回事件且检查是否自动开广播
 {
     __this->client_timeout_id = 0;
     if (TO_TYPE_CREAT_CONN == type_id) 
@@ -186,7 +186,7 @@ static void __gatt_client_timeout_handler(int type_id)
  *  \note
  */
 /*************************************************************************************************/
-static void __gatt_client_timeout_del(void) //超时删除
+static void __gatt_client_timeout_del(void) //连接超时定时器删除
 {
     if (__this->client_timeout_id) {
         sys_timeout_del(__this->client_timeout_id);
@@ -205,7 +205,7 @@ static void __gatt_client_timeout_del(void) //超时删除
  *  \note
  */
 /*************************************************************************************************/
-static void __gatt_client_timeout_add(int type_id, u32 set_ms) //超时定时添加
+static void __gatt_client_timeout_add(int type_id, u32 set_ms) //连接超时定时添加
 {
     if (__this->client_timeout_id) {
         sys_timeout_del(__this->client_timeout_id);
@@ -241,7 +241,7 @@ static void __gatt_client_can_send_now_wakeup(void)  //可以发送信息了
  *  \note
  */
 /*************************************************************************************************/
-ble_state_e ble_gatt_client_get_work_state(void)
+ble_state_e ble_gatt_client_get_work_state(void) //获取工作状态
 {
     return __this->client_work_state;
 }
@@ -257,7 +257,7 @@ ble_state_e ble_gatt_client_get_work_state(void)
  *  \note
  */
 /*************************************************************************************************/
-ble_state_e ble_gatt_client_get_connect_state(u16 conn_handle)
+ble_state_e ble_gatt_client_get_connect_state(u16 conn_handle) // 获取连接状态
 {
     if (!conn_handle)
     {
@@ -277,50 +277,48 @@ ble_state_e ble_gatt_client_get_connect_state(u16 conn_handle)
  *  \note      可以指定接受后使用的参数
  */
 /*************************************************************************************************/
-//协议栈内部调用
-int l2cap_connection_update_request_just(u8 *packet, hci_con_handle_t handle)
+int l2cap_connection_update_request_just(u8 *packet, hci_con_handle_t handle) //l2cap协议栈内部调用 不用管
 {
     log_info("slave request conn_update:\n-conn_handle= %04x\n-interval_min= %d,\n-interval_max= %d,\n-latency= %d,\n-timeout= %d\n",
              handle,
              little_endian_read_16(packet, 0), little_endian_read_16(packet, 2),
              little_endian_read_16(packet, 4), little_endian_read_16(packet, 6));
 
-#if (SUPPORT_MAX_GATT_CLIENT > 1)
-    u16 cfg_interval = BASE_INTERVAL_VALUE;
-    u16 max_interval = little_endian_read_16(packet, 2);
-    while (max_interval >= (cfg_interval + BASE_INTERVAL_VALUE)) {
-        cfg_interval += BASE_INTERVAL_VALUE;
-    }
-    little_endian_store_16(packet, 0, cfg_interval);
-    little_endian_store_16(packet, 2, cfg_interval);
-    r_printf("conn_handle:%04x,confirm_interval:%d", handle, cfg_interval);
-    log_info("conn_handle:%04x,confirm_interval:%d\n", handle, cfg_interval);
-#endif
+    #if (SUPPORT_MAX_GATT_CLIENT > 1)
+        u16 cfg_interval = BASE_INTERVAL_VALUE;
+        u16 max_interval = little_endian_read_16(packet, 2);
+        while (max_interval >= (cfg_interval + BASE_INTERVAL_VALUE)) {
+            cfg_interval += BASE_INTERVAL_VALUE;
+        }
+        little_endian_store_16(packet, 0, cfg_interval);
+        little_endian_store_16(packet, 2, cfg_interval);
+        r_printf("conn_handle:%04x,confirm_interval:%d", handle, cfg_interval);
+        log_info("conn_handle:%04x,confirm_interval:%d\n", handle, cfg_interval);
+    #endif
 
-    if (little_endian_read_16(packet, 0) > little_endian_read_16(packet, 2)) {
-        log_info("interval error,reject!!!\n");
-        return 1;
-    }
-
-    if (config_vendor_le_bb & VENDOR_BB_CONNECT_SLOT) {
-        if (little_endian_read_16(packet, 0) < 2) {
-            log_info("interval_625 error,reject!!!\n");
+        if (little_endian_read_16(packet, 0) > little_endian_read_16(packet, 2)) {
+            log_info("interval error,reject!!!\n");
             return 1;
         }
-    } else {
-        if (little_endian_read_16(packet, 0) < 6) {
-            log_info("interval_1250 error,reject!!!\n");
-            return 1;
-        }
-    }
 
-    //change param
-    /* little_endian_store_16(packet, 4,0);//disable latency */
-    /* little_endian_store_16(packet, 6,400);//change timeout */
-    return !__this->scan_conn_config->conn_update_accept;
-    /* return 1; */
+        if (config_vendor_le_bb & VENDOR_BB_CONNECT_SLOT) {
+            if (little_endian_read_16(packet, 0) < 2) {
+                log_info("interval_625 error,reject!!!\n");
+                return 1;
+            }
+        } else {
+            if (little_endian_read_16(packet, 0) < 6) {
+                log_info("interval_1250 error,reject!!!\n");
+                return 1;
+            }
+        }
+
+        //change param
+        /* little_endian_store_16(packet, 4,0);//disable latency */
+        /* little_endian_store_16(packet, 6,400);//change timeout */
+        return !__this->scan_conn_config->conn_update_accept;
+        /* return 1; */
 }
-
 
 /*************************************************************************************************/
 /*!
@@ -333,8 +331,7 @@ int l2cap_connection_update_request_just(u8 *packet, hci_con_handle_t handle)
  *  \note      read动作返回数据、notify 或indicate 通知数据
  */
 /*************************************************************************************************/
-//协议栈内部调用
-void user_client_report_data_callback(att_data_report_t *report_data)
+void user_client_report_data_callback(att_data_report_t *report_data) // 接收server段的数据发送
 {
     if (report_data->conn_handle != __this->just_search_handle) {
         if (INVAIL_INDEX == ble_comm_dev_get_index(report_data->conn_handle, GATT_ROLE_CLIENT)) {
@@ -342,7 +339,6 @@ void user_client_report_data_callback(att_data_report_t *report_data)
             return;
         }
     }
-
     /* log_info("data_report:hdl=%04x,pk_type=%02x,size=%d\n", report_data->conn_handle, report_data->packet_type, report_data->blob_length); */
     __gatt_client_event_callback_handler(GATT_COMM_EVENT_GATT_DATA_REPORT, report_data, sizeof(att_data_report_t), 0);
 }
@@ -358,7 +354,7 @@ void user_client_report_data_callback(att_data_report_t *report_data)
  *  \note       操作handle，完成 write ccc
  */
 /*************************************************************************************************/
-static void __do_operate_search_handle(void)
+static void __do_operate_search_handle(void) //搜索完profile，跟进配置处理搜索到的handle，使能通知等操作
 {
     u16 tmp_16, i, cur_opt_type;
     opt_handle_t *opt_hdl_pt;
@@ -419,6 +415,7 @@ static void __do_operate_search_handle(void)
         }
     }
 }
+
 /*************************************************************************************************/
 /*!
  *  \brief      检查是否有匹配的uuid
@@ -430,7 +427,7 @@ static void __do_operate_search_handle(void)
  *  \note
  */
 /*************************************************************************************************/
-static void __check_target_uuid_match(search_result_t *result_info)
+static void __check_target_uuid_match(search_result_t *result_info)  //看UUID是否匹配
 {
     u32 i;
     target_uuid_t *t_uuid;
@@ -519,7 +516,7 @@ static void __check_target_uuid_match(search_result_t *result_info)
  *  \note      搜索charactc包含descriptor   //Descriptor：对Characterisctic的描述，如范围、单位等
  */ 
 /*************************************************************************************************/
-void user_client_report_descriptor_result(charact_descriptor_t *result_descriptor)
+void user_client_report_descriptor_result(charact_descriptor_t *result_descriptor)  //descriptor 内容
 {
     log_info("report_descriptor,handle= %04x ,uuid16: %04x\n", result_descriptor->handle, result_descriptor->uuid16);
     if (result_descriptor->uuid16 == 0) {
@@ -541,8 +538,7 @@ void user_client_report_descriptor_result(charact_descriptor_t *result_descripto
  *  \note      每搜索到一个server 或 charactc uuid 都会调用,直到搜索结束
  */
 /*************************************************************************************************/
-//协议栈内部调用
-void user_client_report_search_result(search_result_t *result_info)
+void user_client_report_search_result(search_result_t *result_info) // 每搜索到一个server 或 charactc uuid 都会调用,直到搜索结束
 {
     if (result_info == (void *) - 1) {
         log_info("client_report_search_result finish!!!\n");
@@ -593,7 +589,7 @@ void user_client_report_search_result(search_result_t *result_info)
  *  \note
  */
 /*************************************************************************************************/
-static void __gatt_client_search_profile_start(void)
+static void __gatt_client_search_profile_start(void)    //  启动profile搜索
 {
     if (!__this->client_search_handle) {
         log_error("search_profile_fail:%04x\n", __this->client_search_handle);
@@ -625,7 +621,7 @@ static void __gatt_client_search_profile_start(void)
  *  \note
  */
 /*************************************************************************************************/
-static void __gatt_client_check_auto_scan(void)
+static void __gatt_client_check_auto_scan(void)  //检查是否配置自动开启scan
 {
     if (__this->scan_conn_config->scan_auto_do) {
         ble_gatt_client_scan_enable(1);
@@ -643,26 +639,28 @@ static void __gatt_client_check_auto_scan(void)
  *  \note
  */
 /*************************************************************************************************/
-static bool __gatt_client_just_new_dev_scan(void)
+static bool __gatt_client_just_new_dev_scan(void) // 检查是否支持新设备open scan
 {
     log_info("%s\n", __FUNCTION__);
     u8 state = ble_gatt_client_get_work_state();
 
-    switch (state) {
-    case BLE_ST_IDLE:
-    case BLE_ST_INIT_OK:
-    case BLE_ST_DISCONN:
-    case BLE_ST_CONNECT_FAIL:
-    case BLE_ST_SEND_CREATE_CONN_CANNEL:
-        break;
-    default:
-        log_info("dev_doing,%02x\n", state);
-        return false;
-        break;
+    switch (state) 
+    {
+        case BLE_ST_IDLE:
+        case BLE_ST_INIT_OK:
+        case BLE_ST_DISCONN:
+        case BLE_ST_CONNECT_FAIL:
+        case BLE_ST_SEND_CREATE_CONN_CANNEL:
+            break;
+        default:
+            log_info("dev_doing,%02x\n", state);
+            return false;
+            break;
     }
 
     s8 tmp_cid = ble_comm_dev_get_idle_index(GATT_ROLE_CLIENT);
-    if (tmp_cid == INVAIL_INDEX) {
+    if (tmp_cid == INVAIL_INDEX) 
+    {
         log_info("no idle dev to do!!!\n");
         return false;
     }
@@ -682,47 +680,54 @@ static bool __gatt_client_just_new_dev_scan(void)
  *  \note
  */
 /*************************************************************************************************/
-int ble_gatt_client_scan_enable(u32 en)
+int ble_gatt_client_scan_enable(u32 en) // 打开设备scan
 {
     ble_state_e next_state, cur_state;
 
-    if (!__this->scan_ctrl_en && en) {
-        return 	GATT_CMD_OPT_FAIL;
+    if (!__this->scan_ctrl_en && en)  // 如果scan_ctrl_en没使能，则返回失败状态
+    {
+        return 	GATT_CMD_OPT_FAIL;  //返回失败的状态
     }
 
 
-    if (en) {
-        if (!__gatt_client_just_new_dev_scan()) {
+    if (en)  // 使能
+    {
+        if (!__gatt_client_just_new_dev_scan()) 
+        {
             return 	GATT_CMD_OPT_FAIL;
         }
-        next_state = BLE_ST_SCAN;
-    } else {
-        next_state = BLE_ST_IDLE;
+        next_state = BLE_ST_SCAN; //状态切换成扫描态
+    } 
+    else 
+    {
+        next_state = BLE_ST_IDLE; //状态切换成闲置
     }
 
-    cur_state =  ble_gatt_client_get_work_state();
+    cur_state =  ble_gatt_client_get_work_state(); // 获取当前工作状态
 
-    switch (cur_state) {
-    case BLE_ST_SCAN:
-    case BLE_ST_IDLE:
-    case BLE_ST_INIT_OK:
-    case BLE_ST_NULL:
-    case BLE_ST_DISCONN:
-    case BLE_ST_CONNECT_FAIL:
-    case BLE_ST_SEND_CREATE_CONN_CANNEL:
-        break;
-    default:
-        return 	GATT_CMD_OPT_FAIL;
-        break;
+    switch (cur_state)  // 状态在确定
+    {
+        case BLE_ST_SCAN:
+        case BLE_ST_IDLE:
+        case BLE_ST_INIT_OK:
+        case BLE_ST_NULL:
+        case BLE_ST_DISCONN:
+        case BLE_ST_CONNECT_FAIL:
+        case BLE_ST_SEND_CREATE_CONN_CANNEL:
+            break;
+        default:
+            return 	GATT_CMD_OPT_FAIL;
+            break;
     }
 
-    if (cur_state == next_state) {
+    if (cur_state == next_state)  //如果状态等于则直接退出 返回GATT_OP_RET_SUCESS
+    {
         return GATT_OP_RET_SUCESS;
     }
 
     __gatt_client_set_work_state(INVAIL_CONN_HANDLE, next_state, 1);
 
-#if EXT_ADV_MODE_EN
+#if EXT_ADV_MODE_EN  //额外广播开启
     if (en) {
         ble_op_set_ext_scan_param(&ext_scan_param, sizeof(ext_scan_param));
         ble_op_ext_scan_enable(&ext_scan_enable, sizeof(ext_scan_enable));
@@ -730,14 +735,17 @@ int ble_gatt_client_scan_enable(u32 en)
         ble_op_ext_scan_enable(&ext_scan_disable, sizeof(ext_scan_disable));
     }
 #else
-    if (en) {
+    if (en) 
+    {
 
-        if (__this->scan_conn_config->set_local_addr_tag == USE_SET_LOCAL_ADDRESS_TAG) {
+        if (__this->scan_conn_config->set_local_addr_tag == USE_SET_LOCAL_ADDRESS_TAG)
+         {
             le_controller_set_mac(&__this->scan_conn_config->local_address_info[1]);
         }
 
-        log_info("scan_param: %d-%d-%d\n", \
-                 __this->scan_conn_config->scan_type, __this->scan_conn_config->scan_interval, __this->scan_conn_config->scan_window);
+        log_info("scan_param: %d-%d-%d\n", \ 
+                __this->scan_conn_config->scan_type, __this->scan_conn_config->scan_interval, __this->scan_conn_config->scan_window);
+                
         ble_op_set_scan_param(__this->scan_conn_config->scan_type, __this->scan_conn_config->scan_interval, __this->scan_conn_config->scan_window);
     }
     log_info("scan_en:%d\n", en);
@@ -759,6 +767,7 @@ int ble_gatt_client_scan_enable(u32 en)
  */
 /*************************************************************************************************/
 static u8 device_match_index;
+//扫描设备是否匹配
 static bool __check_device_is_match(u8 event_type, u8 info_type, u8 *data, int size, client_match_cfg_t **output_match_devices)
 {
     int i;
@@ -811,7 +820,7 @@ static bool __check_device_is_match(u8 event_type, u8 info_type, u8 *data, int s
  *  \note
  */
 /*************************************************************************************************/
-static bool __resolve_adv_report(adv_report_t *report_pt, u16 len)
+static bool __resolve_adv_report(adv_report_t *report_pt, u16 len) //检测是否有匹配的设备, true or false
 {
     u8 i, length, ad_type;
     u8 *adv_data_pt;
@@ -870,36 +879,36 @@ static bool __resolve_adv_report(adv_report_t *report_pt, u16 len)
         case HCI_EIR_DATATYPE_COMPLETE_LOCAL_NAME: //获取名字信息
         case HCI_EIR_DATATYPE_SHORTENED_LOCAL_NAME:
             tmp32 = adv_data_pt[length - 1];
-            adv_data_pt[length - 1] = 0;;
+            adv_data_pt[length - 1] = 0;
             log_info("remoter_name:%s ,rssi:%d\n", adv_data_pt, report_pt->rssi);
             log_info_hexdump(report_pt->address, 6);
 
             uint8_t location;
-            location = BL_Find_Mac_RepAddr(roter_data.bl_adv_rp,13,report_pt->address) ;
+            location = BL_Find_Mac_RepAddr(RoterData.bl_adv_rp,13,report_pt->address) ;
             log_info("location:%d", location);
             if(location !=255)
             {
-                memcpy(roter_data.bl_adv_rp[location].mac,report_pt->address, 6);
-                roter_data.bl_adv_rp[location].rssi = report_pt->rssi;  
+                memcpy(RoterData.bl_adv_rp[location].mac,report_pt->address, 6);
+                RoterData.bl_adv_rp[location].rssi = report_pt->rssi;  
+                RoterData.bl_adv_rp[location].Timeout = 0;
             }
             else
             {
-               location =  BL_Check_NonAddr(roter_data.bl_adv_rp,13);
+               location =  BL_Check_NonAddr(RoterData.bl_adv_rp,13);
                
                if(location !=255)
                {
-                    memcpy(roter_data.bl_adv_rp[location].mac,report_pt->address, 6);
-                    roter_data.bl_adv_rp[location].rssi = report_pt->rssi;  
-                    roter_data.bl_adv_rp[location].useflag = 1;
-                  //  if(roter_data.bl_cnt)
-                    roter_data.bl_cnt++;
+                    memcpy(RoterData.bl_adv_rp[location].mac,report_pt->address, 6);
+                    RoterData.bl_adv_rp[location].rssi = report_pt->rssi;  
+                    RoterData.bl_adv_rp[location].useflag = 1;
+                    RoterData.Ble_Adv_Count++;
                }
 
             }
             
-            // memcpy(roter_data.bl_adv_rp[roter_data.bl_cnt].mac,report_pt->address, 6);
-            // roter_data.bl_adv_rp[roter_data.bl_cnt].rssi = report_pt->rssi;  
-            // if(++roter_data.bl_cnt  >13) roter_data.bl_cnt =  0;
+            // memcpy(RoterData.bl_adv_rp[RoterData.Ble_Adv_Count].mac,report_pt->address, 6);
+            // RoterData.bl_adv_rp[RoterData.Ble_Adv_Count].rssi = report_pt->rssi;  
+            // if(++RoterData.Ble_Adv_Count  >13) RoterData.Ble_Adv_Count =  0;
 
             adv_data_pt[length - 1] = tmp32;
 
@@ -990,7 +999,7 @@ static const struct create_conn_param_ext_t create_default_param_table =
     .maximum_ce_length = 1,
 };
 
-int ble_gatt_client_create_connection_request(u8 *address, u8 addr_type, int mode)
+int ble_gatt_client_create_connection_request(u8 *address, u8 addr_type, int mode) // 通过MAC请求发起连接的
 {
     u8 cur_state =  ble_gatt_client_get_work_state();
 
@@ -998,31 +1007,32 @@ int ble_gatt_client_create_connection_request(u8 *address, u8 addr_type, int mod
     log_info("***remote type %d,addr:", addr_type);
     put_buf(address, 6);
 
-    switch (cur_state) {
-    case BLE_ST_SCAN:
-    case BLE_ST_IDLE:
-    case BLE_ST_INIT_OK:
-    case BLE_ST_DISCONN:
-    case BLE_ST_CONNECT_FAIL:
-    case BLE_ST_SEND_CREATE_CONN_CANNEL:
-        break;
-
-    case BLE_ST_CREATE_CONN:
-        if (CONFIG_BT_GATT_CLIENT_NUM == 1) {
-            log_error("already create conn:%d!!!\n");
-        } else if (CONFIG_BT_GATT_CLIENT_NUM > 1) {
-#if RCSP_BTMATE_EN
-            r_printf("To replace create conn!!");
+    switch (cur_state) 
+    {
+        case BLE_ST_SCAN:
+        case BLE_ST_IDLE:
+        case BLE_ST_INIT_OK:
+        case BLE_ST_DISCONN:
+        case BLE_ST_CONNECT_FAIL:
+        case BLE_ST_SEND_CREATE_CONN_CANNEL:
             break;
-#else
-            r_printf("Please wait Please wait for the first connection to complete!!");
-#endif
-        }
+
+            case BLE_ST_CREATE_CONN:
+                if (CONFIG_BT_GATT_CLIENT_NUM == 1) {
+                    log_error("already create conn:%d!!!\n");
+                } else if (CONFIG_BT_GATT_CLIENT_NUM > 1) {
+        #if RCSP_BTMATE_EN
+                    r_printf("To replace create conn!!");
+                    break;
+        #else
+                    r_printf("Please wait Please wait for the first connection to complete!!");
+        #endif
+                }
 
 
-    default:
-        return GATT_CMD_PARAM_ERROR;
-        break;
+        default:
+            return GATT_CMD_PARAM_ERROR;
+            break;
     }
 
     if (cur_state == BLE_ST_SCAN) {
@@ -1064,7 +1074,8 @@ int ble_gatt_client_create_connection_request(u8 *address, u8 addr_type, int mod
     else
     {
         __gatt_client_set_work_state(INVAIL_CONN_HANDLE, BLE_ST_CREATE_CONN, 1);
-        if (__this->scan_conn_config->creat_state_timeout_ms) {
+        if (__this->scan_conn_config->creat_state_timeout_ms) 
+        {
             __gatt_client_timeout_add(TO_TYPE_CREAT_CONN, __this->scan_conn_config->creat_state_timeout_ms);
         }
     }
@@ -1102,7 +1113,7 @@ int ble_gatt_client_create_connection_cannel(void)
  *  \note
  */
 /*************************************************************************************************/
-static void __gatt_client_report_adv_data(adv_report_t *report_pt, u16 len)
+static void __gatt_client_report_adv_data(adv_report_t *report_pt, u16 len)  // 解析协议栈回调的scan到的adv&rsp 包 并建立起连接
 {
     u8 find_tag = 0;
     /* log_info("event_type,addr_type: %x,%x; ",report_pt->event_type,report_pt->address_type); */
@@ -1110,27 +1121,29 @@ static void __gatt_client_report_adv_data(adv_report_t *report_pt, u16 len)
     /* log_info("adv_data_display:"); */
     /* log_info_hexdump(report_pt->data,report_pt->length); */
 
-    if (!__this->gatt_search_config || !__this->gatt_search_config->match_devices_count) {
+    if (!__this->gatt_search_config || !__this->gatt_search_config->match_devices_count)   //如没配置 profile配置项  是扫描设备数 则关闭
+    {
         /*没有加指定搜索,直接输出adv report*/
         putchar('~');
-        __gatt_client_event_callback_handler(GATT_COMM_EVENT_SCAN_ADV_REPORT, report_pt, len, 0);
+        __gatt_client_event_callback_handler(GATT_COMM_EVENT_SCAN_ADV_REPORT, report_pt, len, 0); //返回ADC
         return;
     }
 
-    find_tag = __resolve_adv_report(report_pt, len);  //返回是否有
+    find_tag = __resolve_adv_report(report_pt, len);  //返回是否有匹配的设备
 
-    if (find_tag && __this->scan_conn_config && __this->scan_conn_config->creat_auto_do) 
+    if (find_tag && __this->scan_conn_config && __this->scan_conn_config->creat_auto_do)   //如果有匹配的  -  且扫描配置有  -  自动连接开启
     {
-        ble_gatt_client_scan_enable(0);
-        if (ble_gatt_client_create_connection_request(report_pt->address, report_pt->address_type, 0)) 
+        ble_gatt_client_scan_enable(0);  //关闭广播
+        if (ble_gatt_client_create_connection_request(report_pt->address, report_pt->address_type, 0))  // 自动发起连接
         {
             log_info("creat fail,scan again!!!\n");
-            ble_gatt_client_scan_enable(1);
+            ble_gatt_client_scan_enable(1); //开启广播
         }
-        memcpy(roter_data.bl_connect_addr,report_pt->address, 6); //把数组放到MAC地址中
+        memcpy(RoterData.Ble_Connect_Mac,report_pt->address, 6); //把数组放到MAC地址中
     } 
     else
     {
+
     }
 
 }
@@ -1146,7 +1159,7 @@ static void __gatt_client_report_adv_data(adv_report_t *report_pt, u16 len)
  *  \note
  */
 /*************************************************************************************************/
-void ble_gatt_client_passkey_input(u32 *key, u16 conn_handle)
+void ble_gatt_client_passkey_input(u32 *key, u16 conn_handle) //密钥输入
 {
     u16 tmp_val[3];
     *key = 888888; //default key
@@ -1167,7 +1180,7 @@ void ble_gatt_client_passkey_input(u32 *key, u16 conn_handle)
  *  \note
  */
 /*************************************************************************************************/
-void ble_gatt_client_sm_packet(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)
+void ble_gatt_client_sm_packet(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) // 加密包处理
 {
     sm_just_event_t *event = (void *)packet;
     u32 tmp32;
@@ -1240,7 +1253,8 @@ void ble_gatt_client_sm_packet(uint8_t packet_type, uint16_t channel, uint8_t *p
     }
 }
 
-static const char *const client_phy_result[] = {
+static const char *const client_phy_result[] =  // 链路层速度
+{
     "None",
     "1M",
     "2M",
@@ -1272,7 +1286,7 @@ void ble_gatt_client_cbk_packet_handler(uint8_t packet_type, uint16_t channel, u
             __gatt_client_can_send_now_wakeup(); //发送信息
             break;
 
-        case GAP_EVENT_ADVERTISING_REPORT: //广播数据报告
+        case GAP_EVENT_ADVERTISING_REPORT:       //广播数据报告
             if (BLE_ST_SCAN == ble_gatt_client_get_work_state()) 
             {
                 /* putchar('V'); */
@@ -1523,7 +1537,7 @@ void ble_gatt_client_module_enable(u8 en)  // client 开关
  *  \note
  */
 /*************************************************************************************************/
-void ble_gatt_client_disconnect_all(void)
+void ble_gatt_client_disconnect_all(void) // 断开所有的链路
 {
     u8 i;
     u16 conn_handle;
@@ -1549,7 +1563,7 @@ void ble_gatt_client_disconnect_all(void)
  *  \note      没开启scan前，都可以配置
  */
 /*************************************************************************************************/
-void ble_gatt_client_set_scan_config(scan_conn_cfg_t *scan_conn_cfg)
+void ble_gatt_client_set_scan_config(scan_conn_cfg_t *scan_conn_cfg) //  配置scan，conn的参数
 {
     __this->scan_conn_config = scan_conn_cfg;
 }
@@ -1565,7 +1579,7 @@ void ble_gatt_client_set_scan_config(scan_conn_cfg_t *scan_conn_cfg)
  *  \note      没开启scan前，都可以配置
  */
 /*************************************************************************************************/
-void ble_gatt_client_set_search_config(gatt_search_cfg_t *gatt_search_cfg)
+void ble_gatt_client_set_search_config(gatt_search_cfg_t *gatt_search_cfg) //配置scan匹配的设备 和 连接后搜索的profile
 {
     __this->gatt_search_config = gatt_search_cfg;
 }
@@ -1581,7 +1595,7 @@ void ble_gatt_client_set_search_config(gatt_search_cfg_t *gatt_search_cfg)
  *  \note
  */
 /*************************************************************************************************/
-void ble_gatt_just_search_profile_start(u16 conn_handle)
+void ble_gatt_just_search_profile_start(u16 conn_handle) //搜索对方的的profile
 {
     __this->client_search_handle = conn_handle;
     __this->just_search_handle = conn_handle;
@@ -1599,9 +1613,10 @@ void ble_gatt_just_search_profile_start(u16 conn_handle)
  *  \note
  */
 /*************************************************************************************************/
-void ble_gatt_just_search_profile_stop(u16 conn_handle)
+void ble_gatt_just_search_profile_stop(u16 conn_handle)  //停止搜索对方的的profile
 {
-    if (__this->just_search_handle == conn_handle) {
+    if (__this->just_search_handle == conn_handle) 
+    {
         __this->just_search_handle = 0;
     }
 }
@@ -1617,7 +1632,7 @@ void ble_gatt_just_search_profile_stop(u16 conn_handle)
  *  \note
  */
 /*************************************************************************************************/
-void ble_gatt_client_profile_init(void)
+void ble_gatt_client_profile_init(void) // gatt_client 协议栈初始化调用
 {
     log_info("%s\n", __FUNCTION__);
 
@@ -1637,7 +1652,7 @@ void ble_gatt_client_profile_init(void)
  *  \note
  */
 /*************************************************************************************************/
-void ble_gatt_client_init(gatt_client_cfg_t *client_cfg)
+void ble_gatt_client_init(gatt_client_cfg_t *client_cfg) // 蓝牙协议栈初始化前调用
 {
     log_info("%s\n", __FUNCTION__);
     memset(__this, 0, sizeof(client_ctl_t));

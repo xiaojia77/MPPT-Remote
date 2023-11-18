@@ -10,7 +10,7 @@
 
 MenuData_t MenuData = {0}; // 5个菜单
 
-roter_t roter_data = {0};
+roter_t RoterData = {0};
 
 void Lcd_WriteCmd(uint8_t cmd)
 {
@@ -19,6 +19,7 @@ void Lcd_WriteCmd(uint8_t cmd)
     spi_send_byte(SPI1, cmd);
     gpio_write(LCD_CS, 1);
 }
+
 void Lcd_WriteData(uint8_t data)
 {
     gpio_write(LCD_RS, 1);
@@ -26,6 +27,7 @@ void Lcd_WriteData(uint8_t data)
     spi_send_byte(SPI1, data);
     gpio_write(LCD_CS, 1);
 }
+
 void Lcd_WriteRgbData(uint16_t data)
 {
     uint8_t spi_tx_buf[2];
@@ -38,8 +40,11 @@ void Lcd_WriteRgbData(uint16_t data)
     // Lcd_WriteData(data>>8);
     // Lcd_WriteData(data);
 }
+
 void Lcd_Address_Set(unsigned short int x_start, unsigned short int y_start, unsigned short int x_end, unsigned short int y_end)
 {
+    y_start += 80;
+    y_end += 80;
     uint16_t x = x_start + 0, y = x_end + 0;
     Lcd_WriteCmd(0x2a);    // Column address set
     Lcd_WriteData(x >> 8); // start column
@@ -55,11 +60,13 @@ void Lcd_Address_Set(unsigned short int x_start, unsigned short int y_start, uns
     Lcd_WriteData(y);
     Lcd_WriteCmd(0x2C); // Memory write
 }
+
 void PutPixel(uint x_start, uint y_start, uint color)
 {
     Lcd_Address_Set(x_start, y_start, x_start + 1, y_start + 1);
     Lcd_WriteRgbData(color);
 }
+
 void Lcd_Show24x24(uint8_t x, uint8_t y, uint8_t *p)
 {
     uint8_t i, j, k;
@@ -78,6 +85,7 @@ void Lcd_Show24x24(uint8_t x, uint8_t y, uint8_t *p)
         }
     }
 }
+
 void Lcd_Show16x24(uint8_t x, uint8_t y, uint8_t *p)
 {
     uint8_t i, j, k;
@@ -98,6 +106,7 @@ void Lcd_Show16x24(uint8_t x, uint8_t y, uint8_t *p)
         }
     }
 }
+
 void Lcd_Show8x16(uint8_t x, uint8_t y, uint8_t *p)
 {
     uint8_t i, j, k;
@@ -116,13 +125,14 @@ void Lcd_Show8x16(uint8_t x, uint8_t y, uint8_t *p)
         }
     }
 }
+
 void Lcd_printf24x24(uint8_t x, uint8_t y, uint8_t *format, ...) // must be string
 {
     uint8_t SearchData[4];
-    char str_data[40];
+    char *str_data = malloc(50);
     va_list ap;
     va_start(ap, format);
-    vsnprintf(str_data, 40, format, ap);
+    vsnprintf(str_data, 50, format, ap);
     char *str = str_data;
     char *w;
     while (*str)
@@ -150,6 +160,7 @@ void Lcd_printf24x24(uint8_t x, uint8_t y, uint8_t *format, ...) // must be stri
             str++;
         }
     }
+    free(str_data);
 }
  
 void Lcd_printf16x16(uint8_t x, uint8_t y, uint8_t *str) // must be string
@@ -160,6 +171,15 @@ void Lcd_printf16x16(uint8_t x, uint8_t y, uint8_t *str) // must be string
     {
         if (*str & 0x80) // 汉字
         {
+            SearchData[0] = str[0];
+            SearchData[1] = str[1];
+            SearchData[2] = str[2];
+            SearchData[3] = 0;
+            w = strstr(DotTbl24String, SearchData);
+            if (!w)
+                return;
+            Lcd_Show16x24(x, y, DotTbl24[w - DotTbl24String]);
+            x += 24;
             str += 3;
         }
         else
@@ -187,6 +207,7 @@ void Lcd_Clear24x24(uint8_t x, uint8_t y)
         }
     }
 }
+
 void Lcd_Clear(u16 color)
 {
     u16 i, j;
@@ -199,6 +220,7 @@ void Lcd_Clear(u16 color)
         }
     }
 }
+
 void ST7789Lcd_Init(void)
 {
     gpio_set_direction(LCD_RST, 0);
@@ -288,7 +310,8 @@ void ST7789Lcd_Init(void)
     Lcd_WriteData(0x2d);
     Lcd_WriteData(0x32);
     Lcd_WriteCmd(0x36); // Memory data access control
-    Lcd_WriteData(0x00);
+    Lcd_WriteData(0xC0);
+
     Lcd_WriteCmd(0x3A);  // Interface pixel format
     Lcd_WriteData(0x55); // 65K
     Lcd_WriteCmd(0xe7);  // SPI2 enable    启用2数据通道模式
@@ -328,7 +351,7 @@ void BL_menu_select_display()
     Lcd_printf16x16(5, 16 + 16 * MenuData.index[MenuData.current_id], ">");
 }
 
-void menu_select(uint8_t key)
+void Mppt_Main_Menu_Select(uint8_t key)
 {
     switch (key)
     {
@@ -354,7 +377,7 @@ void menu_select(uint8_t key)
     }
 }
 
-void main_menu() // 主菜单
+void Mppt_Main_Menu() // 主菜单
 {
     Lcd_Clear(BLACK);
     Lcd_printf24x24(120 - 24 * 5, 0, "ＭＰＰＴ太阳能控制器");
@@ -363,13 +386,15 @@ void main_menu() // 主菜单
     Lcd_printf24x24(30, 90, "蓝牙红外设置");
     Lcd_printf24x24(30, 120, "蓝牙广播信息");
     Lcd_printf24x24(30, 150, "蓝牙自动设置");
-    Lcd_printf24x24(30, 180, "版本查询");
+    Lcd_printf24x24(30, 180, "ＭＰＰＴ信息");
+    Lcd_printf24x24(30, 210, "版本查询");
+    
     Lcd_printf24x24(5, 30 * MenuData.index[MenuData.current_id], "＞");
 }
 
-void main_menu_operation(uint8_t key)
+void Mppt_Main_Menu_Operation(uint8_t key)
 {
-    menu_select(key);
+    Mppt_Main_Menu_Select(key);
     switch (key)
     {
     case 3:                                                        // →
@@ -451,52 +476,52 @@ uint floatToString(float n, u8 a, char *str)
 void charge_set_display()
 {
     char str[7] = "";
-    floatToString(roter_data.Trickle_Current,1,str);
+    floatToString(RoterData.Trickle_Current,1,str);
     Lcd_printf24x24(120 - 24 * 3, 0, "充电参数设置");
-    if (roter_data.Bat_Volatage)
+    if (RoterData.Bat_Volatage)
         Lcd_printf24x24(30, 30, "电池规格3.7v");
     else
         Lcd_printf24x24(30, 30, "电池规格3.2v");
-    Lcd_printf24x24(30,60,"充电电流%dA ",roter_data.Charge_Current_Max);
-    Lcd_printf24x24(30,90,"最大功率%dw ",roter_data.Charge_Power_Max);
+    Lcd_printf24x24(30,60,"充电电流%dA ",RoterData.Charge_Current_Max);
+    Lcd_printf24x24(30,90,"最大功率%dw ",RoterData.Charge_Power_Max);
     Lcd_printf24x24(30,120,"涓流电流%sA ",str);
     Lcd_printf24x24(5, 30 * MenuData.index[MenuData.current_id], "＞");
 }
 
-void charge_set_menu()
+void Mppt_Charge_Set_Menu()
 {
     Lcd_Clear(BLACK);
     charge_set_display();
 }
 
-void charge_menu_operation(uint8_t key)
+void Mppt_Charge_Set_Menu_Operation(uint8_t key)
 {
     static uint8_t fsm;
-    menu_select(key);
+    Mppt_Main_Menu_Select(key);
     switch (key)
     {
         case 3: // →
                 switch (MenuData.index[MenuData.current_id])
                 {
                     case 1:
-                        if (roter_data.Bat_Volatage)
+                        if (RoterData.Bat_Volatage)
                         {
-                            roter_data.Bat_Volatage = 0;
+                            RoterData.Bat_Volatage = 0;
                         }
                         else
                         {
-                            roter_data.Bat_Volatage = 1;
+                            RoterData.Bat_Volatage = 1;
                         }
                         break;
                     case 2:
-                        if(++roter_data.Charge_Current_Max > 20) roter_data.Charge_Current_Max = 2;
+                        if(++RoterData.Charge_Current_Max > 20) RoterData.Charge_Current_Max = 2;
                         break;
                     case 3:
-                        if(++roter_data.Charge_Power_Max > 75) roter_data.Charge_Power_Max = 10;
+                        if(++RoterData.Charge_Power_Max > 75) RoterData.Charge_Power_Max = 10;
                         break;
                     case 4:
-                        roter_data.Trickle_Current += 0.1;
-                        if(roter_data.Trickle_Current>2.5)roter_data.Trickle_Current = 0.5;
+                        RoterData.Trickle_Current += 0.1;
+                        if(RoterData.Trickle_Current>2.5)RoterData.Trickle_Current = 0.5;
                         break;
                 }
                 charge_set_display();
@@ -505,24 +530,24 @@ void charge_menu_operation(uint8_t key)
                 switch (MenuData.index[MenuData.current_id])
                 {
                     case 1:
-                        if (roter_data.Bat_Volatage)
+                        if (RoterData.Bat_Volatage)
                         {
-                            roter_data.Bat_Volatage = 0;
+                            RoterData.Bat_Volatage = 0;
                         }
                         else
                         {
-                            roter_data.Bat_Volatage = 1;
+                            RoterData.Bat_Volatage = 1;
                         }
                         break;
                     case 2:
-                        if(--roter_data.Charge_Current_Max < 2) roter_data.Charge_Current_Max = 20;
+                        if(--RoterData.Charge_Current_Max < 2) RoterData.Charge_Current_Max = 20;
                         break;
                     case 3:
-                        if(++roter_data.Charge_Power_Max > 10) roter_data.Charge_Power_Max = 75;
+                        if(--RoterData.Charge_Power_Max < 10) RoterData.Charge_Power_Max = 75;
                         break;
                     case 4:
-                        roter_data.Trickle_Current -= 0.1;
-                        if(roter_data.Trickle_Current<0.5)roter_data.Trickle_Current = 2.5;
+                        RoterData.Trickle_Current -= 0.1;
+                        if(RoterData.Trickle_Current<0.5)RoterData.Trickle_Current = 2.5;
                         break;
                 }
                 charge_set_display();
@@ -549,46 +574,46 @@ void charge_menu_operation(uint8_t key)
 void dischar_display()
 {   
     char str[7] = "";
-    floatToString(roter_data.Low_voltage_Protect,2,str);
+    floatToString(RoterData.Low_voltage_Protect,2,str);
     Lcd_printf24x24(120 - 24 * 3, 0, "放电参数设置");
     Lcd_printf24x24(30, 30, "低压保护:%sv",str);
-    Lcd_printf24x24(30, 60, "电流挡位:%d ",roter_data.current_gear);
-    Lcd_printf24x24(30, 90, "雷达感应:%d%% ",roter_data.Ledar_Pwm);
-    Lcd_printf24x24(30, 120, "雷达时间:%ds ",roter_data.Ledar_Dly_Time);
-    Lcd_printf24x24(30, 150, "亮度设置:%d%% ",roter_data.Led_Set_Pwm);
+    Lcd_printf24x24(30, 60, "电流挡位:%d ",RoterData.Current_Gear);
+    Lcd_printf24x24(30, 90, "雷达感应:%d%% ",RoterData.Ledar_Pwm);
+    Lcd_printf24x24(30, 120, "雷达时间:%ds ",RoterData.Ledar_Dly_Time);
+    Lcd_printf24x24(30, 150, "亮度设置:%d%% ",RoterData.Led_Set_Pwm);
     Lcd_printf24x24(30, 180, "放电曲线设置");
     Lcd_printf24x24(5, 30 * MenuData.index[MenuData.current_id], "＞");
 }
 
-void dischar_set_menu()
+void Mppt_Dischar_Set_Menu()
 {
     Lcd_Clear(BLACK);
     dischar_display();
 }
 
-void dischar_set_operation(uint8_t key)
+void Mppt_Dischar_Set_Menu_Operation(uint8_t key)
 {
-     menu_select(key);
+     Mppt_Main_Menu_Select(key);
     switch (key)
     {
         case 3: // →
                 switch (MenuData.index[MenuData.current_id])
                 {
                     case 1:
-                        roter_data.Low_voltage_Protect += 0.0501;
-                        if(roter_data.Low_voltage_Protect>2.85)roter_data.Low_voltage_Protect = 2.5;
+                        RoterData.Low_voltage_Protect += 0.0501;
+                        if(RoterData.Low_voltage_Protect>2.85)RoterData.Low_voltage_Protect = 2.5;
                         break;
                     case 2:
-                        if(++roter_data.current_gear > 20) roter_data.current_gear = 1;
+                        if(++RoterData.Current_Gear > 20) RoterData.Current_Gear = 1;
                         break;
                     case 3:
-                        if(++roter_data.Ledar_Pwm > 30) roter_data.Ledar_Pwm = 10;
+                        if(++RoterData.Ledar_Pwm > 30) RoterData.Ledar_Pwm = 10;
                         break;
                     case 4:
-                        if(++roter_data.Ledar_Dly_Time>15)roter_data.Trickle_Current = 5;
+                        if(++RoterData.Ledar_Dly_Time>15)RoterData.Trickle_Current = 5;
                         break;      
                      case 5:
-                        if(++roter_data.Led_Set_Pwm>100)roter_data.Trickle_Current = 10;
+                        if(++RoterData.Led_Set_Pwm>100)RoterData.Trickle_Current = 10;
                         break;
                      case 6:
                         MenuData.current_id = DISCHAR_CURVE_SET_MENU; // 切换到下级菜单
@@ -603,20 +628,20 @@ void dischar_set_operation(uint8_t key)
                 switch (MenuData.index[MenuData.current_id])
                 {
                       case 1:
-                        roter_data.Low_voltage_Protect -= 0.0501;
-                        if(roter_data.Low_voltage_Protect<2.5)roter_data.Low_voltage_Protect = 2.5;
+                        RoterData.Low_voltage_Protect -= 0.0501;
+                        if(RoterData.Low_voltage_Protect<2.5)RoterData.Low_voltage_Protect = 2.5;
                         break;
                     case 2:
-                        if(--roter_data.current_gear <= 0) roter_data.current_gear = 20;
+                        if(--RoterData.Current_Gear <= 0) RoterData.Current_Gear = 20;
                         break;
                     case 3:
-                        if(--roter_data.Ledar_Pwm < 10) roter_data.Ledar_Pwm = 30;
+                        if(--RoterData.Ledar_Pwm < 10) RoterData.Ledar_Pwm = 30;
                         break;
                     case 4:
-                        if(--roter_data.Ledar_Dly_Time<5)roter_data.Ledar_Dly_Time = 15;
+                        if(--RoterData.Ledar_Dly_Time<5)RoterData.Ledar_Dly_Time = 15;
                         break;      
                      case 5:
-                        if(--roter_data.Led_Set_Pwm<=0)roter_data.Led_Set_Pwm = 100;
+                        if(--RoterData.Led_Set_Pwm<=0)RoterData.Led_Set_Pwm = 100;
                         break;
                 }
                 dischar_display();
@@ -625,7 +650,7 @@ void dischar_set_operation(uint8_t key)
 
 }
 
-void dischar_curve_set_menu()
+void Mppt_Dischar_Curve_Set_Menu()
 {   
     Lcd_Clear(BLACK);
     Lcd_printf24x24(120 - 24 * 3, 0, "放电曲线设置");
@@ -636,11 +661,11 @@ void IRorBL_set_menu()
 {
     Lcd_Clear(BLACK);
     Lcd_printf24x24(120 - 24 * 3, 0, "蓝牙红外设置");
-    if (roter_data.Ble_Onflag)
+    if (RoterData.Ble_Onflag)
         Lcd_printf24x24(30, 30, "蓝牙通信：开");
     else
         Lcd_printf24x24(30, 30, "蓝牙通信：关");
-    if (roter_data.Ir_Onflag)
+    if (RoterData.Ir_Onflag)
         Lcd_printf24x24(30, 60, "红外通信：开");
     else
         Lcd_printf24x24(30, 60, "红外通信：关");
@@ -649,28 +674,28 @@ void IRorBL_set_menu()
 
 void IRorBL_set_operation(uint8_t key)
 {
-    menu_select(key);
+    Mppt_Main_Menu_Select(key);
     switch (key)
     {
     case 3: // →
         switch (MenuData.index[MenuData.current_id])
         {
         case 1:
-            if (roter_data.Ble_Onflag)
-                roter_data.Ble_Onflag = 0;
+            if (RoterData.Ble_Onflag)
+                RoterData.Ble_Onflag = 0;
             else
-                roter_data.Ble_Onflag = 1;
-            if (roter_data.Ble_Onflag)
+                RoterData.Ble_Onflag = 1;
+            if (RoterData.Ble_Onflag)
                 Lcd_printf24x24(30, 30, "蓝牙通信：开");
             else
                 Lcd_printf24x24(30, 30, "蓝牙通信：关");
             break;
         case 2:
-            if (roter_data.Ir_Onflag)
-                roter_data.Ir_Onflag = 0;
+            if (RoterData.Ir_Onflag)
+                RoterData.Ir_Onflag = 0;
             else
-                roter_data.Ir_Onflag = 1;
-            if (roter_data.Ir_Onflag)
+                RoterData.Ir_Onflag = 1;
+            if (RoterData.Ir_Onflag)
                 Lcd_printf24x24(30, 60, "红外通信：开");
             else
                 Lcd_printf24x24(30, 60, "红外通信：关");
@@ -680,25 +705,44 @@ void IRorBL_set_operation(uint8_t key)
     }
 }
 
+void Mppt_Para_Info_Display()
+{
+    Lcd_printf24x24(120 - 24 * 3, 0, "ＭＰＰＴ信息");
+    Lcd_printf24x24(30, 30, "已充电电量%dah",2);
+    Lcd_printf24x24(30, 60, "充电电流%da",2);
+    Lcd_printf24x24(30, 90, "充电功率%dw",10);
+    Lcd_printf24x24(30, 120, "电池内阻%dw",10);
+    Lcd_printf24x24(30, 150, "电池电量%d%%",100);
+}
+
+void Mppt_Para_Info_menu() //充电信息配置
+{
+    Lcd_Clear(BLACK);
+    Mppt_Para_Info_Display();
+}
+
 static u16 bl_con_menu_timer;
+
 void bl_con_info_display()
 {
     uint8_t i;
     char str[30];
     for (i = 0; i < 13; i++)
     {
-        sprintf(str, "%02x %02x %02x %02x %02x %02x rssi:%d",
-                roter_data.bl_adv_rp[i].mac[0],
-                roter_data.bl_adv_rp[i].mac[1],
-                roter_data.bl_adv_rp[i].mac[2],
-                roter_data.bl_adv_rp[i].mac[3],
-                roter_data.bl_adv_rp[i].mac[4],
-                roter_data.bl_adv_rp[i].mac[5],
-                roter_data.bl_adv_rp[i].rssi);
+        sprintf(str, "%02x %02x %02x %02x %02x %02x rssi:%d  ",
+                RoterData.bl_adv_rp[i].mac[0],
+                RoterData.bl_adv_rp[i].mac[1],
+                RoterData.bl_adv_rp[i].mac[2],
+                RoterData.bl_adv_rp[i].mac[3],
+                RoterData.bl_adv_rp[i].mac[4],
+                RoterData.bl_adv_rp[i].mac[5],
+                RoterData.bl_adv_rp[i].rssi);
+        //Lcd_printf16x16(16 + 184, 16 + 16 * (i + 1),"    ");    // 清空后面的显示 防止之前的残留
         Lcd_printf16x16(16, 16 + 16 * (i + 1), str);
     }
 }
-void bl_con_set_menu()
+
+void Mppt_Ble_con_Select_Menu()
 {
     Lcd_Clear(BLACK);
     Lcd_printf24x24(120 - 24 * 3, 0, "蓝牙广播信息");
@@ -706,7 +750,8 @@ void bl_con_set_menu()
     bl_con_info_display();
     bl_con_menu_timer = sys_timer_add(NULL, bl_con_info_display, 1000);
 }
-void bl_con_set_operation(uint8_t key)
+
+void Mppt_Ble_con_Select_Menu_Operation(uint8_t key)
 {
     switch (key)
     {
@@ -742,7 +787,7 @@ void bl_ATcon_set_menu()
     Lcd_printf24x24(120 - 24 * 3, 0, "蓝牙自动连接");
     Lcd_printf24x24(30, 30, "自动设置：关");
     Lcd_printf24x24(30, 60, "清空设置记录");
-    Lcd_printf24x24(30, 90, "在线数：%d",roter_data.bl_cnt);
+    Lcd_printf24x24(30, 90, "在线数：%d",RoterData.Ble_Adv_Count);
     Lcd_printf24x24(30, 120, "已设置：");
     Lcd_printf24x24(5, 30 * MenuData.index[MenuData.current_id], "＞");
 }
@@ -752,6 +797,11 @@ void Version_Check_menu()
     Lcd_Clear(BLACK);
     Lcd_printf24x24(120 - 24 * 2, 0, "版本查询");
     Lcd_printf24x24(120 - 16 * 5, 30, "2023:11:10");
+}
+
+void bl_param_info_menu()
+{
+    
 }
 
 // 测试蓝牙重复位置
@@ -788,14 +838,22 @@ uint8_t BL_Check_NonAddr(Bl_Adv_Rp_t *adv, uint8_t len)
     return 255;
 }
 
-uint8_t BL_Timeout_Check(Bl_Adv_Rp_t *adv, uint8_t len)
+void BL_Timeout_Check(void)
 {
-    uint32_t i;
-    for (i = 0; i < len; i++) //
+    uint8_t i,j;
+    for (i = 0; i < 13; i++) //
     {
-        if (++adv[i].Timeout > 5)
+        if(RoterData.bl_adv_rp[i].useflag)
         {
-            adv[i].useflag = 0; // 清除使用标志
+            if (++RoterData.bl_adv_rp[i].Timeout > 5)
+            {
+                RoterData.bl_adv_rp[i].Timeout = 0;
+                RoterData.bl_adv_rp[i].useflag = 0; // 清除使用标志
+                RoterData.bl_adv_rp[i].rssi = 0;
+                for(j=0;j<6;j++)RoterData.bl_adv_rp[i].mac[j] = 0;
+                RoterData.Ble_Adv_Count -- ;
+            }
         }
+        
     }
 }

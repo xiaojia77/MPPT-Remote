@@ -47,6 +47,9 @@ typedef struct
     uint8_t Ir_Onflag;  //IR控制
     uint8_t Ble_Onflag; //蓝牙通信
 
+
+    float Bat_Capcity;  //电池容量
+
     uint8_t Bat_Volatage;
     uint8_t Charge_Volatage;
     uint8_t Charge_Power_Max;
@@ -54,7 +57,7 @@ typedef struct
     float Trickle_Current; //涓流电流
 
     float Low_voltage_Protect; //低压保护电压
-    uint8_t current_gear; // 0 - 20 电压挡位
+    uint8_t Current_Gear; // 0 - 20 电压挡位
     uint8_t Ledar_Dly_Time; // 0 - 20 电压挡位
     uint8_t Ledar_Pwm; // 0 - 20 电压挡位
     uint8_t Led_Set_Pwm;
@@ -62,14 +65,14 @@ typedef struct
 
 
     Bl_Adv_Rp_t bl_adv_rp[14]; //蓝牙报告
-    uint8_t bl_cnt;
+    uint8_t Ble_Adv_Count;
 
-    uint8_t bl_connect_addr[6];//目前蓝牙连接的地址
+    uint8_t Ble_Connect_Mac[6];//目前蓝牙连接的地址
 
 }roter_t;
 
 MenuData_t MenuData; //显示数据
-roter_t roter_data;
+roter_t RoterData;
 
 void Lcd_WriteCmd(uint8_t cmd);
 void Lcd_WriteData(uint8_t data);
@@ -87,31 +90,37 @@ void Lcd_Clear24x24(uint8_t x,uint8_t y);
 void Lcd_Clear(u16 color);
 void ST7789Lcd_Init(void);
 
-void menu_select(uint8_t key);
-void main_menu(void);
-void main_menu_operation(uint8_t key);
-void charge_set_menu(void);
-void charge_menu_operation(uint8_t key);
-void dischar_set_menu(void);
-void dischar_set_operation(uint8_t key);
+void Mppt_Main_Menu_Select(uint8_t key);
+void Mppt_Main_Menu(void);
+void Mppt_Main_Menu_Operation(uint8_t key);
 
-void dischar_curve_set_menu(void);
+void Mppt_Charge_Set_Menu(void);
+void Mppt_Charge_Set_Menu_Operation(uint8_t key);
+
+void Mppt_Dischar_Set_Menu(void);
+void Mppt_Dischar_Set_Menu_Operation(uint8_t key);
+void Mppt_Dischar_Curve_Set_Menu(void);
 
 void IRorBL_set_menu(void);
 void IRorBL_set_operation(uint8_t key);
-void bl_con_set_menu(void);
-void bl_con_set_operation(uint8_t key);
+
+void Mppt_Ble_con_Select_Menu(void);
+void Mppt_Ble_con_Select_Menu_Operation(uint8_t key);
+
 void bl_ATcon_set_menu(void);
 void Version_Check_menu(void);
+void Mppt_Para_Info_menu(void); // MPPT参数配置
 
 enum
 {
     MAIN_MENU,
+
     CHAEGE_SET_MENU,
     DISCHAR_SET_MENU,
     IRORBLE_SET_MENU,
     BL_CON_SET_MENU,
     BL_ATCON_SET_MENU,
+    MPPT_PARA_INFO_MENU, 
     VERSION_CHECK_MENU,
 
     DISCHAR_CURVE_SET_MENU,
@@ -120,21 +129,23 @@ enum
 
 static Menu_Tab_t const Menu_Tab[10]=
 {
-    {MAIN_MENU,NULL,6,main_menu_operation,main_menu}, //主菜单 次级菜单
+    {MAIN_MENU,NULL,7,Mppt_Main_Menu_Operation,Mppt_Main_Menu}, //主菜单 次级菜单
 
-    {CHAEGE_SET_MENU,MAIN_MENU,4,charge_menu_operation,charge_set_menu}, // 次级菜单
-    {DISCHAR_SET_MENU,MAIN_MENU,6,dischar_set_operation,dischar_set_menu},
+    {CHAEGE_SET_MENU,MAIN_MENU,4,Mppt_Charge_Set_Menu_Operation,Mppt_Charge_Set_Menu}, // 次级菜单
+    {DISCHAR_SET_MENU,MAIN_MENU,6,Mppt_Dischar_Set_Menu_Operation,Mppt_Dischar_Set_Menu},
     {IRORBLE_SET_MENU,MAIN_MENU,2,IRorBL_set_operation,IRorBL_set_menu},
-    {BL_CON_SET_MENU,MAIN_MENU,13,bl_con_set_operation,bl_con_set_menu},
-    {BL_ATCON_SET_MENU,MAIN_MENU,13,menu_select,bl_ATcon_set_menu},
-    {VERSION_CHECK_MENU,MAIN_MENU,5,menu_select,Version_Check_menu},
+    {BL_CON_SET_MENU,MAIN_MENU,13,Mppt_Ble_con_Select_Menu_Operation,Mppt_Ble_con_Select_Menu},
+    {BL_ATCON_SET_MENU,MAIN_MENU,13,Mppt_Main_Menu_Select,bl_ATcon_set_menu},
+    {MPPT_PARA_INFO_MENU,MAIN_MENU,1,Mppt_Main_Menu_Select,Mppt_Para_Info_menu},
+    {VERSION_CHECK_MENU,MAIN_MENU,5,Mppt_Main_Menu_Select,Version_Check_menu},
 
-    {DISCHAR_CURVE_SET_MENU,DISCHAR_SET_MENU,5,menu_select,dischar_curve_set_menu}
+    {MPPT_PARA_INFO_MENU,DISCHAR_SET_MENU,5,Mppt_Main_Menu_Select,Mppt_Dischar_Curve_Set_Menu}
 
 
 };
 
 uint8_t BL_Find_Mac_RepAddr(Bl_Adv_Rp_t *adv,uint8_t len,uint8_t *mac);
 uint8_t BL_Check_NonAddr(Bl_Adv_Rp_t *adv,uint8_t len);
+void BL_Timeout_Check(void);
 
 #endif

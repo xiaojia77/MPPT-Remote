@@ -57,7 +57,8 @@ void stablefilt(StablefiltData *data, unsigned short input, int *stable, int *va
 #define STABLE_FILT_LENGTH      (25)
 #define STABLE_FILT_STEP        (5)
 #define STABLE_FILT_TH          (10)
-typedef struct  {
+typedef struct  
+{
     MedfiltData  medfilt;
     AvgfiltData  avgfilt;
     StablefiltData stablefilt;

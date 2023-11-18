@@ -1089,27 +1089,30 @@ int ble_comm_att_send_data(u16 conn_handle, u16 att_handle, u8 *data, u16 len, a
     gatt_op_ret_e ret = GATT_OP_RET_SUCESS;  //执行成功
     u16 tmp_16;
 
-    if (!conn_handle) {    //不能为0
+    if (!conn_handle)//不能为0
+    {    
         return GATT_CMD_PARAM_ERROR;
     }
 
-    switch (op_type) {
-    case ATT_OP_READ:
-        tmp_16  = 0x55A1;//fixed
-        ret = ble_op_multi_att_send_data(conn_handle, att_handle, &tmp_16, 2, op_type);
-        break;
+    switch (op_type) 
+    {
+        case ATT_OP_READ:
+            tmp_16  = 0x55A1;//fixed
+            ret = ble_op_multi_att_send_data(conn_handle, att_handle, &tmp_16, 2, op_type);
+            break;
 
-    case ATT_OP_READ_LONG:
-        tmp_16  = 0x55A2;//fixed
-        ret = ble_op_multi_att_send_data(conn_handle, att_handle, &tmp_16, 2, op_type);
-        break;
+        case ATT_OP_READ_LONG:
+            tmp_16  = 0x55A2;//fixed
+            ret = ble_op_multi_att_send_data(conn_handle, att_handle, &tmp_16, 2, op_type);
+            break;
 
-    default:
-        ret = ble_op_multi_att_send_data(conn_handle, att_handle, data, len, op_type);
-        break;
+        default:
+            ret = ble_op_multi_att_send_data(conn_handle, att_handle, data, len, op_type);
+            break;
     }
 
-    if (ret) {
+    if (ret) 
+    {
         const char *err_string;
 
         int error_id = (int)0 - (int)GATT_CMD_RET_BUSY + (int)ret;

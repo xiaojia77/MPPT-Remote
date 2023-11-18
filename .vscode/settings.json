@@ -57,7 +57,8 @@
         "lcd_data.h": "c",
         "stdarg.h": "c",
         "stdlib.h": "c",
-        "stdio.h": "c"
+        "stdio.h": "c",
+        "ioctl.h": "c"
     },
     "C_Cpp.dimInactiveRegions": true
 }
