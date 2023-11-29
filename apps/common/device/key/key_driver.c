@@ -298,6 +298,13 @@ int key_driver_init(void)
     if (err == 0) {
         sys_s_hi_timer_add((void *)&adkey_scan_para, key_driver_scan, adkey_scan_para.scan_time); //注册按键扫描定时器
     }
+
+    extern const struct adkey_platform_data adkey2_data;
+    extern struct key_driver_para adkey2_scan_para;
+    err = adkey2_init(&adkey2_data);
+    if (err == 0) {
+    sys_s_hi_timer_add((void *)&adkey2_scan_para, key_driver_scan, adkey2_scan_para.scan_time); //注册按键扫描定时器
+}
 #endif
 #endif
 

@@ -17,6 +17,7 @@
 #include "app_power_manage.h"
 #include "le_client_demo.h"
 #include "app_comm_bt.h"
+#include "asm/mcpwm.h"
 
 
 
@@ -34,6 +35,7 @@
 #include "debug.h"
 
 #include "lcd7789.h"
+#include "lcd_data.h"
 
 
 #if CONFIG_APP_MULTI
@@ -91,6 +93,60 @@ void multi_set_soft_poweroff(void)
 #endif
 }
 
+#define Power_En IO_PORTB_01
+static u8 Power_Flag = 0;
+void Power_Port_Init()
+{
+    gpio_set_pull_up(Power_En, 0);
+    gpio_set_pull_down(Power_En, 0); 
+    gpio_set_direction(Power_En, 0);
+    gpio_write(Power_En, 1);
+    Power_Flag = 1;
+}
+void Power_Lock()
+{
+    gpio_write(Power_En, 1);
+}
+
+static u16 Bepp_timer  = 0;
+void Beep_init(void)
+{
+    struct pwm_platform_data pwm_p_data;
+    memset((u8 *)&pwm_p_data, 0, sizeof(struct pwm_platform_data));
+    pwm_p_data.pwm_ch_num = pwm_ch0;                 //通道0
+    pwm_p_data.frequency = 2000;                    //1KHz
+    pwm_p_data.duty = 0;                          //占空比50%
+    pwm_p_data.h_pin = -1;                           //不用则填 -1
+    pwm_p_data.l_pin = IO_PORTA_09;                         //硬件引脚
+    mcpwm_init(&pwm_p_data);
+}
+static void Beep_Func(void *priv)
+{
+    log_info("Bepp stop");
+    mcpwm_set_duty(pwm_ch0,0);
+    Bepp_timer = 0;//ID号清0,必须要有！！！
+}
+void Beep_Star(void)
+{
+    log_info("%s[id:%d]", __func__, Bepp_timer);
+    if(Bepp_timer)
+    {
+        sys_hi_timeout_del(Bepp_timer);//注册前,要判断是否注册过
+        Bepp_timer = 0;
+    }
+    mcpwm_set_duty(pwm_ch0,5000);
+    Bepp_timer = sys_hi_timeout_add(NULL, Beep_Func, 50);//ms单位
+}
+void Beep_Timer_Del(void)
+{
+    log_info("%s[id:%d]", __func__, Bepp_timer);
+    if(Bepp_timer)
+    {
+        sys_timeout_del(Bepp_timer);
+        Bepp_timer = 0;
+    }
+}
+
 
 static void multi_app_start()
 {
@@ -100,65 +156,83 @@ static void multi_app_start()
     log_info("=======================================");
     log_info("app_file: %s", __FILE__);
 
+    
+
     clk_set("sys", BT_NORMAL_HZ);
+    
+   // Power_Lock();
 
-#if (TCFG_USER_EDR_ENABLE || TCFG_USER_BLE_ENABLE)
-    u32 sys_clk =  clk_get("sys");
-    bt_pll_para(TCFG_CLOCK_OSC_HZ, sys_clk, 0, 0);
+    #if (TCFG_USER_EDR_ENABLE || TCFG_USER_BLE_ENABLE)
+        u32 sys_clk =  clk_get("sys");
+        bt_pll_para(TCFG_CLOCK_OSC_HZ, sys_clk, 0, 0);
 
-#if TCFG_USER_EDR_ENABLE
-    btstack_edr_start_before_init(NULL, 0);
-#endif
+    #if TCFG_USER_EDR_ENABLE
+        btstack_edr_start_before_init(NULL, 0);
+    #endif
 
-#if TCFG_USER_BLE_ENABLE
-    btstack_ble_start_before_init(NULL, 0);
-#endif
-    btstack_init();
+    #if TCFG_USER_BLE_ENABLE
+        btstack_ble_start_before_init(NULL, 0);
+    #endif
+        btstack_init();
+        
+        
+        spi_open(SPI1);
+        ST7789Lcd_Init();
+        Beep_init();
 
-    spi_open(SPI1);
-    ST7789Lcd_Init();
-    for(i=0;i<10;i++)MenuData.index[i] = 1;
-    RoterData.Charge_Current_Max = 20;
-    RoterData.Charge_Power_Max = 75;
-    RoterData.Trickle_Current = 0.5;
+        Power_Port_Init();
+        Beep_Star();
 
-    RoterData.Current_Gear = 20;
-    RoterData.Ledar_Dly_Time = 15;
-    RoterData.Ledar_Pwm = 10;
-    RoterData.Led_Set_Pwm = 100;
-    RoterData.Low_voltage_Protect = 2.65;
-    Mppt_Main_Menu();
-    sys_timer_add(NULL,BL_Timeout_Check,2400);
+        for(i=0;i<sizeof(MenuData.index);i++)MenuData.index[i] = 1;
+        for(i=0;i<sizeof(RoterData.Ble_Adv_rp)/sizeof(RoterData.Ble_Adv_rp[0]);i++)
+            RoterData.Ble_Adv_rp[i].rssi = -99;
 
-#endif
+        RoterData.Bat_Capcity = 7.5;
+        RoterData.Charge_Current_Max = 20;
+        RoterData.Charge_Power_Max = 75;
+        RoterData.Trickle_Current = 0.5;
+        RoterData.DischarCurve_Moed = 0;
+
+        RoterData.Current_Gear = 20;
+        RoterData.Ledar_Dly_Time = 15;
+        RoterData.Ledar_Pwm = 10;
+        RoterData.Led_Set_Pwm = 100;
+        RoterData.Low_voltage_Protect = 2.65;
+        Mppt_Main_Menu();
+       // Lcd_ShowPicture(0,0,240,240,gImage_image);
+         sys_timer_add(NULL,Ble_Timeout_Check,2400);
+
+    #endif
     /* 按键消息使能 */
     sys_key_event_enable();
 }
 
 static int multi_state_machine(struct application *app, enum app_state state, struct intent *it)
 {
-    switch (state) {
-    case APP_STA_CREATE:
-        break;
-    case APP_STA_START:
-        if (!it) {
+    switch (state) 
+    {
+        case APP_STA_CREATE:
             break;
-        }
-        switch (it->action) {
-        case ACTION_MULTI_MAIN:
-            multi_app_start();
+        case APP_STA_START:
+            if (!it) 
+            {
+                break;
+            }
+            switch (it->action) {
+            case ACTION_MULTI_MAIN:
+                multi_app_start();
+                break;
+            }
             break;
-        }
-        break;
-    case APP_STA_PAUSE:
-        break;
-    case APP_STA_RESUME:
-        break;
-    case APP_STA_STOP:
-        break;
-    case APP_STA_DESTROY:
-        log_info("APP_STA_DESTROY\n");
-        break;
+        case APP_STA_PAUSE:
+            break;
+        case APP_STA_RESUME:
+            break;
+        case APP_STA_STOP:
+            break;
+        case APP_STA_DESTROY:
+            log_info("APP_STA_DESTROY\n");
+            break;
     }
 
     return 0;
@@ -169,43 +243,63 @@ static int multi_bt_hci_event_handler(struct bt_event *bt)
     //对应原来的蓝牙连接上断开处理函数  ,bt->value=reason
     log_info("----%s reason %x %x", __FUNCTION__, bt->event, bt->value);
 
-#if TCFG_USER_EDR_ENABLE
-    bt_comm_edr_hci_event_handler(bt);
-#endif
+    #if TCFG_USER_EDR_ENABLE
+        bt_comm_edr_hci_event_handler(bt);
+    #endif
 
-#if TCFG_USER_BLE_ENABLE
-    bt_comm_ble_hci_event_handler(bt);
-#endif
-    return 0;
-}
+    #if TCFG_USER_BLE_ENABLE
+        bt_comm_ble_hci_event_handler(bt);
+    #endif
+        return 0;
+    }
 
 static int multi_bt_connction_status_event_handler(struct bt_event *bt)
 {
     log_info("----%s %d", __FUNCTION__, bt->event);
 
-#if TCFG_USER_EDR_ENABLE
-    bt_comm_edr_status_event_handler(bt);
-#endif
+    #if TCFG_USER_EDR_ENABLE
+        bt_comm_edr_status_event_handler(bt);
+    #endif
 
-#if TCFG_USER_BLE_ENABLE
-    bt_comm_ble_status_event_handler(bt);
-#endif
-    return 0;
+    #if TCFG_USER_BLE_ENABLE
+        bt_comm_ble_status_event_handler(bt);
+    #endif
+        return 0;
 }
 
 static void multi_key_event_handler(struct sys_event *event)
 {
-    /* u16 cpi = 0; */
-    u8 event_type = 0;
-    u8 key_value = 0;
+    /* u16 cpi = 0; */  
+    u8 event_type = event->u.key.event;
+    u8 key_value = event->u.key.value;
 
     if (event->arg == (void *)DEVICE_EVENT_FROM_KEY)
-     {
-        event_type = event->u.key.event;
-        key_value = event->u.key.value;
-        log_info("app_key_evnet: %d,%d\n", event_type, key_value);
+    {
 
-        if( Menu_Tab[MenuData.current_id].current_operation != NULL) Menu_Tab[MenuData.current_id].current_operation(key_value);
+        if( (event_type == KEY_EVENT_CLICK) & (key_value == 22) )
+        {
+            Beep_Star();
+            if(!Power_Flag)
+            {
+                Power_Flag = 1;
+                Power_Lock(); 
+                
+            }
+            else
+            {
+                Power_Flag = 0;
+                gpio_write(Power_En, 0);
+            }
+        }
+        if(key_value < 22)
+        {
+
+            Beep_Star();
+            log_info("app_key_evnet: %d,%d\n", event_type, key_value);
+
+            if( Menu_Tab[MenuData.current_id].current_operation != NULL) Menu_Tab[MenuData.current_id].current_operation(key_value);
+        }
+        
 //         if (event_type == KEY_EVENT_TRIPLE_CLICK
 //             && (key_value == TCFG_ADKEY_VALUE3 || key_value == TCFG_ADKEY_VALUE0)) {
 //             //for test

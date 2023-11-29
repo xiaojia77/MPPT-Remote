@@ -29,15 +29,16 @@
 #include "debug.h"
 
 /*任务列表 */
-const struct task_info task_info_table[] = {
-    {"app_core",            1,     0,   640,   128  },
-    {"sys_event",           7,     0,   256,   0    },
-    {"btctrler",            4,     0,   512,   256  },
-    {"btencry",             1,     0,   512,   128  },
-    {"btstack",             3,     0,   768,   256   },
-    {"systimer",		    7,	   0,   128,   0	},
-    {"update",				1,	   0,   512,   0    },
-    {"dw_update",		 	2,	   0,   256,   128  },
+const struct task_info task_info_table[] = 
+{
+    {"app_core",            1,     0,   640,   128  },  //当前任务
+    {"sys_event",           7,     0,   256,   0    },  //系统事件
+    {"btctrler",            4,     0,   512,   256  },  //底层驱动
+    {"btencry",             1,     0,   512,   128  },  //蓝牙加密部分
+    {"btstack",             3,     0,   768,   256   }, //蓝牙协议栈
+    {"systimer",		    7,	   0,   128,   0	},  //软件定时器(这里是通过回调通知对应的线程来执行回调函数)
+    {"update",				1,	   0,   512,   0    },  //OTA
+    {"dw_update",		 	2,	   0,   256,   128  },  
 #if (RCSP_BTMATE_EN)
     {"rcsp_task",		    2,	   0,   640,	0},
 #endif

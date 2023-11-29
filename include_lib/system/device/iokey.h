@@ -38,7 +38,8 @@ struct iokey_port {
     u8 key_value;
 };
 
-struct iokey_platform_data {
+struct iokey_platform_data 
+{
     u8 enable;
     u8 num;
     const struct iokey_port *port;

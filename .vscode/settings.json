@@ -58,7 +58,11 @@
         "stdarg.h": "c",
         "stdlib.h": "c",
         "stdio.h": "c",
-        "ioctl.h": "c"
+        "ioctl.h": "c",
+        "adkey.h": "c",
+        "event.h": "c",
+        "iokey.h": "c",
+        "norflash.h": "c"
     },
     "C_Cpp.dimInactiveRegions": true
 }

@@ -841,14 +841,17 @@ void ble_comm_module_enable(u8 en)
 /*************************************************************************************************/
 int ble_comm_disconnect_extend(u16 conn_handle, u8 reason)
 {
-    if (conn_handle) {
+    if (conn_handle)
+     {
         u8 role = ble_comm_dev_get_handle_role(conn_handle);
-        if (BLE_ST_SEND_DISCONN != ble_comm_dev_get_handle_state(conn_handle, role)) {
+        if (BLE_ST_SEND_DISCONN != ble_comm_dev_get_handle_state(conn_handle, role)) 
+        {
             ble_comm_dev_set_handle_state(conn_handle, role, BLE_ST_SEND_DISCONN);
             log_info(">>>send disconnect= %04x\n", conn_handle);
             /* ble_op_disconnect(conn_handle); */
             ble_op_disconnect_ext(conn_handle, reason);
-        } else {
+        } else 
+        {
             log_info(">>>busy,wait disconnect= %04x\n", conn_handle);
         }
     }

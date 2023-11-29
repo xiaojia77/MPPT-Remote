@@ -106,7 +106,8 @@ enum {
 #define USE_SET_LOCAL_ADDRESS_TAG     (0x5a)
 
 /* ================ gatt server 配置 ================*/
-typedef struct {
+typedef struct
+{
     const u8 *adv_data; /*无定向广播adv包数据*/
     const u8 *rsp_data; /*无定向广播respone包数据*/
     u8  adv_data_len;   /*无定向广播adv包长度*/
@@ -152,7 +153,8 @@ typedef struct {
     u8  conn_update_accept;	        /*连接过程,接受从机的连接参数请求使能*/
 } scan_conn_cfg_t;
 
-typedef struct {
+typedef struct 
+{
     /*未连接,扫描设备配置*/
     const client_match_cfg_t  *match_devices;     /*扫描匹配设备表*/
     u16   match_devices_count;    /*搜索devices的个数*/
@@ -163,10 +165,12 @@ typedef struct {
     const target_uuid_t       *search_uuid_group; /*搜索uuid表*/
     u16 search_uuid_count;    /*搜索uuid的个数*/
     u8  auto_enable_ccc;      /*是否执行使能匹配的 NOTIFY和INDICATE 通知功能*/
+
 } gatt_search_cfg_t;
 
 
-typedef struct {
+typedef struct 
+{
     /*协议栈事件回调处理*/
     int (*event_packet_handler)(int event, u8 *packet, u16 size, u8 *ext_param);
 } gatt_client_cfg_t;

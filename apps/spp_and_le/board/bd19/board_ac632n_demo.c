@@ -91,7 +91,8 @@ const struct adkey_platform_data adkey_data = {
     .ad_channel = TCFG_ADKEY_AD_CHANNEL,                      //AD通道值
     .extern_up_en = TCFG_ADKEY_EXTERN_UP_ENABLE,              //是否使用外接上拉电阻
     .ad_value = {                                             //根据电阻算出来的电压值
-        TCFG_ADKEY_VOLTAGE0,
+       // TCFG_ADKEY_VOLTAGE0,
+        50,
         TCFG_ADKEY_VOLTAGE1,
         TCFG_ADKEY_VOLTAGE2,
         TCFG_ADKEY_VOLTAGE3,
@@ -101,6 +102,7 @@ const struct adkey_platform_data adkey_data = {
         TCFG_ADKEY_VOLTAGE7,
         TCFG_ADKEY_VOLTAGE8,
         TCFG_ADKEY_VOLTAGE9,
+        TCFG_ADKEY_VOLTAGE10,
     },
     .key_value = {                                             //AD按键各个按键的键值
         TCFG_ADKEY_VALUE0,
@@ -113,6 +115,40 @@ const struct adkey_platform_data adkey_data = {
         TCFG_ADKEY_VALUE7,
         TCFG_ADKEY_VALUE8,
         TCFG_ADKEY_VALUE9,
+        TCFG_ADKEY_VALUE10,
+    },
+};
+
+const struct adkey_platform_data adkey2_data = {
+    .enable = TCFG_ADKEY2_ENABLE,                              //AD按键使能
+    .adkey_pin = TCFG_ADKEY2_PORT,                             //AD按键对应引脚
+    .ad_channel = TCFG_ADKEY2_AD_CHANNEL,                      //AD通道值
+    .extern_up_en = TCFG_ADKEY2_EXTERN_UP_ENABLE,              //是否使用外接上拉电阻
+    .ad_value = {                                             //根据电阻算出来的电压值
+        TCFG_ADKEY2_VOLTAGE0,
+        TCFG_ADKEY2_VOLTAGE1,
+        TCFG_ADKEY2_VOLTAGE2,
+        TCFG_ADKEY2_VOLTAGE3,
+        TCFG_ADKEY2_VOLTAGE4,
+        TCFG_ADKEY2_VOLTAGE5,
+        TCFG_ADKEY2_VOLTAGE6,
+        TCFG_ADKEY2_VOLTAGE7,
+        TCFG_ADKEY2_VOLTAGE8,
+        TCFG_ADKEY2_VOLTAGE9,
+        TCFG_ADKEY2_VOLTAGE10,
+    },
+    .key_value = {                                             //AD按键各个按键的键值
+        TCFG_ADKEY2_VALUE0,
+        TCFG_ADKEY2_VALUE1,
+        TCFG_ADKEY2_VALUE2,
+        TCFG_ADKEY2_VALUE3,
+        TCFG_ADKEY2_VALUE4,
+        TCFG_ADKEY2_VALUE5,
+        TCFG_ADKEY2_VALUE6,
+        TCFG_ADKEY2_VALUE7,
+        TCFG_ADKEY2_VALUE8,
+        TCFG_ADKEY2_VALUE9,
+        TCFG_ADKEY2_VALUE10,
     },
 };
 #endif
@@ -130,22 +166,23 @@ const struct iokey_port iokey_list[] = {
 	{
 		.connect_way = TCFG_IOKEY_POWER_CONNECT_WAY,          //IO按键的连接方式
 		.key_type.one_io.port = TCFG_IOKEY_POWER_ONE_PORT,    //IO按键对应的引脚
-		.key_value = 0,                                       //按键值
+		.key_value = 22,                                       //按键值
 	},
 
-	{
-		.connect_way = TCFG_IOKEY_PREV_CONNECT_WAY,
-		.key_type.one_io.port = TCFG_IOKEY_PREV_ONE_PORT,
-		.key_value = 1,
-	},
+	// {
+	// 	.connect_way = TCFG_IOKEY_PREV_CONNECT_WAY,
+	// 	.key_type.one_io.port = TCFG_IOKEY_PREV_ONE_PORT,
+	// 	.key_value = 23,
+	// },
 
-	{
-		.connect_way = TCFG_IOKEY_NEXT_CONNECT_WAY,
-		.key_type.one_io.port = TCFG_IOKEY_NEXT_ONE_PORT,
-		.key_value = 2,
-	},
+	// {
+	// 	.connect_way = TCFG_IOKEY_NEXT_CONNECT_WAY,
+	// 	.key_type.one_io.port = TCFG_IOKEY_NEXT_ONE_PORT,
+	// 	.key_value = 24,
+	// },
 };
-const struct iokey_platform_data iokey_data = {
+const struct iokey_platform_data iokey_data = 
+{
 	.enable = TCFG_IOKEY_ENABLE,                              //是否使能IO按键
 	.num = ARRAY_SIZE(iokey_list),                            //IO按键的个数
 	.port = iokey_list,                                       //IO按键参数表
@@ -658,12 +695,15 @@ void sleep_exit_callback(u32 usec)
 void sleep_enter_callback(u8  step)
 {
 	/* 此函数禁止添加打印 */
-	if (step == 1) {
+	if (step == 1)
+     {
 		putchar('<');
 		APP_IO_DEBUG_1(A, 5);
 		/*dac_power_off();*/
-	} else {
-		close_gpio(0);
+	} 
+    else
+    {
+		//close_gpio(0);
 	}
 }
 

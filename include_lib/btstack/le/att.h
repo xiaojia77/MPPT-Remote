@@ -64,9 +64,9 @@ extern "C" {
     } service_report_t; //==le_service_t
 
     typedef struct {
-        uint16_t start_handle;
+        uint16_t start_handle; //开始的handle
         uint16_t value_handle; //属性操作handle
-        uint16_t end_handle;
+        uint16_t end_handle;   //结束的handle
         uint16_t properties;   //属性对应 ATT_PROPERTY_XXX
         uint16_t uuid16;       //为0则是 uuid128
         uint8_t  uuid128[16];

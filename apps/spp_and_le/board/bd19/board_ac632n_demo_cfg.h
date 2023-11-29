@@ -23,7 +23,7 @@
 //*********************************************************************************//
 #define TCFG_UART0_ENABLE					ENABLE_THIS_MOUDLE                     //串口打印模块使能
 #define TCFG_UART0_RX_PORT					NO_CONFIG_PORT                         //串口接收脚配置（用于打印可以选择NO_CONFIG_PORT）
-#define TCFG_UART0_TX_PORT  				IO_PORTA_00                            //串口发送脚配置
+#define TCFG_UART0_TX_PORT  				IO_PORTB_03                            //串口发送脚配置
 #define TCFG_UART0_BAUDRATE  				1000000                                //串口波特率配置
 
 #define UART_DB_TX_PIN                      IO_PORTA_01                            //AT_CHART串口
@@ -107,30 +107,24 @@
 //*********************************************************************************//
 //                                 iokey 配置                                      //
 //*********************************************************************************//
-#define TCFG_IOKEY_ENABLE					DISABLE_THIS_MOUDLE //是否使能IO按键
+#define TCFG_IOKEY_ENABLE					ENABLE_THIS_MOUDLE //是否使能IO按键
 
-#define TCFG_IOKEY_POWER_CONNECT_WAY		ONE_PORT_TO_LOW    //按键一端接低电平一端接IO
+#define TCFG_IOKEY_POWER_CONNECT_WAY		ONE_PORT_TO_HIGH    //按键一端接低电平一端接IO
 
-#define TCFG_IOKEY_POWER_ONE_PORT			IO_PORTB_01        //IO按键端口
+#define TCFG_IOKEY_POWER_ONE_PORT			IO_PORTB_00        //IO按键端口
 
 #define TCFG_IOKEY_PREV_CONNECT_WAY			ONE_PORT_TO_LOW  //按键一端接低电平一端接IO
-#define TCFG_IOKEY_PREV_ONE_PORT			IO_PORTB_00
+#define TCFG_IOKEY_PREV_ONE_PORT			NO_CONFIG_PORT
 
 #define TCFG_IOKEY_NEXT_CONNECT_WAY 		ONE_PORT_TO_LOW  //按键一端接低电平一端接IO
-#define TCFG_IOKEY_NEXT_ONE_PORT			IO_PORTB_02
+#define TCFG_IOKEY_NEXT_ONE_PORT			NO_CONFIG_PORT
 
 //*********************************************************************************//
 //                                 adkey 配置                                      //
 //*********************************************************************************//
 #define TCFG_ADKEY_ENABLE                   ENABLE_THIS_MOUDLE //是否使能AD按键
-#define TCFG_ADKEY_PORT                     IO_PORTB_01         //AD按键端口(需要注意选择的IO口是否支持AD功能)
-/*AD通道选择，需要和AD按键的端口相对应:
-    AD_CH_PA1    AD_CH_PA3    AD_CH_PA4    AD_CH_PA5
-    AD_CH_PA9    AD_CH_PA1    AD_CH_PB1    AD_CH_PB4
-    AD_CH_PB6    AD_CH_PB7    AD_CH_DP     AD_CH_DM
-    AD_CH_PB2
-*/
-#define TCFG_ADKEY_AD_CHANNEL               AD_CH_PB1
+#define TCFG_ADKEY_PORT                     IO_PORT_DM1         //AD按键端口(需要注意选择的IO口是否支持AD功能)
+#define TCFG_ADKEY_AD_CHANNEL               AD_CH_DM1
 #define TCFG_ADKEY_EXTERN_UP_ENABLE         ENABLE_THIS_MOUDLE //是否使用外部上拉
 
 #if TCFG_ADKEY_EXTERN_UP_ENABLE
@@ -141,15 +135,16 @@
 
 //必须从小到大填电阻，没有则同VDDIO,填0x3ffL
 #define TCFG_ADKEY_AD0      (0)                                 //0R
-#define TCFG_ADKEY_AD1      (0x3ffL * 30   / (30   + R_UP))     //3k
-#define TCFG_ADKEY_AD2      (0x3ffL * 62   / (62   + R_UP))     //6.2k
-#define TCFG_ADKEY_AD3      (0x3ffL * 91   / (91   + R_UP))     //9.1k
-#define TCFG_ADKEY_AD4      (0x3ffL * 150  / (150  + R_UP))     //15k
-#define TCFG_ADKEY_AD5      (0x3ffL * 240  / (240  + R_UP))     //24k
-#define TCFG_ADKEY_AD6      (0x3ffL * 330  / (330  + R_UP))     //33k
-#define TCFG_ADKEY_AD7      (0x3ffL * 510  / (510  + R_UP))     //51k
-#define TCFG_ADKEY_AD8      (0x3ffL * 1000 / (1000 + R_UP))     //100k
-#define TCFG_ADKEY_AD9      (0x3ffL * 2200 / (2200 + R_UP))     //220k
+#define TCFG_ADKEY_AD1      (0x3ffL * 15   / (15   + R_UP))     //3k
+#define TCFG_ADKEY_AD2      (0x3ffL * 33   / (33   + R_UP))     //6.2k
+#define TCFG_ADKEY_AD3      (0x3ffL * 62   / (62   + R_UP))     //9.1k
+#define TCFG_ADKEY_AD4      (0x3ffL * 92  / (92  + R_UP))     //15k
+#define TCFG_ADKEY_AD5      (0x3ffL * 150  / (150  + R_UP))     //24k
+#define TCFG_ADKEY_AD6      (0x3ffL * 240  / (240  + R_UP))     //33k
+#define TCFG_ADKEY_AD7      (0x3ffL * 330  / (330  + R_UP))     //51k
+#define TCFG_ADKEY_AD8      (0x3ffL * 510 / (510 + R_UP))     //100k
+#define TCFG_ADKEY_AD9      (0x3ffL * 1000 / (1000 + R_UP))     //220k
+#define TCFG_ADKEY_AD10      (0x3ffL * 2200 / (2200 + R_UP))     //220k
 #define TCFG_ADKEY_VDDIO    (0x3ffL)
 
 #define TCFG_ADKEY_VOLTAGE0 ((TCFG_ADKEY_AD0 + TCFG_ADKEY_AD1) / 2)
@@ -161,7 +156,8 @@
 #define TCFG_ADKEY_VOLTAGE6 ((TCFG_ADKEY_AD6 + TCFG_ADKEY_AD7) / 2)
 #define TCFG_ADKEY_VOLTAGE7 ((TCFG_ADKEY_AD7 + TCFG_ADKEY_AD8) / 2)
 #define TCFG_ADKEY_VOLTAGE8 ((TCFG_ADKEY_AD8 + TCFG_ADKEY_AD9) / 2)
-#define TCFG_ADKEY_VOLTAGE9 ((TCFG_ADKEY_AD9 + TCFG_ADKEY_VDDIO) / 2)
+#define TCFG_ADKEY_VOLTAGE9 ((TCFG_ADKEY_AD9 + TCFG_ADKEY_AD10) / 2)
+#define TCFG_ADKEY_VOLTAGE10 ((TCFG_ADKEY_AD10 + TCFG_ADKEY_VDDIO) / 2)
 
 #define TCFG_ADKEY_VALUE0                   0
 #define TCFG_ADKEY_VALUE1                   1
@@ -173,6 +169,56 @@
 #define TCFG_ADKEY_VALUE7                   7
 #define TCFG_ADKEY_VALUE8                   8
 #define TCFG_ADKEY_VALUE9                   9
+#define TCFG_ADKEY_VALUE10                  10
+
+//第二路adkey
+#define TCFG_ADKEY2_ENABLE                   ENABLE_THIS_MOUDLE //是否使能AD按键
+#define TCFG_ADKEY2_PORT                     IO_PORT_DP1         //AD按键端口(需要注意选择的IO口是否支持AD功能)
+#define TCFG_ADKEY2_AD_CHANNEL               AD_CH_DP1
+#define TCFG_ADKEY2_EXTERN_UP_ENABLE         ENABLE_THIS_MOUDLE //是否使用外部上拉
+
+#if TCFG_ADKEY2_EXTERN_UP_ENABLE
+#define R_UP_2    220                 //22K，外部上拉阻值在此自行设置
+#else
+#define R_UP_2    100                 //10K，内部上拉默认10K
+#endif
+
+#define TCFG_ADKEY2_AD0      (0)                                 //0R
+#define TCFG_ADKEY2_AD1      (0x3ffL * 15   / (15   + R_UP))     //3k
+#define TCFG_ADKEY2_AD2      (0x3ffL * 33   / (33   + R_UP_2))     //3k
+#define TCFG_ADKEY2_AD3      (0x3ffL * 62   / (62   + R_UP_2))     //6.2k
+#define TCFG_ADKEY2_AD4      (0x3ffL * 92   / (92   + R_UP_2))     //9.1k
+#define TCFG_ADKEY2_AD5      (0x3ffL * 150  / (150  + R_UP_2))     //15k
+#define TCFG_ADKEY2_AD6      (0x3ffL * 240  / (240  + R_UP_2))     //24k
+#define TCFG_ADKEY2_AD7      (0x3ffL * 330  / (330  + R_UP_2))     //33k
+#define TCFG_ADKEY2_AD8      (0x3ffL * 510  / (510  + R_UP_2))     //51k
+#define TCFG_ADKEY2_AD9      (0x3ffL * 1000 / (1000 + R_UP_2))     //100k
+#define TCFG_ADKEY2_AD10      (0x3ffL * 2200 / (2200 + R_UP_2))     //220k
+#define TCFG_ADKEY2_VDDIO    (0x3ffL)
+
+#define TCFG_ADKEY2_VOLTAGE0 ((TCFG_ADKEY_AD0 + TCFG_ADKEY_AD1) / 2)
+#define TCFG_ADKEY2_VOLTAGE1 ((TCFG_ADKEY_AD1 + TCFG_ADKEY_AD2) / 2)
+#define TCFG_ADKEY2_VOLTAGE2 ((TCFG_ADKEY_AD2 + TCFG_ADKEY_AD3) / 2)
+#define TCFG_ADKEY2_VOLTAGE3 ((TCFG_ADKEY_AD3 + TCFG_ADKEY_AD4) / 2)
+#define TCFG_ADKEY2_VOLTAGE4 ((TCFG_ADKEY_AD4 + TCFG_ADKEY_AD5) / 2)
+#define TCFG_ADKEY2_VOLTAGE5 ((TCFG_ADKEY_AD5 + TCFG_ADKEY_AD6) / 2)
+#define TCFG_ADKEY2_VOLTAGE6 ((TCFG_ADKEY_AD6 + TCFG_ADKEY_AD7) / 2)
+#define TCFG_ADKEY2_VOLTAGE7 ((TCFG_ADKEY_AD7 + TCFG_ADKEY_AD8) / 2)
+#define TCFG_ADKEY2_VOLTAGE8 ((TCFG_ADKEY_AD8 + TCFG_ADKEY_AD9) / 2)
+#define TCFG_ADKEY2_VOLTAGE9 ((TCFG_ADKEY_AD9 + TCFG_ADKEY2_AD10) / 2)
+#define TCFG_ADKEY2_VOLTAGE10 ((TCFG_ADKEY2_AD10 + TCFG_ADKEY_VDDIO) / 2)
+
+#define TCFG_ADKEY2_VALUE0                   11
+#define TCFG_ADKEY2_VALUE1                   12
+#define TCFG_ADKEY2_VALUE2                   13
+#define TCFG_ADKEY2_VALUE3                   14
+#define TCFG_ADKEY2_VALUE4                   15
+#define TCFG_ADKEY2_VALUE5                   16
+#define TCFG_ADKEY2_VALUE6                   17
+#define TCFG_ADKEY2_VALUE7                   18
+#define TCFG_ADKEY2_VALUE8                   19
+#define TCFG_ADKEY2_VALUE9                   20
+#define TCFG_ADKEY2_VALUE10                  21
 
 //*********************************************************************************//
 //                                 Audio配置                                       //
@@ -321,7 +367,7 @@
 //*********************************************************************************//
 #define TCFG_AUTO_SHUT_DOWN_TIME		          0   //没有蓝牙连接自动关机时间
 #if (TCFG_LOWPOWER_POWER_SEL == PWR_DCDC15)
-#define TCFG_SYS_LVD_EN						      1   //dcdc模式电压低于2.4v的时候切为LDO模式，需要开启电量检测
+#define TCFG_SYS_LVD_EN						      0   //dcdc模式电压低于2.4v的时候切为LDO模式，需要开启电量检测
 #else
 #define TCFG_SYS_LVD_EN						      1   //电量检测使能
 #endif

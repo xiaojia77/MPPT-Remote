@@ -1,17 +1,3 @@
-/*********************************************************************************************
-    *   Filename        : .c
-
-    *   Description     :
-
-    *   Author          : JM
-
-    *   Email           : zh-jieli.com
-
-    *   Last modifiled  : 2021-01-17 11:14
-
-    *   Copyright:(c)JIELI  2011-2026  @ , All Rights Reserved.
-*********************************************************************************************/
-
 #include "system/app_core.h"
 #include "system/includes.h"
 
@@ -71,7 +57,8 @@ enum {
 #define SUPPORT_OPT_HANDLE_MAX   16
 
 //---------------
-typedef struct {
+typedef struct 
+{
     scan_conn_cfg_t *scan_conn_config;      //扫描配置项
     gatt_client_cfg_t *client_config;       //client配置项
     gatt_search_cfg_t *gatt_search_config;  //搜索profile配置项
@@ -108,7 +95,8 @@ bool ble_comm_need_wait_encryption(u8 role);
 /*************************************************************************************************/
 static int __gatt_client_event_callback_handler(int event, u8 *packet, u16 size, u8 *ext_param) // 事件回调输出接口
 {
-    if (__this->client_config->event_packet_handler) {
+    if (__this->client_config->event_packet_handler) 
+    {
 
         return __this->client_config->event_packet_handler(event, packet, size, ext_param);
     }
@@ -167,7 +155,7 @@ static void __gatt_client_timeout_handler(int type_id) // 连接超时检测  �
     {
         if (ble_gatt_client_get_work_state() == BLE_ST_CREATE_CONN) 
         {
-            log_info(" create connection timeout !!! ");
+            log_info(" create connection timeout !!! "); // 连接超时自动开启广播
             ble_gatt_client_create_connection_cannel();
             __gatt_client_event_callback_handler(GATT_COMM_EVENT_CREAT_CONN_TIMEOUT, 0, 0, 0);
             __gatt_client_check_auto_scan();
@@ -333,8 +321,10 @@ int l2cap_connection_update_request_just(u8 *packet, hci_con_handle_t handle) //
 /*************************************************************************************************/
 void user_client_report_data_callback(att_data_report_t *report_data) // 接收server段的数据发送
 {
-    if (report_data->conn_handle != __this->just_search_handle) {
-        if (INVAIL_INDEX == ble_comm_dev_get_index(report_data->conn_handle, GATT_ROLE_CLIENT)) {
+    if (report_data->conn_handle != __this->just_search_handle) 
+    {
+        if (INVAIL_INDEX == ble_comm_dev_get_index(report_data->conn_handle, GATT_ROLE_CLIENT)) 
+        {
             log_info("unknown_handle:%04x,drop data\n", report_data->conn_handle);
             return;
         }
@@ -359,7 +349,8 @@ static void __do_operate_search_handle(void) //搜索完profile，跟进配置�
     u16 tmp_16, i, cur_opt_type;
     opt_handle_t *opt_hdl_pt;
 
-    if (!__this->gatt_search_config || 0 == __this->gatt_search_config->search_uuid_count) {
+    if (!__this->gatt_search_config || 0 == __this->gatt_search_config->search_uuid_count)  //如果gatt_search_config没配置 || 搜索数为0
+    {
         return;
     }
 
@@ -379,7 +370,8 @@ static void __do_operate_search_handle(void) //搜索完profile，跟进配置�
 
         if (cur_opt_type & ATT_PROPERTY_NOTIFY) // notify 就自动写CCC
         { 
-            if (__this->gatt_search_config->auto_enable_ccc) {
+            if (__this->gatt_search_config->auto_enable_ccc) 
+            {
                 tmp_16  = 0x0001;//fixed
                 log_info("write_ntf_ccc:%04x\n", opt_hdl_pt->value_handle);
                 ble_comm_att_send_data(__this->client_search_handle, opt_hdl_pt->value_handle + 1, &tmp_16, 2, ATT_OP_WRITE);
@@ -393,15 +385,21 @@ static void __do_operate_search_handle(void) //搜索完profile，跟进配置�
                 }
             }
 
-        } else if (cur_opt_type & ATT_PROPERTY_INDICATE) {
-            if (__this->gatt_search_config->auto_enable_ccc) {
+        } 
+        else if (cur_opt_type & ATT_PROPERTY_INDICATE) 
+        {
+            if (__this->gatt_search_config->auto_enable_ccc) 
+            {
                 tmp_16  = 0x0002;//fixed
                 log_info("write_ind_ccc:%04x\n", opt_hdl_pt->value_handle);
                 ble_comm_att_send_data(__this->client_search_handle, opt_hdl_pt->value_handle + 1, &tmp_16, 2, ATT_OP_WRITE);
             }
 
-        } else if (cur_opt_type & ATT_PROPERTY_READ) {
-            if (opt_hdl_pt->search_uuid->read_long_enable) {
+        }
+         else if (cur_opt_type & ATT_PROPERTY_READ) 
+        {
+            if (opt_hdl_pt->search_uuid->read_long_enable) 
+            {
                 tmp_16  = 0x55A2;//fixed
                 log_info("read_long:%04x\n", opt_hdl_pt->value_handle);
                 ble_comm_att_send_data(__this->client_search_handle, opt_hdl_pt->value_handle, &tmp_16, 2, ATT_OP_READ_LONG);
@@ -410,7 +408,8 @@ static void __do_operate_search_handle(void) //搜索完profile，跟进配置�
                 log_info("read:%04x\n", opt_hdl_pt->value_handle);
                 ble_comm_att_send_data(__this->client_search_handle, opt_hdl_pt->value_handle, &tmp_16, 2, ATT_OP_READ);
             }
-        } else {
+        } else 
+        {
             ;
         }
     }
@@ -519,7 +518,8 @@ static void __check_target_uuid_match(search_result_t *result_info)  //看UUID�
 void user_client_report_descriptor_result(charact_descriptor_t *result_descriptor)  //descriptor 内容
 {
     log_info("report_descriptor,handle= %04x ,uuid16: %04x\n", result_descriptor->handle, result_descriptor->uuid16);
-    if (result_descriptor->uuid16 == 0) {
+    if (result_descriptor->uuid16 == 0) 
+    {
         log_info("uuid128:");
         log_info_hexdump(result_descriptor->uuid128, 16);
     }
@@ -540,17 +540,19 @@ void user_client_report_descriptor_result(charact_descriptor_t *result_descripto
 /*************************************************************************************************/
 void user_client_report_search_result(search_result_t *result_info) // 每搜索到一个server 或 charactc uuid 都会调用,直到搜索结束
 {
-    if (result_info == (void *) - 1) {
+    if (result_info == (void *) - 1) 
+    {
         log_info("client_report_search_result finish!!!\n");
-        ble_comm_dev_set_handle_state(__this->client_search_handle, GATT_ROLE_CLIENT, BLE_ST_SEARCH_COMPLETE);
+        ble_comm_dev_set_handle_state(__this->client_search_handle, GATT_ROLE_CLIENT, BLE_ST_SEARCH_COMPLETE); //handle 状态
         __do_operate_search_handle();
-        __gatt_client_set_work_state(__this->client_search_handle, BLE_ST_SEARCH_COMPLETE, 1);
+        __gatt_client_set_work_state(__this->client_search_handle, BLE_ST_SEARCH_COMPLETE, 1); //工作状态已经搜索完profile
         __gatt_client_event_callback_handler(GATT_COMM_EVENT_GATT_SEARCH_PROFILE_COMPLETE, &__this->client_search_handle, 2, 0);
 
         __this->client_search_handle = 0;//clear handle
 
         //搜索完profile,多机应用会触发尝试开新设备scan
-        if (SUPPORT_MAX_GATT_CLIENT > 1) {
+        if (SUPPORT_MAX_GATT_CLIENT > 1)  
+        {
             __gatt_client_check_auto_scan();
         }
         return;
@@ -563,14 +565,14 @@ void user_client_report_search_result(search_result_t *result_info) // 每搜索
              result_info->characteristic.value_handle
             );
 
-
-    // 128的 uuid
-    if (!result_info->services.uuid16) {
+    if (!result_info->services.uuid16) // 128的 uuid
+    {
         log_info("######services_uuid128:");
         log_info_hexdump(result_info->services.uuid128, 16);
     }
 
-    if (!result_info->characteristic.uuid16) {
+    if (!result_info->characteristic.uuid16) 
+    {
         log_info("######charact_uuid128:");
         log_info_hexdump(result_info->characteristic.uuid128, 16);
     }
@@ -601,10 +603,13 @@ static void __gatt_client_search_profile_start(void)    //  启动profile搜索
     user_client_init(__this->client_search_handle, search_ram_buffer, SEARCH_PROFILE_BUFSIZE);
     __this->opt_handle_used_cnt = 0;
 
-    if (!__this->gatt_search_config || 0 == __this->gatt_search_config->search_uuid_count) {
+    if (!__this->gatt_search_config || 0 == __this->gatt_search_config->search_uuid_count) 
+    {
         log_info("skip search_profile:%04x\n\n", __this->client_search_handle);
         user_client_set_search_complete();
-    } else {
+    } 
+    else 
+    {
         log_info("start search_profile_all:%04x\n", __this->client_search_handle);
         ble_op_search_profile_all();
     }
@@ -820,6 +825,41 @@ static bool __check_device_is_match(u8 event_type, u8 info_type, u8 *data, int s
  *  \note
  */
 /*************************************************************************************************/
+int Rssi_Cmpsort(const void*p1,const void*p2)
+{
+  return(*(Ble_Adv_Rp_t*)p1).rssi<(*(Ble_Adv_Rp_t*)p2).rssi?1:-1;
+ // return  ( (-1*(*(Ble_Adv_Rp_t*)p1).rssi) > (-1*(*(Ble_Adv_Rp_t*)p2).rssi) ) ?1:-1;
+}
+
+void Ble_Connect_Recode(const uint8_t *address,uint8_t Rssi)
+{
+    uint8_t location;
+    location = Ble_Find_Mac_RepAddr(RoterData.Ble_Adv_rp,sizeof(RoterData.Ble_Adv_rp)/sizeof(RoterData.Ble_Adv_rp[0]),address) ;
+    //log_info("location:%d", location);
+    if(location !=255)
+    {
+        memcpy(RoterData.Ble_Adv_rp[location].mac,address, 6);
+        RoterData.Ble_Adv_rp[location].rssi = Rssi;  
+        RoterData.Ble_Adv_rp[location].Timeout = 0;
+    }
+    else
+    {
+    location =  Ble_Check_NonAddr(RoterData.Ble_Adv_rp,sizeof(RoterData.Ble_Adv_rp)/sizeof(RoterData.Ble_Adv_rp[0]));
+    
+    if(location !=255)
+    {
+            memcpy(RoterData.Ble_Adv_rp[location].mac,address, 6);
+            RoterData.Ble_Adv_rp[location].rssi = Rssi;  
+            RoterData.Ble_Adv_rp[location].useflag = 1;
+            RoterData.Ble_Adv_Rp_Count++;
+    }
+    }
+
+    int len = sizeof(RoterData.Ble_Adv_rp)/sizeof(RoterData.Ble_Adv_rp[0]);
+    int size = sizeof(RoterData.Ble_Adv_rp[0]);
+    qsort(&RoterData.Ble_Adv_rp,len,size,Rssi_Cmpsort);
+}
+
 static bool __resolve_adv_report(adv_report_t *report_pt, u16 len) //检测是否有匹配的设备, true or false
 {
     u8 i, length, ad_type;
@@ -828,7 +868,7 @@ static bool __resolve_adv_report(adv_report_t *report_pt, u16 len) //检测是�
     u32 tmp32;
     client_match_cfg_t *match_cfg = NULL;
 
-    if(report_pt->rssi<-99)return false;
+         if(report_pt->rssi<-99)return false;
         // 指定地址连接
         if (__check_device_is_match(report_pt->event_type, CLI_CREAT_BY_ADDRESS, report_pt->address, 6, &match_cfg))
          {
@@ -880,35 +920,12 @@ static bool __resolve_adv_report(adv_report_t *report_pt, u16 len) //检测是�
         case HCI_EIR_DATATYPE_SHORTENED_LOCAL_NAME:
             tmp32 = adv_data_pt[length - 1];
             adv_data_pt[length - 1] = 0;
-            log_info("remoter_name:%s ,rssi:%d\n", adv_data_pt, report_pt->rssi);
-            log_info_hexdump(report_pt->address, 6);
-
-            uint8_t location;
-            location = BL_Find_Mac_RepAddr(RoterData.bl_adv_rp,13,report_pt->address) ;
-            log_info("location:%d", location);
-            if(location !=255)
-            {
-                memcpy(RoterData.bl_adv_rp[location].mac,report_pt->address, 6);
-                RoterData.bl_adv_rp[location].rssi = report_pt->rssi;  
-                RoterData.bl_adv_rp[location].Timeout = 0;
-            }
-            else
-            {
-               location =  BL_Check_NonAddr(RoterData.bl_adv_rp,13);
-               
-               if(location !=255)
-               {
-                    memcpy(RoterData.bl_adv_rp[location].mac,report_pt->address, 6);
-                    RoterData.bl_adv_rp[location].rssi = report_pt->rssi;  
-                    RoterData.bl_adv_rp[location].useflag = 1;
-                    RoterData.Ble_Adv_Count++;
-               }
-
-            }
+           // log_info("remoter_name:%s ,rssi:%d\n", adv_data_pt, report_pt->rssi);
+           // log_info_hexdump(report_pt->address, 6);
             
-            // memcpy(RoterData.bl_adv_rp[RoterData.Ble_Adv_Count].mac,report_pt->address, 6);
-            // RoterData.bl_adv_rp[RoterData.Ble_Adv_Count].rssi = report_pt->rssi;  
-            // if(++RoterData.Ble_Adv_Count  >13) RoterData.Ble_Adv_Count =  0;
+            // memcpy(RoterData.Ble_Adv_rp[RoterData.Ble_Adv_Rp_Count].mac,report_pt->address, 6);
+            // RoterData.Ble_Adv_rp[RoterData.Ble_Adv_Rp_Count].rssi = report_pt->rssi;  
+            // if(++RoterData.Ble_Adv_Rp_Count  >13) RoterData.Ble_Adv_Rp_Count =  0;
 
             adv_data_pt[length - 1] = tmp32;
 
@@ -923,10 +940,15 @@ static bool __resolve_adv_report(adv_report_t *report_pt, u16 len) //检测是�
             }
 #endif
             //--------------------------------
+            Ble_Connect_Recode(report_pt->address,report_pt->rssi);
             //名字匹配
             if (__check_device_is_match(report_pt->event_type, CLI_CREAT_BY_NAME, adv_data_pt, length - 1, &match_cfg)) 
-            {
-                find_remoter = 1;
+            {       
+                //if(RoterData.Ble_Adv_rp[location].IsconnectFlag == 0)
+                {
+                   // RoterData.Ble_Adv_rp[location].IsconnectFlag = 1;
+                    find_remoter = 1;
+                }
                 log_info("catch name ok\n");
             }
             break;
@@ -1139,7 +1161,8 @@ static void __gatt_client_report_adv_data(adv_report_t *report_pt, u16 len)  // 
             log_info("creat fail,scan again!!!\n");
             ble_gatt_client_scan_enable(1); //开启广播
         }
-        memcpy(RoterData.Ble_Connect_Mac,report_pt->address, 6); //把数组放到MAC地址中
+        memcpy(RoterData.Ble_Connect_Mac,report_pt->address, 6); //把MAC地址放到数组中
+
     } 
     else
     {

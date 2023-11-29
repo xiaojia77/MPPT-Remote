@@ -54,8 +54,8 @@ const struct spi_platform_data spi1_p_data =
 {
     .port = 
     {
-        IO_PORTA_02,    //CLK
-        IO_PORTA_01,    //DO
+        IO_PORTA_04,    //CLK
+        IO_PORTA_03,    //DO
         -1,    //DI
         -1,    //DI
         -1,    //DI

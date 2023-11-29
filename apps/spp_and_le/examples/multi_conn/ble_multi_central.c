@@ -1,16 +1,3 @@
-/*********************************************************************************************
-    *   Filename        : .c
-
-    *   Description     :
-
-    *   Author          :JM
-
-    *   Email           : zh-jieli.com
-
-    *   Last modifiled  : 2017-01-17 11:14
-
-    *   Copyright:(c)JIELI  2011-2016  @ , All Rights Reserved.
-*********************************************************************************************/
 #include "system/app_core.h"
 #include "system/includes.h"
 
@@ -35,7 +22,7 @@
 
 #include "lcd7789.h"
 
-
+#include "malloc.h"
 
 
 #if CONFIG_APP_MULTI && CONFIG_BT_GATT_CLIENT_NUM
@@ -50,7 +37,7 @@
 #endif
 
 //搜索类型
-#define SET_SCAN_TYPE       SCAN_ACTIVE
+#define SET_SCAN_TYPE       SCAN_ACTIVE   // 主动扫描
 //搜索 周期大小
 #define SET_SCAN_INTERVAL   ADV_SCAN_MS(24) // unit: 0.625ms
 //搜索 窗口大小
@@ -68,7 +55,7 @@
 #define SET_CREAT_CONN_TIMEOUT    8000 //(unit:ms)
 
 //配对信息表
-#define CLIENT_PAIR_BOND_ENABLE    1 //CONFIG_BT_SM_SUPPORT_ENABLE
+#define CLIENT_PAIR_BOND_ENABLE    0 //CONFIG_BT_SM_SUPPORT_ENABLE
 #define CLIENT_PAIR_BOND_TAG       0x56
 
 #define DELTA 0x9e3779b9
@@ -119,16 +106,18 @@ void btea(uint32_t *v, int n, uint32_t const key[4])
         while (--rounds);
     }
 }
- 
-struct ctl_pair_info_t {
-    u8 head_tag;
-    u8 match_dev_id;
-    u8 pair_flag;
+
+
+struct ctl_pair_info_t 
+{
+    u8 head_tag;        
+    u8 match_dev_id;   // 设备的UUID
+    u8 pair_flag;      // 配对FLAG
     u8 peer_address_info[7];
-    u16 conn_handle;
-    u16 conn_interval;
-    u16 conn_latency;
-    u16 conn_timeout;
+    u16 conn_handle;   // 连接handle
+    u16 conn_interval; // 连接间隔
+    u16 conn_latency;  // 连接延迟
+    u16 conn_timeout;  // 连接超时
 };
 
 /* static u8 cur_peer_addr_info[7];    //当前连接对方地址信息 */
@@ -162,19 +151,19 @@ static const target_uuid_t  jl_multi_search_uuid_table[] =
     // CHARACTERISTIC,  ae01, WRITE_WITHOUT_RESPONSE | DYNAMIC,
     // CHARACTERISTIC,  ae02, NOTIFY,
     {
-        .services_uuid16 = 0xae30,
+        .services_uuid16 = 0xae00,
         .characteristic_uuid16 = 0xae01,
         .opt_type = ATT_PROPERTY_WRITE_WITHOUT_RESPONSE,
     },
     {
-        .services_uuid16 = 0xae30,
+        .services_uuid16 = 0xae00,
         .characteristic_uuid16 = 0xae02,
         .opt_type = ATT_PROPERTY_NOTIFY,
     },
 };
 
 //配置多个扫描匹配设备
-static const u8 cetl_test_remoter_name1[] ="SQ20P75SA-B(BLE)";//
+static const u8 cetl_test_remoter_name1[] ="SQ20P75SA-B";//
 static const client_match_cfg_t multi_match_device_table[] = 
 {
     {
@@ -215,6 +204,40 @@ static inline u8 make_packet_val(u8 *buf, u16 offset, u8 data_type, u32 val, u8 
     return val_size + 2;
 }
 //测试write数据操作
+void Get_Mppt_Report1(void) // 获取MPPT 信息的指令
+{
+    uint32_t i, ret = 0;
+    uint32_t encry_key[4] ;     //通过+MAC地址来改变密钥
+    uint16_t offset = 0;
+    uint16_t tmp_handle;
+
+    uint8_t data[8]  = //发送查询指令
+    {
+        0XCC,0X55,0x00,0x00,0x00,0x00,0x00,0x00
+    };
+    for(i=0;i<4;i++) encry_key[i] = bl_ckey[i];
+    for(i=0;i<6;i++) encry_key[i%4] += RoterData.Ble_Connect_Mac[i];
+
+    data[0] = 0xCC; //包头
+    data[1] = 0X55;//包尾
+
+    // put_buf(RoterData.Ble_Connect_Mac,6); // 蓝牙地址
+    // put_buf(encry_key,16); // 加密密钥
+
+    // put_buf(data,8);
+    btea(data,2,encry_key); //加密数据
+    //put_buf(data,8);
+
+    for (i = 0; i < SUPPORT_MAX_GATT_CLIENT; i++) 
+    {
+        tmp_handle = ble_comm_dev_get_handle(i, GATT_ROLE_CLIENT); //获取连接的handle
+        if (tmp_handle && multi_ble_client_write_handle) 
+        {
+            ret = ble_comm_att_send_data(tmp_handle, multi_ble_client_write_handle, data, 8, ATT_OP_WRITE_WITHOUT_RESPOND);
+            log_info("test_write:%04x,%d", tmp_handle, ret);
+        }
+    }
+}
 
 void Get_Mppt_Report(void) // 获取MPPT 信息的指令
 {
@@ -233,12 +256,12 @@ void Get_Mppt_Report(void) // 获取MPPT 信息的指令
     data[0] = 0xBB; //包头
     data[1] = 0X55;//包尾
 
-    put_buf(RoterData.Ble_Connect_Mac,6); // 蓝牙地址
-    put_buf(encry_key,16); // 加密密钥
+    // put_buf(RoterData.Ble_Connect_Mac,6); // 蓝牙地址
+    // put_buf(encry_key,16); // 加密密钥
 
-    put_buf(data,8);
-    btea(data,2,encry_key); //加密数据
-    put_buf(data,8);
+    // put_buf(data,8);
+     btea(data,2,encry_key); //加密数据
+    // put_buf(data,8);
 
     for (i = 0; i < SUPPORT_MAX_GATT_CLIENT; i++) 
     {
@@ -255,70 +278,86 @@ static void Mppt_Set_Para_Send(void) // 发MPPT的设置参数
 {
     uint32_t i, ret = 0;
 
-    uint8_t *data = malloc(200);
+    uint8_t *data ;
     uint32_t encry_key[4] ;     //通过+MAC地址来改变密钥
     uint16_t offset = 0;
     uint16_t tmp_handle;
 
-    uint16_t const Curv_Data[16]=
+    uint16_t const Curv_Data[8][2]=   // 曲线数据  单位S 占空比%
     {
         {60*60*1,90},{60*60*2,80},{60*60*3,70},{60*60*4,60},
         {60*60*5,50},{60*60*6,40},{60*60*7,30},{60*60*8,20},
     };
 
-    for(i=0;i<4;i++) encry_key[i] = bl_ckey[i]; // 密码获取
-    for(i=0;i<6;i++) encry_key[i%4] += RoterData.Ble_Connect_Mac[i]; //加密密钥
-
-    data[offset++] = 0xAA; //包头
-    offset += make_packet_val(&data[offset],offset,0x01,10000,4); // 发10A
-    offset += make_packet_val(&data[offset],offset,0x02,50000,4); // 发5A  0.5C;
-    offset += make_packet_val(&data[offset],offset,0x03,50000,4); // 发50W 
-    offset += make_packet_val(&data[offset],offset,0x04,500,4);   // 发500mah
-    offset += make_packet_val(&data[offset],offset,0x05,2600,4);  // 发2600MV
-    offset += make_packet_val(&data[offset],offset,0x06,20,4);    // 发20挡位
-    offset += make_packet_val(&data[offset],offset,0x07,10,4);    // 雷达10%
-    offset += make_packet_val(&data[offset],offset,0x08,10,4);    // 雷达延迟15S
-    offset += make_packet_val(&data[offset],offset,0x09,10,4);    // 默认亮度100%
-    offset += make_packet_val(&data[offset],offset,0x0A,0,4);     // 曲线模式0 pwm模式
-    offset += make_packet_data(&data[offset],offset,0x0b,&Curv_Data,32);   // 默认亮度100%
-    data[offset++] = 0X55;//包尾
-    for(i=0;i<offset%4;i++)
+    uint16_t const Time_Data[3]=   // 日期数据  年月日
     {
-        data[offset] = 0;//补0
-        offset++;
-    }
-    log_info("Data len:%d",offset);
-    put_buf(RoterData.Ble_Connect_Mac,6); // 蓝牙地址
-    put_buf(encry_key,16);                // 加密密钥
-  
-    put_buf(data,offset);           //打印原始数据
-    btea(data,offset/4 ,encry_key); //加密数据
-    put_buf(data,offset);
+        2023,11,18
+    };
 
     for (i = 0; i < SUPPORT_MAX_GATT_CLIENT; i++) 
     {
         tmp_handle = ble_comm_dev_get_handle(i, GATT_ROLE_CLIENT); //获取连接的handle
         if (tmp_handle && multi_ble_client_write_handle) 
         {
+            data = malloc(256);
+            mem_stats();
+            for(i=0;i<4;i++) encry_key[i] = bl_ckey[i]; // 密码获取
+            for(i=0;i<6;i++) encry_key[i%4] += RoterData.Ble_Connect_Mac[i]; //加密密钥
+
+            data[offset++] = 0xAA; //包头
+            offset += make_packet_val(&data[offset],offset,0x01,80010,4); // 发10A
+            offset += make_packet_val(&data[offset],offset,0x02,23333,4); // 发5A  0.5C;
+            offset += make_packet_val(&data[offset],offset,0x03,50210,4); // 发50W 
+            offset += make_packet_val(&data[offset],offset,0x04,550,4);   // 发500mah
+            offset += make_packet_val(&data[offset],offset,0x05,2650,4);  // 发2600MV
+            offset += make_packet_val(&data[offset],offset,0x06,19,4);    // 发20挡位
+            offset += make_packet_val(&data[offset],offset,0x07,10,4);    // 雷达10%
+            offset += make_packet_val(&data[offset],offset,0x08,10,4);    // 雷达延迟15S
+            offset += make_packet_val(&data[offset],offset,0x09,10,4);    // 默认亮度100%
+            offset += make_packet_val(&data[offset],offset,0x0A,0,4);     // 曲线模式0 pwm模式
+            offset += make_packet_data(&data[offset],offset,0x0B,&Curv_Data,sizeof(Curv_Data));   // 默认曲线
+            offset += make_packet_val(&data[offset],offset,0x0C,0,4);   // 默认曲线
+            offset += make_packet_val(&data[offset],offset,0x0D,23333,4);     // 曲线模式0 pwm模式
+            offset += make_packet_data(&data[offset],offset,0x0E,&Time_Data,sizeof(Time_Data));   // 默认事件
+
+            data[offset++] = 0X55;//包尾
+            for(i=0;i<offset%4;i++)
+            {
+                data[offset] = 0;//补0
+                offset++;
+            }
+            log_info("MPPT Set Para Data len:%d \r\n",offset);
+            put_buf(RoterData.Ble_Connect_Mac,6); // 蓝牙地址
+            put_buf(encry_key,16);                // 加密密钥
+        
+            put_buf(data,offset);           //打印原始数据
+            btea(data,offset/4 ,encry_key); //加密数据
+            put_buf(data,offset);
+
             ret = ble_comm_att_send_data(tmp_handle, multi_ble_client_write_handle, data, offset , ATT_OP_WRITE_WITHOUT_RESPOND);
             log_info("test_write:%04x,%d", tmp_handle, ret);
+            free(data);
+            mem_stats();
         }
     }
     
-   free(data);
+  
 }
 
 void Mppt_Data_Decode(u8 *packet,u16 size) // MPPT 信息解码
 {
-    uint8_t *data = malloc(100);
+    uint8_t *data;
     uint32_t i,encry_key[4],temp;     //通过+MAC地址来改变密钥
     u8 command;
     u8 data_i = 0 , next_len;
     uint16_t data_position = 0;
 
-
-    if(size < 8)return ; //数据长度不够直接退出
-
+    if(size < 8)
+    {
+        log_info("recive data len < 8\r\n");
+        return ; //数据长度不够直接退出 
+    }
+    data = malloc(256);
     for(i=0;i<4;i++) encry_key[i] = bl_ckey[i];
     for(i=0;i<6;i++) encry_key[i%4] += RoterData.Ble_Connect_Mac[i];
 
@@ -330,41 +369,135 @@ void Mppt_Data_Decode(u8 *packet,u16 size) // MPPT 信息解码
     btea(data,-(size/4),encry_key); //加密数据
     put_buf(data,size);
 
-    if(data[data_i++] == 0xBB)
+    switch (data[data_i++])
     {
-        log_info("find data head 0xbb\r\n");
-        while(data_i<size)
-        {
-            next_len = data[data_i] + 1; //长度
-            if(!next_len)break; //非法数据 
-            command = data[data_i + 1];  //命令
-            data_position = data_i + 2;
-            log_info("cmd:%d next_len:%d ",command,next_len);
-            switch (command)
+        case 0xAA:  // 设置参数返回
+            log_info("find data head 0xAA\r\n");
+            if(data[0] == 0x00) 
             {
-                case 0x01:
-                    temp = little_endian_read_32(&data[data_position],0);     
-                    log_info("charge capcity data:%dMA/H ",temp);
-                    break;
-                case 0x02:
-                    temp = little_endian_read_32(&data[data_position],0);     
-                    log_info("charge current data:%dMA ",temp);
-                    break;
-                case 0x03: 
-                    temp = little_endian_read_32(&data[data_position],0);  
-                    log_info("charge power:%dW ",temp);
-                    break;
-                case 0x04:
-                    temp = little_endian_read_16(&data[data_position],0);  
-                    log_info("Bat resistance :%dR ",temp);
-                    break;
-                default:    
-                    break;
+                log_info("Set Para Success\r\n");
             }
-            data_i = data_i+next_len;
-        }
-    }
+            if(data[0] == 0x01) log_info("invail connect\r\n");
+            if(data[0] == 0x02) log_info("invail data len\r\n");
+            if(data[0] == 0x03) log_info("head error\r\n");
+            if(data[0] == 0x04) log_info("invail Curve Data\r\n");
+           // if(cur_conn_info.conn_handle)ble_comm_disconnect(cur_conn_info.conn_handle);
+            ble_gatt_client_disconnect_all();
+            break;
+        case 0XBB: // 信息参数返回
+            log_info("find data head 0xBB\r\n");
+            while(data_i<size - 1)
+            {
+                next_len = data[data_i] + 1; //长度
+                if(!next_len)break; //非法数据 
+                command = data[data_i + 1];  //命令
+                data_position = data_i + 2;
+                log_info("cmd:%d next_len:%d ",command,next_len);
+                switch (command)
+                {
+                    case 0x01:
+                        temp = little_endian_read_32(&data[data_position],0);     
+                        log_info("charge capcity data:%dMA/H ",temp);
+                        break;
+                    case 0x02:
+                        temp = little_endian_read_32(&data[data_position],0);     
+                        log_info("charge current data:%dMA ",temp);
+                        break;
+                    case 0x03: 
+                        temp = little_endian_read_32(&data[data_position],0);  
+                        log_info("charge power:%dW ",temp);
+                        break;
+                    case 0x04:
+                        temp = little_endian_read_32(&data[data_position],0);  
+                        log_info("Bat resistance :%dR ",temp);
+                        break;
+                    case 0x05:
+                        temp = little_endian_read_32(&data[data_position],0);  
+                        log_info("Bat Percent :%dR ",temp);
+                        break;
+                    default:    
+                        break;
+                }
+                data_i = data_i+next_len;
+            } 
+            break;
+        case 0xCC:  // 返回设置的信息
+            log_info("find data head 0xCC\r\n");
+            while(data_i<size)
+            {
+                next_len = data[data_i] + 1; //长度
+                if(!next_len)break; //非法数据 
+                command = data[data_i + 1];  //命令
+                data_position = data_i + 2;
+                log_info("cmd:%d next_len:%d ",command,next_len);
+                switch (command)
+                {
+                    case 0x01:
+                        temp = little_endian_read_32(&data[data_position],0);     
+                        log_info("bat capcity data:%dMA/H ",temp);
+                        break;
+                    case 0x02:
+                        temp = little_endian_read_32(&data[data_position],0);     
+                        log_info("Max charge current data:%dMA ",temp);
+                        break;
+                    case 0x03: 
+                        temp = little_endian_read_32(&data[data_position],0);  
+                        log_info("Max charge power:%dW ",temp);
+                        break;
+                    case 0x04:
+                        temp = little_endian_read_32(&data[data_position],0);  
+                        log_info("Trickle_Current :%dA ",temp);
+                        break;
+                    case 0x05:
+                        temp = little_endian_read_32(&data[data_position],0);  
+                        log_info("Low Percent :%dV ",temp);
+                        break;
+                    case 0x06:
+                        temp = little_endian_read_32(&data[data_position],0);  
+                        log_info("Current Gear : ",temp);
+                        break;
+                    case 0x07:
+                        temp = little_endian_read_32(&data[data_position],0);  
+                        log_info("Ladear On Pwm :%d%% ",temp);
+                        break;
+                    case 0x08:
+                        temp = little_endian_read_32(&data[data_position],0);  
+                        log_info("Ladear Check Time:%ds ",temp);
+                        break;
+                    case 0x09:
+                        temp = little_endian_read_32(&data[data_position],0);  
+                        log_info("Led Default Pwm:%d%% ",temp);
+                        break;
+                    case 0x0A:
+                        temp = little_endian_read_32(&data[data_position],0);  
+                        log_info("Pwm Mode:%d%% ",temp);
+                        break;
+                    case 0x0B:
+                         temp = little_endian_read_32(&data[data_position],0);  
+                        log_info("Curve Data:%d%% ",temp);
+                        break;
+                    case 0x0C:
+                         temp = little_endian_read_32(&data[data_position],0);  
+                        log_info("Lock Mode:%d%% ",temp);
+                        break;
+                    case 0x0D:
+                         temp = little_endian_read_32(&data[data_position],0);  
+                        log_info("Roter UserCode:%d%% ",temp);
+                        break;
+                    case 0x0E:
+                         temp = little_endian_read_32(&data[data_position],0);  
+                        log_info("Data:%d%% ",temp);
+                        break;
 
+                    default:    
+                        break;
+                }
+                data_i = data_i+next_len;
+            } 
+            break;
+        default:
+            break;
+    }
     free(data);
 }
 
@@ -711,7 +844,7 @@ static int multi_client_event_packet_handler(int event, u8 *packet, u16 size, u8
         break;
 
 
-        case GATT_COMM_EVENT_MTU_EXCHANGE_COMPLETE:
+        case GATT_COMM_EVENT_MTU_EXCHANGE_COMPLETE: // MTU交换完毕
             log_info("con_handle= %02x, ATT MTU = %u\n", little_endian_read_16(packet, 0), little_endian_read_16(packet, 2));
             break;
 
@@ -724,7 +857,7 @@ static int multi_client_event_packet_handler(int event, u8 *packet, u16 size, u8
         #endif
             break;
 
-        case GATT_COMM_EVENT_CLIENT_STATE:
+        case GATT_COMM_EVENT_CLIENT_STATE:      // client 状态变化
             log_info("client_state: handle=%02x,%02x\n", little_endian_read_16(packet, 1), packet[0]);
             break;
 
@@ -757,8 +890,8 @@ static int multi_client_event_packet_handler(int event, u8 *packet, u16 size, u8
 
 }
 
-//scan参数设置
-static void multi_scan_conn_config_set(struct ctl_pair_info_t *pair_info)
+
+static void multi_scan_conn_config_set(struct ctl_pair_info_t *pair_info)//scan参数设置
 {
     multi_client_scan_cfg.scan_auto_do = 1;
     multi_client_scan_cfg.creat_auto_do = 1;
@@ -767,12 +900,15 @@ static void multi_scan_conn_config_set(struct ctl_pair_info_t *pair_info)
     multi_client_scan_cfg.scan_interval = SET_SCAN_INTERVAL;
     multi_client_scan_cfg.scan_window = SET_SCAN_WINDOW;
 
-    if (pair_info) {
+    if (pair_info)
+    {
         log_info("pair_to_creat:%d,%d,%d\n", pair_info->conn_interval, pair_info->conn_latency, pair_info->conn_timeout);
         multi_client_scan_cfg.creat_conn_interval = pair_info->conn_interval;
         multi_client_scan_cfg.creat_conn_latency = pair_info->conn_latency;
         multi_client_scan_cfg.creat_conn_super_timeout = pair_info->conn_timeout;
-    } else {
+    } 
+    else 
+    {
         multi_client_scan_cfg.creat_conn_interval = SET_CONN_INTERVAL;
         multi_client_scan_cfg.creat_conn_latency = SET_CONN_LATENCY;
         multi_client_scan_cfg.creat_conn_super_timeout = SET_CONN_TIMEOUT;
@@ -817,7 +953,10 @@ void multi_client_init(void)
     multi_scan_conn_config_set(NULL);
 
     #if MULTI_TEST_WRITE_SEND_DATA  //测试写数据
-        sys_timer_add(0, Mppt_Set_Para_Send, 1500);
+   sys_timer_add(0, Mppt_Set_Para_Send, 1000);
+   //sys_timer_add(0, mem_stats, 100);
+    //sys_timer_add(0, Get_Mppt_Report, 2200);
+    //sys_timer_add(0, Get_Mppt_Report1, 2300);
     #endif
 }
 
