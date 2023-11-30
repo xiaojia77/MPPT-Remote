@@ -187,19 +187,19 @@ static void multi_app_start()
         for(i=0;i<sizeof(RoterData.Ble_Adv_rp)/sizeof(RoterData.Ble_Adv_rp[0]);i++)
             RoterData.Ble_Adv_rp[i].rssi = -99;
 
-        RoterData.Bat_Capcity = 7.5;
-        RoterData.Charge_Current_Max = 20;
-        RoterData.Charge_Power_Max = 75;
-        RoterData.Trickle_Current = 0.5;
-        RoterData.DischarCurve_Moed = 0;
+        RoterData.Mppt_SetPara.Bat_Capcity = 7.5;
+        RoterData.Mppt_SetPara.Charge_Current_Max = 20;
+        RoterData.Mppt_SetPara.Charge_Power_Max = 75;
+        RoterData.Mppt_SetPara.Trickle_Current = 0.5;
+        RoterData.Mppt_SetPara.DischarCurve_Moed = 0;
 
-        RoterData.Current_Gear = 20;
-        RoterData.Ledar_Dly_Time = 15;
-        RoterData.Ledar_Pwm = 10;
-        RoterData.Led_Set_Pwm = 100;
-        RoterData.Low_voltage_Protect = 2.65;
+        RoterData.Mppt_SetPara.Current_Gear = 20;
+        RoterData.Mppt_SetPara.Ledar_Dly_Time = 15;
+        RoterData.Mppt_SetPara.Ledar_Pwm = 10;
+        RoterData.Mppt_SetPara.Led_Set_Pwm = 100;
+        RoterData.Mppt_SetPara.Low_voltage_Protect = 2.65;
         Mppt_Main_Menu();
-       // Lcd_ShowPicture(0,0,240,240,gImage_image);
+        Lcd_ShowPicture(0,0,240,240,gImage_image);
          sys_timer_add(NULL,Ble_Timeout_Check,2400);
 
     #endif
