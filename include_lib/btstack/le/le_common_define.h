@@ -122,7 +122,8 @@ typedef enum {
 //按(长度 + 类型 + 内容)这样的格,组合填入广播包数据
 static inline u8 make_eir_packet_data(u8 *buf, u16 offset, u8 data_type, u8 *data, u8 data_len)
 {
-    if (ADV_RSP_PACKET_MAX - offset < data_len + 2) {
+    if (ADV_RSP_PACKET_MAX - offset < data_len + 2) 
+    {
         return offset + data_len + 2;
     }
 

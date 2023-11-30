@@ -41,36 +41,7 @@
 #if CONFIG_APP_MULTI
 
 static u8 is_app_multi_active = 0;
-//---------------------------------------------------------------------
-// static u8 ledc_buf[3 * 1] __attribute__((aligned(4)));
-// LEDC_PLATFORM_DATA_BEGIN(ledc_data)
-//     .index = 0,
-//     .port = IO_PORTA_04,
-//     .idle_level = 0,
-//     .out_inv = 0,
-//     .bit_inv = 0,
-//     .t_unit = t_2us,
-//     .t1h_cnt = 250,
-//     .t1l_cnt = 50,
-//     .t0h_cnt = 100,
-//     .t0l_cnt = 50,
-//     .t_rest_cnt = 20,
-//     .cbfun = NULL,
-// LEDC_PLATFORM_DATA_END()
-// void test_handle()
-// {
-//     ledc_send_rgbbuf(0, ledc_buf, 1, 0);
-//    
-// }
-//
-    // printf("*************  ledc test  **************\n");
-    // ledc_init(&ledc_data);
-    // ledc_rgb_to_buf(0xf0,0,0X0F,ledc_buf,0);
 
-    
-    // sys_timer_add(NULL,test_handle, 1500);
-
-//----------------------------------------------------------------------------
 void multi_set_soft_poweroff(void)
 {
     log_info("set_soft_poweroff\n");
@@ -160,22 +131,22 @@ static void multi_app_start()
 
     clk_set("sys", BT_NORMAL_HZ);
     
-   // Power_Lock();
-
     #if (TCFG_USER_EDR_ENABLE || TCFG_USER_BLE_ENABLE)
         u32 sys_clk =  clk_get("sys");
         bt_pll_para(TCFG_CLOCK_OSC_HZ, sys_clk, 0, 0);
 
     #if TCFG_USER_EDR_ENABLE
-        btstack_edr_start_before_init(NULL, 0);
+         btstack_edr_start_before_init(NULL, 0);
     #endif
 
     #if TCFG_USER_BLE_ENABLE
         btstack_ble_start_before_init(NULL, 0);
+    
     #endif
-        btstack_init();
+         btstack_init();
         
-        
+       
+
         spi_open(SPI1);
         ST7789Lcd_Init();
         Beep_init();
@@ -199,8 +170,9 @@ static void multi_app_start()
         RoterData.Mppt_SetPara.Led_Set_Pwm = 100;
         RoterData.Mppt_SetPara.Low_voltage_Protect = 2.65;
         Mppt_Main_Menu();
-        Lcd_ShowPicture(0,0,240,240,gImage_image);
-         sys_timer_add(NULL,Ble_Timeout_Check,2400);
+        
+        // Lcd_ShowPicture(0,0,240,240,gImage_image);
+        // sys_timer_add(NULL,Ble_Timeout_Check,2400);
 
     #endif
     /* 按键消息使能 */

@@ -163,7 +163,7 @@ static const target_uuid_t  jl_multi_search_uuid_table[] =
 };
 
 //配置多个扫描匹配设备
-static const u8 cetl_test_remoter_name1[] ="SQ20P75SA-B";//
+static const u8 cetl_test_remoter_name1[] ="SQ20P75SA-";//
 static const client_match_cfg_t multi_match_device_table[] = 
 {
     {
@@ -274,7 +274,7 @@ void Get_Mppt_Report(void) // 获取MPPT 信息的指令
     }
 }
 
-static void Mppt_Set_Para_Send(void) // 发MPPT的设置参数
+void Mppt_Set_Para_Send(void) // 发MPPT的设置参数
 {
     uint32_t i, ret = 0;
 
@@ -381,8 +381,8 @@ void Mppt_Data_Decode(u8 *packet,u16 size) // MPPT 信息解码
             if(data[0] == 0x02) log_info("invail data len\r\n");
             if(data[0] == 0x03) log_info("head error\r\n");
             if(data[0] == 0x04) log_info("invail Curve Data\r\n");
-           // if(cur_conn_info.conn_handle)ble_comm_disconnect(cur_conn_info.conn_handle);
-            ble_gatt_client_disconnect_all();
+            if(cur_conn_info.conn_handle)ble_comm_disconnect(cur_conn_info.conn_handle);
+           // ble_gatt_client_disconnect_all();
             break;
         case 0XBB: // 信息参数返回
             log_info("find data head 0xBB\r\n");
@@ -954,9 +954,6 @@ void multi_client_init(void)
 
     #if MULTI_TEST_WRITE_SEND_DATA  //测试写数据
    sys_timer_add(0, Mppt_Set_Para_Send, 1000);
-   //sys_timer_add(0, mem_stats, 100);
-    //sys_timer_add(0, Get_Mppt_Report, 2200);
-    //sys_timer_add(0, Get_Mppt_Report1, 2300);
     #endif
 }
 

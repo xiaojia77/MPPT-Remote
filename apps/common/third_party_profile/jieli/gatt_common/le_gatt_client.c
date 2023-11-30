@@ -835,24 +835,26 @@ void Ble_Connect_Recode(const uint8_t *address,uint8_t Rssi)
 {
     uint8_t location;
     location = Ble_Find_Mac_RepAddr(RoterData.Ble_Adv_rp,sizeof(RoterData.Ble_Adv_rp)/sizeof(RoterData.Ble_Adv_rp[0]),address) ;
-    //log_info("location:%d", location);
-    if(location !=255)
+    
+    if(location != 0xFF) 
     {
+       
         memcpy(RoterData.Ble_Adv_rp[location].mac,address, 6);
         RoterData.Ble_Adv_rp[location].rssi = Rssi;  
         RoterData.Ble_Adv_rp[location].Timeout = 0;
     }
     else
     {
-    location =  Ble_Check_NonAddr(RoterData.Ble_Adv_rp,sizeof(RoterData.Ble_Adv_rp)/sizeof(RoterData.Ble_Adv_rp[0]));
-    
-    if(location !=255)
-    {
+        location =  Ble_Check_NonAddr(RoterData.Ble_Adv_rp,sizeof(RoterData.Ble_Adv_rp)/sizeof(RoterData.Ble_Adv_rp[0]));
+        if(location != 0XFF)
+        {
+            log_info("Find New Pair Mac,Recode location:%d", location);
             memcpy(RoterData.Ble_Adv_rp[location].mac,address, 6);
             RoterData.Ble_Adv_rp[location].rssi = Rssi;  
             RoterData.Ble_Adv_rp[location].useflag = 1;
+            RoterData.Ble_Adv_rp[location].IsconnectFlag = 0;
             RoterData.Ble_Adv_Rp_Count++;
-    }
+        }
     }
 
     int len = sizeof(RoterData.Ble_Adv_rp)/sizeof(RoterData.Ble_Adv_rp[0]);
@@ -868,11 +870,13 @@ static bool __resolve_adv_report(adv_report_t *report_pt, u16 len) //检测是�
     u32 tmp32;
     client_match_cfg_t *match_cfg = NULL;
 
-         if(report_pt->rssi<-99)return false;
+         //if(report_pt->rssi<-99)return false;
         // 指定地址连接
+
+        // 地址对应的上直接发起连接
         if (__check_device_is_match(report_pt->event_type, CLI_CREAT_BY_ADDRESS, report_pt->address, 6, &match_cfg))
-         {
-            find_remoter = 1; //匹配成功
+        {
+            find_remoter = 1; 
             log_info("catch mac ok\n");
             goto just_creat;
         }
@@ -881,99 +885,103 @@ static bool __resolve_adv_report(adv_report_t *report_pt, u16 len) //检测是�
         adv_data_pt = report_pt->data;
         for (i = 0; i < report_pt->length;)
         {
-            if (*adv_data_pt == 0)
-            {
-                /* log_info("analyze end\n"); */
-                break;
-            }
-
-        length = *adv_data_pt++;
-
-        if (length >= report_pt->length || (length + i) >= report_pt->length)
-         {
-            /*过滤非标准包格式*/
-            printf("!!!error_adv_packet:");
-            put_buf(report_pt->data, report_pt->length);
-            break;
-        }
-
-        ad_type = *adv_data_pt++;
-        i += (length + 1);
-
-        switch (ad_type) 
-        {
-        case HCI_EIR_DATATYPE_FLAGS:
-            /* log_info("flags:%02x\n",adv_data_pt[0]); */
-            break;
-
-        case HCI_EIR_DATATYPE_MORE_16BIT_SERVICE_UUIDS:
-        case HCI_EIR_DATATYPE_COMPLETE_16BIT_SERVICE_UUIDS:
-        case HCI_EIR_DATATYPE_MORE_32BIT_SERVICE_UUIDS:
-        case HCI_EIR_DATATYPE_COMPLETE_32BIT_SERVICE_UUIDS:
-        case HCI_EIR_DATATYPE_MORE_128BIT_SERVICE_UUIDS:
-        case HCI_EIR_DATATYPE_COMPLETE_128BIT_SERVICE_UUIDS:
-            /* log_info("service uuid:"); */
-            /* log_info_hexdump(adv_data_pt, length - 1); */
-            break;
-
-        case HCI_EIR_DATATYPE_COMPLETE_LOCAL_NAME: //获取名字信息
-        case HCI_EIR_DATATYPE_SHORTENED_LOCAL_NAME:
-            tmp32 = adv_data_pt[length - 1];
-            adv_data_pt[length - 1] = 0;
-           // log_info("remoter_name:%s ,rssi:%d\n", adv_data_pt, report_pt->rssi);
-           // log_info_hexdump(report_pt->address, 6);
-            
-            // memcpy(RoterData.Ble_Adv_rp[RoterData.Ble_Adv_Rp_Count].mac,report_pt->address, 6);
-            // RoterData.Ble_Adv_rp[RoterData.Ble_Adv_Rp_Count].rssi = report_pt->rssi;  
-            // if(++RoterData.Ble_Adv_Rp_Count  >13) RoterData.Ble_Adv_Rp_Count =  0;
-
-            adv_data_pt[length - 1] = tmp32;
-
-            //---------------------------------
-#if SUPPORT_TEST_BOX_BLE_MASTER_TEST_EN
-#define TEST_BOX_BLE_NAME		"JLBT_TESTBOX"
-#define TEST_BOX_BLE_NAME_LEN	0xc
-            if (0 == memcmp(adv_data_pt, TEST_BOX_BLE_NAME, TEST_BOX_BLE_NAME_LEN)) {
-                log_info("catch TEST_BOX ok\n");
-                find_remoter = 2;
-                break;
-            }
-#endif
-            //--------------------------------
-            Ble_Connect_Recode(report_pt->address,report_pt->rssi);
-            //名字匹配
-            if (__check_device_is_match(report_pt->event_type, CLI_CREAT_BY_NAME, adv_data_pt, length - 1, &match_cfg)) 
-            {       
-                //if(RoterData.Ble_Adv_rp[location].IsconnectFlag == 0)
+                if (*adv_data_pt == 0)
                 {
-                   // RoterData.Ble_Adv_rp[location].IsconnectFlag = 1;
-                    find_remoter = 1;
+                    /* log_info("analyze end\n"); */
+                    break;
                 }
-                log_info("catch name ok\n");
+
+            length = *adv_data_pt++;
+
+            if (length >= report_pt->length || (length + i) >= report_pt->length)
+            {
+                /*过滤非标准包格式*/
+                printf("!!!error_adv_packet:");
+                put_buf(report_pt->data, report_pt->length);
+                break;
             }
-            break;
-            //TAG名字匹配
-        case HCI_EIR_DATATYPE_MANUFACTURER_SPECIFIC_DATA:
-            if (__check_device_is_match(report_pt->event_type, CLI_CREAT_BY_TAG, adv_data_pt, length - 1, &match_cfg)) {
-                log_info("get_tag_string!\n");
-                find_remoter = 1;
-            }
-            break;
 
-        case HCI_EIR_DATATYPE_APPEARANCE_DATA:
-            /* log_info("get_class_type:%04x\n",little_endian_read_16(adv_data_pt,0)); */
-            break;
+            ad_type = *adv_data_pt++;
+            i += (length + 1);
 
-        default:
-            /* log_info("unknow ad_type:"); */
-            break;
+            switch (ad_type) 
+            {
+                case HCI_EIR_DATATYPE_FLAGS:
+                    /* log_info("flags:%02x\n",adv_data_pt[0]); */
+                    break;
+
+                case HCI_EIR_DATATYPE_MORE_16BIT_SERVICE_UUIDS:
+                case HCI_EIR_DATATYPE_COMPLETE_16BIT_SERVICE_UUIDS:
+                case HCI_EIR_DATATYPE_MORE_32BIT_SERVICE_UUIDS:
+                case HCI_EIR_DATATYPE_COMPLETE_32BIT_SERVICE_UUIDS:
+                case HCI_EIR_DATATYPE_MORE_128BIT_SERVICE_UUIDS:
+                case HCI_EIR_DATATYPE_COMPLETE_128BIT_SERVICE_UUIDS:
+                    /* log_info("service uuid:"); */
+                    /* log_info_hexdump(adv_data_pt, length - 1); */
+                    break;
+
+                case 0x20:
+                    break;
+
+                case HCI_EIR_DATATYPE_COMPLETE_LOCAL_NAME: //获取名字信息
+                case HCI_EIR_DATATYPE_SHORTENED_LOCAL_NAME:
+                    tmp32 = adv_data_pt[length - 1];
+                    adv_data_pt[length - 1] = 0;
+                // log_info("remoter_name:%s ,rssi:%d\n", adv_data_pt, report_pt->rssi);
+                // log_info_hexdump(report_pt->address, 6);
+                    
+                    // memcpy(RoterData.Ble_Adv_rp[RoterData.Ble_Adv_Rp_Count].mac,report_pt->address, 6);
+                    // RoterData.Ble_Adv_rp[RoterData.Ble_Adv_Rp_Count].rssi = report_pt->rssi;  
+                    // if(++RoterData.Ble_Adv_Rp_Count  >13) RoterData.Ble_Adv_Rp_Count =  0;
+
+                    adv_data_pt[length - 1] = tmp32;
+
+                    //---------------------------------
+        #if SUPPORT_TEST_BOX_BLE_MASTER_TEST_EN
+        #define TEST_BOX_BLE_NAME		"JLBT_TESTBOX"
+        #define TEST_BOX_BLE_NAME_LEN	0xc
+                    if (0 == memcmp(adv_data_pt, TEST_BOX_BLE_NAME, TEST_BOX_BLE_NAME_LEN)) {
+                        log_info("catch TEST_BOX ok\n");
+                        find_remoter = 2;
+                        break;
+                    }
+        #endif
+                    //--------------------------------
+                    Ble_Connect_Recode(report_pt->address,report_pt->rssi);
+                    //名字匹配
+                    if (__check_device_is_match(report_pt->event_type, CLI_CREAT_BY_NAME, adv_data_pt, length - 1, &match_cfg)) 
+                    {       
+                       // if(RoterData.Ble_Adv_rp[location].IsconnectFlag == 0)
+                        {   
+                          //  RoterData.Ble_Adv_rp[location].IsconnectFlag = 1;
+                            find_remoter = 1;
+                        }
+                        log_info("catch name ok\n");
+                    }
+                    break;
+                    //TAG名字匹配
+                case HCI_EIR_DATATYPE_MANUFACTURER_SPECIFIC_DATA:
+                    if (__check_device_is_match(report_pt->event_type, CLI_CREAT_BY_TAG, adv_data_pt, length - 1, &match_cfg)) {
+                        log_info("get_tag_string!\n");
+                        find_remoter = 1;
+                    }
+                    break;
+
+                case HCI_EIR_DATATYPE_APPEARANCE_DATA:
+                    /* log_info("get_class_type:%04x\n",little_endian_read_16(adv_data_pt,0)); */
+                    break;
+
+                default:
+                    /* log_info("unknow ad_type:"); */
+                    break;
+                }
+
+                if (find_remoter)
+                {
+                    log_info_hexdump(adv_data_pt, length - 1);
+                }
+                adv_data_pt += (length - 1);
         }
-
-        if (find_remoter) {
-            log_info_hexdump(adv_data_pt, length - 1);
-        }
-        adv_data_pt += (length - 1);
-    }
 
 just_creat:
     if (find_remoter)

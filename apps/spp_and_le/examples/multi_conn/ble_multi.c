@@ -133,7 +133,9 @@ void bt_ble_init(void)
     multi_client_init();
 #endif
 
-    ble_module_enable(1);
+    ble_gatt_server_module_enable(1);
+    ble_gatt_client_module_enable(1);
+   // ble_module_enable(1);
 }
 
 //模块退出

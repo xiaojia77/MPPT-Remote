@@ -54,8 +54,8 @@ typedef struct
 typedef struct 
 {
     float Bat_Capcity;  //电池容量
-    uint8_t Charge_Power_Max;
-    uint8_t Charge_Current_Max;
+    float Charge_Power_Max;
+    float Charge_Current_Max;
     float Trickle_Current; //涓流电流
 
     float Low_voltage_Protect; //低压保护电压
@@ -63,6 +63,8 @@ typedef struct
     uint8_t Ledar_Dly_Time; // 0 - 20 电压挡位
     uint8_t Ledar_Pwm; // 0 - 20 电压挡位
     uint8_t Led_Set_Pwm;
+    uint8_t Solar_Mode;
+
     uint8_t DischarCurve_Moed; // 0 pwm模式 电流 AI
 
     float Curv_Data[8][2]; 
@@ -230,11 +232,11 @@ static Menu_Tab_t const Menu_Tab[]=
 
     {BL_CON_SELECT_MENU,MAIN_MENU,8,Mppt_Ble_con_Select_Menu_Operation,Mppt_Ble_con_Select_Menu},
         {BL_CON_MENU,MAIN_MENU,NULL,Mppt_Ble_con_Menu_Operation,Mppt_Ble_con_Menu},
-            {BL_CON_SET_MENU,MAIN_MENU,5,Mppt_Ble_Set_Operation,Mppt_Ble_Set_Menu},
+            {BL_CON_SET_MENU,MAIN_MENU,6,Mppt_Ble_Set_Operation,Mppt_Ble_Set_Menu},
                 {MPPT_INFO,BL_CON_SET_MENU,2,Mppt_Main_Menu_Operation,Mppt_Info_Menu},
-                {CHAEGE_PARA_MODIFY,BL_CON_SET_MENU,2,Mppt_ChargePara_Modify_Menu_Operation,Mppt_ChargePara_Modify_Menu},
-                {DISCHAR_PARA_MODIFY,BL_CON_SET_MENU,2,Mppt_DischarPara_Modify_Menu_Operation,Mppt_DischarPara_Modify_Menu},
-                {CURVE_PARAT_MENU,BL_CON_SET_MENU,2,Mppt_CurvePara_Modify_Menu_Operation,Mppt_CurvePara_Modify_Menu},
+                {CHAEGE_PARA_MODIFY,BL_CON_SET_MENU,4,Mppt_ChargePara_Modify_Menu_Operation,Mppt_ChargePara_Modify_Menu},
+                {DISCHAR_PARA_MODIFY,BL_CON_SET_MENU,6,Mppt_DischarPara_Modify_Menu_Operation,Mppt_DischarPara_Modify_Menu},
+                {CURVE_PARAT_MENU,BL_CON_SET_MENU,16,Mppt_CurvePara_Modify_Menu_Operation,Mppt_CurvePara_Modify_Menu},
                 {ENTRY_MODIFY,BL_CON_SET_MENU,2,Mppt_DischarPara_Modify_Menu_Operation,Mppt_Comfir_Modify_Menu},
         
 

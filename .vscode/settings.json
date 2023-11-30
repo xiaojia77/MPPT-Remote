@@ -62,7 +62,10 @@
         "adkey.h": "c",
         "event.h": "c",
         "iokey.h": "c",
-        "norflash.h": "c"
+        "norflash.h": "c",
+        "config_transport.h": "c",
+        "app_chargestore.h": "c",
+        "math.h": "c"
     },
     "C_Cpp.dimInactiveRegions": true
 }

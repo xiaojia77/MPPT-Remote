@@ -339,7 +339,7 @@
 //                                  低功耗配置                                     //
 //*********************************************************************************//
 //#define TCFG_LOWPOWER_POWER_SEL				PWR_DCDC15
-#define TCFG_LOWPOWER_POWER_SEL				PWR_LDO15                    //电源模式设置，可选DCDC和LDO
+#define TCFG_LOWPOWER_POWER_SEL				PWR_LDO33                    //电源模式设置，可选DCDC和LDO
 #define TCFG_LOWPOWER_BTOSC_DISABLE			0                            //低功耗模式下BTOSC是否保持
 #define TCFG_LOWPOWER_LOWPOWER_SEL			SLEEP_EN                     //SNIFF状态下芯片是否进入powerdown
 /*强VDDIO等级配置,可选：
@@ -379,7 +379,7 @@
 //*********************************************************************************//
 #define TCFG_USER_TWS_ENABLE                      0   //tws功能使能
 #define TCFG_USER_BLE_ENABLE                      1   //BLE功能使能,---使能后,请配置TCFG_BLE_DEMO_SELECT选择DEMO例子
-#define TCFG_USER_EDR_ENABLE                      1   //EDR功能使能
+#define TCFG_USER_EDR_ENABLE                      0 //1   //EDR功能使能
 
 #if TCFG_USER_EDR_ENABLE
 #define USER_SUPPORT_PROFILE_SPP    1
