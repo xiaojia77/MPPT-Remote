@@ -14,5 +14,7 @@ void multi_client_exit(void);
 int multi_client_clear_pair(void);
 int multi_server_clear_pair(void);
 
-
+void Mppt_Set_Para_Send(void);
+void Get_Mppt_Report(void);
+void Get_Mppt_Report1(void);
 #endif

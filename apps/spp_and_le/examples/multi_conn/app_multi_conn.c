@@ -169,6 +169,33 @@ static void multi_app_start()
         RoterData.Mppt_SetPara.Ledar_Pwm = 10;
         RoterData.Mppt_SetPara.Led_Set_Pwm = 100;
         RoterData.Mppt_SetPara.Low_voltage_Protect = 2.65;
+
+        RoterData.Mppt_SetPara.Lock_Mode = 0;
+
+        RoterData.Mppt_SetPara.Curv_Data[0][0] = 0.5;
+        RoterData.Mppt_SetPara.Curv_Data[0][1] = 90;
+
+        RoterData.Mppt_SetPara.Curv_Data[1][0] = 1;
+        RoterData.Mppt_SetPara.Curv_Data[1][1] = 80;
+        
+        RoterData.Mppt_SetPara.Curv_Data[2][0] = 2;
+        RoterData.Mppt_SetPara.Curv_Data[2][1] = 70;
+
+        RoterData.Mppt_SetPara.Curv_Data[3][0] = 3;
+        RoterData.Mppt_SetPara.Curv_Data[3][1] = 60;
+        
+        RoterData.Mppt_SetPara.Curv_Data[4][0] = 4;
+        RoterData.Mppt_SetPara.Curv_Data[4][1] = 50;
+        
+        RoterData.Mppt_SetPara.Curv_Data[5][0] = 5;
+        RoterData.Mppt_SetPara.Curv_Data[5][1] = 40;
+        
+        RoterData.Mppt_SetPara.Curv_Data[6][0] = 6;
+        RoterData.Mppt_SetPara.Curv_Data[6][1] = 30;
+        
+        RoterData.Mppt_SetPara.Curv_Data[7][0] = 8.5;
+        RoterData.Mppt_SetPara.Curv_Data[7][1] = 15;
+
         Mppt_Main_Menu();
         
         // Lcd_ShowPicture(0,0,240,240,gImage_image);

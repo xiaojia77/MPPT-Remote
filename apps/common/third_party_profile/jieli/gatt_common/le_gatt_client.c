@@ -783,7 +783,8 @@ static bool __check_device_is_match(u8 event_type, u8 info_type, u8 *data, int s
         return false;
     }
 
-    for (i = 0; i < __this->gatt_search_config->match_devices_count; i++) {
+    for (i = 0; i < __this->gatt_search_config->match_devices_count; i++)
+    {
         cfg = &__this->gatt_search_config->match_devices[i];
         if (cfg == NULL) 
         {
@@ -825,20 +826,19 @@ static bool __check_device_is_match(u8 event_type, u8 info_type, u8 *data, int s
  *  \note
  */
 /*************************************************************************************************/
-int Rssi_Cmpsort(const void*p1,const void*p2)
-{
-  return(*(Ble_Adv_Rp_t*)p1).rssi<(*(Ble_Adv_Rp_t*)p2).rssi?1:-1;
- // return  ( (-1*(*(Ble_Adv_Rp_t*)p1).rssi) > (-1*(*(Ble_Adv_Rp_t*)p2).rssi) ) ?1:-1;
-}
+// int Rssi_Cmpsort(const void*p1,const void*p2)
+// {
+//   return(*(Ble_Adv_Rp_t*)p1).rssi<(*(Ble_Adv_Rp_t*)p2).rssi?1:-1;
+//  // return  ( (-1*(*(Ble_Adv_Rp_t*)p1).rssi) > (-1*(*(Ble_Adv_Rp_t*)p2).rssi) ) ?1:-1;
+// }
 
-void Ble_Connect_Recode(const uint8_t *address,uint8_t Rssi)
+uint8_t Ble_Connect_Recode(const uint8_t *address,uint8_t Rssi)
 {
     uint8_t location;
     location = Ble_Find_Mac_RepAddr(RoterData.Ble_Adv_rp,sizeof(RoterData.Ble_Adv_rp)/sizeof(RoterData.Ble_Adv_rp[0]),address) ;
     
     if(location != 0xFF) 
     {
-       
         memcpy(RoterData.Ble_Adv_rp[location].mac,address, 6);
         RoterData.Ble_Adv_rp[location].rssi = Rssi;  
         RoterData.Ble_Adv_rp[location].Timeout = 0;
@@ -852,14 +852,19 @@ void Ble_Connect_Recode(const uint8_t *address,uint8_t Rssi)
             memcpy(RoterData.Ble_Adv_rp[location].mac,address, 6);
             RoterData.Ble_Adv_rp[location].rssi = Rssi;  
             RoterData.Ble_Adv_rp[location].useflag = 1;
-            RoterData.Ble_Adv_rp[location].IsconnectFlag = 0;
+            RoterData.Ble_Adv_rp[location].IsModifyFlag = 0;
             RoterData.Ble_Adv_Rp_Count++;
+        }
+        else
+        {
+            log_info("Recode location full");
         }
     }
 
-    int len = sizeof(RoterData.Ble_Adv_rp)/sizeof(RoterData.Ble_Adv_rp[0]);
-    int size = sizeof(RoterData.Ble_Adv_rp[0]);
-    qsort(&RoterData.Ble_Adv_rp,len,size,Rssi_Cmpsort);
+  //  int len = sizeof(RoterData.Ble_Adv_rp)/sizeof(RoterData.Ble_Adv_rp[0]);
+  //  int size = sizeof(RoterData.Ble_Adv_rp[0]);
+  //  qsort(&RoterData.Ble_Adv_rp,len,size,Rssi_Cmpsort);
+    return location;
 }
 
 static bool __resolve_adv_report(adv_report_t *report_pt, u16 len) //检测是否有匹配的设备, true or false
@@ -874,12 +879,24 @@ static bool __resolve_adv_report(adv_report_t *report_pt, u16 len) //检测是�
         // 指定地址连接
 
         // 地址对应的上直接发起连接
-        if (__check_device_is_match(report_pt->event_type, CLI_CREAT_BY_ADDRESS, report_pt->address, 6, &match_cfg))
+       // if (__check_device_is_match(report_pt->event_type, CLI_CREAT_BY_ADDRESS, report_pt->address, 6, &match_cfg))
+        int ret =  memcmp(RoterData.Ble_SetConnect_Mac,report_pt->address, 6);
+    
+        // log_info("ret %d\n",ret);
+        // put_buf(RoterData.Ble_SetConnect_Mac,6);
+        // put_buf(report_pt->address,6);    
+        if (ret == 0 ) 
         {
             find_remoter = 1; 
             log_info("catch mac ok\n");
             goto just_creat;
         }
+        // else 
+        // {
+        //     log_info("catch mac fail %d\n",tmp32);
+        //     put_buf(RoterData.Ble_SetConnect_Mac,6);
+        //     put_buf(report_pt->address,6);    
+        // }
 
         //广播数据解析
         adv_data_pt = report_pt->data;
@@ -921,19 +938,33 @@ static bool __resolve_adv_report(adv_report_t *report_pt, u16 len) //检测是�
                     break;
 
                 case 0x20:
+                    if(*adv_data_pt == 1)
+                    {
+                        find_remoter = 0;
+                        log_info("MPPT device is lock %d \n",*adv_data_pt);
+                    }
+                    else
+                    {
+                        log_info("MPPT device is unlock %d\n",*adv_data_pt);
+                    }
+                    break;
+                case 0x21:
+                    tmp32 = little_endian_read_16(adv_data_pt,0);
+                    if( tmp32 != RoterData.Usercode)
+                    {
+                        find_remoter = 0;
+                        log_info("Usercode %d pair fail %d \n",RoterData.Usercode,tmp32);
+                    }
+                    else
+                    {
+                         log_info("Usercode pair ok\n");
+                    }
                     break;
 
                 case HCI_EIR_DATATYPE_COMPLETE_LOCAL_NAME: //获取名字信息
                 case HCI_EIR_DATATYPE_SHORTENED_LOCAL_NAME:
                     tmp32 = adv_data_pt[length - 1];
-                    adv_data_pt[length - 1] = 0;
-                // log_info("remoter_name:%s ,rssi:%d\n", adv_data_pt, report_pt->rssi);
-                // log_info_hexdump(report_pt->address, 6);
-                    
-                    // memcpy(RoterData.Ble_Adv_rp[RoterData.Ble_Adv_Rp_Count].mac,report_pt->address, 6);
-                    // RoterData.Ble_Adv_rp[RoterData.Ble_Adv_Rp_Count].rssi = report_pt->rssi;  
-                    // if(++RoterData.Ble_Adv_Rp_Count  >13) RoterData.Ble_Adv_Rp_Count =  0;
-
+                    adv_data_pt[length - 1] = 0;        
                     adv_data_pt[length - 1] = tmp32;
 
                     //---------------------------------
@@ -947,16 +978,24 @@ static bool __resolve_adv_report(adv_report_t *report_pt, u16 len) //检测是�
                     }
         #endif
                     //--------------------------------
-                    Ble_Connect_Recode(report_pt->address,report_pt->rssi);
+                   
                     //名字匹配
                     if (__check_device_is_match(report_pt->event_type, CLI_CREAT_BY_NAME, adv_data_pt, length - 1, &match_cfg)) 
                     {       
-                       // if(RoterData.Ble_Adv_rp[location].IsconnectFlag == 0)
+                        log_info("remoter_name:%s ,rssi:%d\n", adv_data_pt, report_pt->rssi);
+                        log_info_hexdump(report_pt->address, 6);
+                        uint8_t location = Ble_Connect_Recode(report_pt->address,report_pt->rssi);
+                        if(RoterData.Ble_Adv_rp[location].IsModifyFlag == 0)
                         {   
-                          //  RoterData.Ble_Adv_rp[location].IsconnectFlag = 1;
-                            find_remoter = 1;
+                           // RoterData.Ble_Adv_rp[location].IsModifyFlag = 1;
+                            if(RoterData.ConnenctOnFlag)find_remoter = 1;
+                            log_info("MPPT device is no ModifyFlag\n");
+                            log_info("catch name ok\n");
                         }
-                        log_info("catch name ok\n");
+                        else
+                        {
+                            log_info("MPPT device is IsModifyFlag\n");
+                        }
                     }
                     break;
                     //TAG名字匹配
@@ -1033,8 +1072,8 @@ int ble_gatt_client_create_connection_request(u8 *address, u8 addr_type, int mod
 {
     u8 cur_state =  ble_gatt_client_get_work_state();
 
-    log_info("===========create_connection_request\n");
-    log_info("***remote type %d,addr:", addr_type);
+    log_info("===========create_connection_request cur_state%d\n",cur_state);
+    log_info("***remote type %d,addr: cur_state", addr_type);
     put_buf(address, 6);
 
     switch (cur_state) 
@@ -1045,6 +1084,10 @@ int ble_gatt_client_create_connection_request(u8 *address, u8 addr_type, int mod
         case BLE_ST_DISCONN:
         case BLE_ST_CONNECT_FAIL:
         case BLE_ST_SEND_CREATE_CONN_CANNEL:
+            break;
+        
+        case BLE_ST_SEND_DISCONN:
+            return GATT_CMD_PARAM_ERROR;
             break;
 
             case BLE_ST_CREATE_CONN:

@@ -163,9 +163,16 @@ static const target_uuid_t  jl_multi_search_uuid_table[] =
 };
 
 //配置多个扫描匹配设备
-static const u8 cetl_test_remoter_name1[] ="SQ20P75SA-";//
+static const u8 cetl_test_remoter_name1[] ="SQ20P75SA-B";//
 static const client_match_cfg_t multi_match_device_table[] = 
 {
+    {
+        .create_conn_mode = BIT(CLI_CREAT_BY_NAME),
+        .compare_data_len = sizeof(cetl_test_remoter_name1) - 1, //去结束符
+        .compare_data = cetl_test_remoter_name1,
+        .filter_pdu_bitmap = 0,
+    },
+    
     {
         .create_conn_mode = BIT(CLI_CREAT_BY_NAME),
         .compare_data_len = sizeof(cetl_test_remoter_name1) - 1, //去结束符
@@ -283,11 +290,19 @@ void Mppt_Set_Para_Send(void) // 发MPPT的设置参数
     uint16_t offset = 0;
     uint16_t tmp_handle;
 
-    uint16_t const Curv_Data[8][2]=   // 曲线数据  单位S 占空比%
+    uint16_t  Curv_Data[8][2]=   // 曲线数据  单位S 占空比%
     {
-        {60*60*1,90},{60*60*2,80},{60*60*3,70},{60*60*4,60},
-        {60*60*5,50},{60*60*6,40},{60*60*7,30},{60*60*8,20},
+       // {60*60*1,90},{60*60*2,80},{60*60*3,70},{60*60*4,60},
+       // {60*60*5,50},{60*60*6,40},{60*60*7,30},{60*60*8,20},
     };
+
+    for(i=0;i<8;i++)
+    {
+        Curv_Data[i][0] = 60*60*RoterData.Mppt_SetPara.Curv_Data[i][0];
+        Curv_Data[i][1] = RoterData.Mppt_SetPara.Curv_Data[i][1];
+
+         log_info("curv %d %d", Curv_Data[i][0], Curv_Data[i][1]);
+    }
 
     uint16_t const Time_Data[3]=   // 日期数据  年月日
     {
@@ -305,20 +320,22 @@ void Mppt_Set_Para_Send(void) // 发MPPT的设置参数
             for(i=0;i<6;i++) encry_key[i%4] += RoterData.Ble_Connect_Mac[i]; //加密密钥
 
             data[offset++] = 0xAA; //包头
-            offset += make_packet_val(&data[offset],offset,0x01,80010,4); // 发10A
-            offset += make_packet_val(&data[offset],offset,0x02,23333,4); // 发5A  0.5C;
-            offset += make_packet_val(&data[offset],offset,0x03,50210,4); // 发50W 
-            offset += make_packet_val(&data[offset],offset,0x04,550,4);   // 发500mah
-            offset += make_packet_val(&data[offset],offset,0x05,2650,4);  // 发2600MV
-            offset += make_packet_val(&data[offset],offset,0x06,19,4);    // 发20挡位
-            offset += make_packet_val(&data[offset],offset,0x07,10,4);    // 雷达10%
-            offset += make_packet_val(&data[offset],offset,0x08,10,4);    // 雷达延迟15S
-            offset += make_packet_val(&data[offset],offset,0x09,10,4);    // 默认亮度100%
-            offset += make_packet_val(&data[offset],offset,0x0A,0,4);     // 曲线模式0 pwm模式
-            offset += make_packet_data(&data[offset],offset,0x0B,&Curv_Data,sizeof(Curv_Data));   // 默认曲线
-            offset += make_packet_val(&data[offset],offset,0x0C,0,4);   // 默认曲线
-            offset += make_packet_val(&data[offset],offset,0x0D,23333,4);     // 曲线模式0 pwm模式
-            offset += make_packet_data(&data[offset],offset,0x0E,&Time_Data,sizeof(Time_Data));   // 默认事件
+            offset += make_packet_val(&data[offset],offset,0x01,RoterData.Mppt_SetPara.Bat_Capcity*1000,4); // 发10A
+            offset += make_packet_val(&data[offset],offset,0x02,RoterData.Mppt_SetPara.Charge_Current_Max*1000,4); // 发5A  0.5C;
+            offset += make_packet_val(&data[offset],offset,0x03,RoterData.Mppt_SetPara.Charge_Power_Max*1000,4); // 发50W 
+            offset += make_packet_val(&data[offset],offset,0x04,RoterData.Mppt_SetPara.Trickle_Current*1000,4);   // 发500mah
+            offset += make_packet_val(&data[offset],offset,0x05,RoterData.Mppt_SetPara.Low_voltage_Protect*1000,4);  // 发2600MV
+            offset += make_packet_val(&data[offset],offset,0x06,RoterData.Mppt_SetPara.Current_Gear,4);       // 发20挡位
+            offset += make_packet_val(&data[offset],offset,0x07,RoterData.Mppt_SetPara.Ledar_Pwm,4);          // 雷达10%
+            offset += make_packet_val(&data[offset],offset,0x08,RoterData.Mppt_SetPara.Ledar_Dly_Time,4);     // 雷达延迟15S
+            offset += make_packet_val(&data[offset],offset,0x09,RoterData.Mppt_SetPara.Led_Set_Pwm,4);        // 默认亮度100%
+            offset += make_packet_val(&data[offset],offset,0x0A,RoterData.Mppt_SetPara.DischarCurve_Moed,4);  // 曲线模式0 pwm模式
+            offset += make_packet_data(&data[offset],offset,0x0B,&Curv_Data,sizeof(Curv_Data));               // 默认曲线
+            offset += make_packet_val(&data[offset],offset,0x0C,RoterData.Mppt_SetPara.Lock_Mode,4);          // 锁定模式
+            offset += make_packet_val(&data[offset],offset,0x0D,RoterData.Usercode,4);                        // 用户数据
+            offset += make_packet_data(&data[offset],offset,0x0E,&Time_Data,sizeof(Time_Data));               // 时间参数
+            offset += make_packet_data(&data[offset],offset,0x0F,RoterData.Mppt_SetPara.Solar_Mode,4);        // 太阳能模式
+            offset += make_packet_data(&data[offset],offset,0x10,RoterData.Mppt_SetPara.Extern_Mode,4);       // 外部通信方式
 
             data[offset++] = 0X55;//包尾
             for(i=0;i<offset%4;i++)
@@ -381,7 +398,19 @@ void Mppt_Data_Decode(u8 *packet,u16 size) // MPPT 信息解码
             if(data[0] == 0x02) log_info("invail data len\r\n");
             if(data[0] == 0x03) log_info("head error\r\n");
             if(data[0] == 0x04) log_info("invail Curve Data\r\n");
-            if(cur_conn_info.conn_handle)ble_comm_disconnect(cur_conn_info.conn_handle);
+            if(cur_conn_info.conn_handle)
+            {
+                uint8_t location;
+                location = Ble_Find_Mac_RepAddr(RoterData.Ble_Adv_rp,sizeof(RoterData.Ble_Adv_rp)/sizeof(RoterData.Ble_Adv_rp[0]),RoterData.Ble_Connect_Mac);
+                
+                if(!RoterData.Ble_Adv_rp[location].IsModifyFlag)
+                {
+                   RoterData.Ble_Adv_rp[location].IsModifyFlag = 1; 
+                   RoterData.SetCount++;
+                }
+
+                ble_comm_disconnect(cur_conn_info.conn_handle);
+            }
            // ble_gatt_client_disconnect_all();
             break;
         case 0XBB: // 信息参数返回
@@ -389,31 +418,62 @@ void Mppt_Data_Decode(u8 *packet,u16 size) // MPPT 信息解码
             while(data_i<size - 1)
             {
                 next_len = data[data_i] + 1; //长度
-                if(!next_len)break; //非法数据 
+                if(next_len<2)break; //非法数据 
                 command = data[data_i + 1];  //命令
+                if(!command)break;
                 data_position = data_i + 2;
-                log_info("cmd:%d next_len:%d ",command,next_len);
+                //log_info("cmd:%d next_len:%d ",command,next_len);
                 switch (command)
                 {
                     case 0x01:
-                        temp = little_endian_read_32(&data[data_position],0);     
-                        log_info("charge capcity data:%dMA/H ",temp);
+                        temp = little_endian_read_32(&data[data_position],0); 
+                        log_info("charge capcity data:%xMA ",temp);
+                        RoterData.Mppt_Info.Charge_Capcity = temp;
+                        if(RoterData.Mppt_Info.Charge_Capcity)
+                            RoterData.Mppt_Info.Charge_Capcity /= 1000;
                         break;
                     case 0x02:
                         temp = little_endian_read_32(&data[data_position],0);     
-                        log_info("charge current data:%dMA ",temp);
+                        log_info("charge current data:%xMA ",temp);
+                        RoterData.Mppt_Info.Charge_Current = temp;
+                        if(RoterData.Mppt_Info.Charge_Current)
+                            RoterData.Mppt_Info.Charge_Current /= 1000;
                         break;
                     case 0x03: 
                         temp = little_endian_read_32(&data[data_position],0);  
-                        log_info("charge power:%dW ",temp);
+                        log_info("charge power:%xW ",temp); 
+                        RoterData.Mppt_Info.Charge_Power = temp;
+                        if(RoterData.Mppt_Info.Charge_Power)
+                            RoterData.Mppt_Info.Charge_Power /= 1000;
                         break;
                     case 0x04:
                         temp = little_endian_read_32(&data[data_position],0);  
-                        log_info("Bat resistance :%dR ",temp);
+                        log_info("Dischar_Current :%xma ",temp);
+                        RoterData.Mppt_Info.Dischar_Current = temp;
+                        if(RoterData.Mppt_Info.Dischar_Current)
+                            RoterData.Mppt_Info.Dischar_Current /= 1000;
                         break;
                     case 0x05:
+                        temp = little_endian_read_32(&data[data_position],0); 
+                        log_info("Bat_Resistance :%xMR ",temp);
+                        RoterData.Mppt_Info.Charge_Power = temp; 
+                        break;
+                    case 0x06:
                         temp = little_endian_read_32(&data[data_position],0);  
-                        log_info("Bat Percent :%dR ",temp);
+                        log_info("Bat_Capcity :%x%% ",temp);
+                        RoterData.Mppt_Info.Bat_Capcity = temp;
+                        break;
+                    case 0x07:
+                        temp = little_endian_read_32(&data[data_position],0);     
+                        log_info("OutPut_Staus :%d ",temp);
+                        RoterData.Mppt_Info.Charge_Power = temp;
+                        break;
+                    case 0x08:
+                        temp = little_endian_read_32(&data[data_position],0);  
+                        log_info("Bat Volatge :%dR ",temp);
+                        RoterData.Mppt_Info.Bat_Voltage = temp;            
+                        if(RoterData.Mppt_Info.Bat_Voltage)
+                            RoterData.Mppt_Info.Bat_Voltage /= 1000;
                         break;
                     default:    
                         break;
@@ -426,67 +486,106 @@ void Mppt_Data_Decode(u8 *packet,u16 size) // MPPT 信息解码
             while(data_i<size)
             {
                 next_len = data[data_i] + 1; //长度
-                if(!next_len)break; //非法数据 
+                if(next_len<2)break; //非法数据 
                 command = data[data_i + 1];  //命令
+                if(!command)break;
                 data_position = data_i + 2;
-                log_info("cmd:%d next_len:%d ",command,next_len);
+              //  log_info("cmd:%d next_len:%d ",command,next_len);
                 switch (command)
                 {
                     case 0x01:
                         temp = little_endian_read_32(&data[data_position],0);     
                         log_info("bat capcity data:%dMA/H ",temp);
+                        RoterData.Mppt_ConSetPara_Info.Bat_Capcity = temp;
+                        if(RoterData.Mppt_ConSetPara_Info.Bat_Capcity)
+                            RoterData.Mppt_ConSetPara_Info.Bat_Capcity /= 1000;
                         break;
                     case 0x02:
                         temp = little_endian_read_32(&data[data_position],0);     
                         log_info("Max charge current data:%dMA ",temp);
+                        RoterData.Mppt_ConSetPara_Info.Charge_Current_Max = temp;
+                        if(RoterData.Mppt_ConSetPara_Info.Charge_Current_Max)
+                            RoterData.Mppt_ConSetPara_Info.Charge_Current_Max /= 1000;
                         break;
                     case 0x03: 
                         temp = little_endian_read_32(&data[data_position],0);  
                         log_info("Max charge power:%dW ",temp);
+                        RoterData.Mppt_ConSetPara_Info.Charge_Power_Max = temp;
+                        if(RoterData.Mppt_ConSetPara_Info.Charge_Power_Max)
+                            RoterData.Mppt_ConSetPara_Info.Charge_Power_Max /= 1000;
                         break;
                     case 0x04:
                         temp = little_endian_read_32(&data[data_position],0);  
                         log_info("Trickle_Current :%dA ",temp);
+                        RoterData.Mppt_ConSetPara_Info.Trickle_Current = temp;
+                        if(RoterData.Mppt_ConSetPara_Info.Trickle_Current)
+                            RoterData.Mppt_ConSetPara_Info.Trickle_Current /= 1000;
                         break;
                     case 0x05:
                         temp = little_endian_read_32(&data[data_position],0);  
                         log_info("Low Percent :%dV ",temp);
+                        RoterData.Mppt_ConSetPara_Info.Low_voltage_Protect = temp;
+                        if(RoterData.Mppt_ConSetPara_Info.Low_voltage_Protect)
+                            RoterData.Mppt_ConSetPara_Info.Low_voltage_Protect /= 1000;
                         break;
                     case 0x06:
                         temp = little_endian_read_32(&data[data_position],0);  
                         log_info("Current Gear : ",temp);
+                        RoterData.Mppt_ConSetPara_Info.Current_Gear = temp;
                         break;
                     case 0x07:
                         temp = little_endian_read_32(&data[data_position],0);  
                         log_info("Ladear On Pwm :%d%% ",temp);
+                        RoterData.Mppt_ConSetPara_Info.Ledar_Pwm = temp;
                         break;
                     case 0x08:
                         temp = little_endian_read_32(&data[data_position],0);  
                         log_info("Ladear Check Time:%ds ",temp);
+                        RoterData.Mppt_ConSetPara_Info.Ledar_Dly_Time = temp;
                         break;
                     case 0x09:
                         temp = little_endian_read_32(&data[data_position],0);  
                         log_info("Led Default Pwm:%d%% ",temp);
+                        RoterData.Mppt_ConSetPara_Info.Led_Set_Pwm = temp;
                         break;
                     case 0x0A:
                         temp = little_endian_read_32(&data[data_position],0);  
-                        log_info("Pwm Mode:%d%% ",temp);
+                        log_info("DischarCurve_Moed Mode:%d%% ",temp);
+                        RoterData.Mppt_ConSetPara_Info.DischarCurve_Moed = temp;
                         break;
                     case 0x0B:
-                         temp = little_endian_read_32(&data[data_position],0);  
-                        log_info("Curve Data:%d%% ",temp);
+                            temp = little_endian_read_32(&data[data_position],0);  
+                        log_info("Curve Data:%d%% ",temp);    
+                        for(int i=0;i<8;i++)
+                        {
+                           RoterData.Mppt_ConSetPara_Info.Curv_Data[i][0] = little_endian_read_16(&data[data_position],(i*2)*2) / 3600.;  
+                           RoterData.Mppt_ConSetPara_Info.Curv_Data[i][1] = little_endian_read_16(&data[data_position],(i*2+1)*2);  
+                        }
                         break;
                     case 0x0C:
-                         temp = little_endian_read_32(&data[data_position],0);  
+                        temp = little_endian_read_32(&data[data_position],0);  
                         log_info("Lock Mode:%d%% ",temp);
+                        RoterData.Mppt_ConSetPara_Info.Lock_Mode = temp;
                         break;
                     case 0x0D:
-                         temp = little_endian_read_32(&data[data_position],0);  
+                        temp = little_endian_read_32(&data[data_position],0);  
                         log_info("Roter UserCode:%d%% ",temp);
                         break;
-                    case 0x0E:
-                         temp = little_endian_read_32(&data[data_position],0);  
-                        log_info("Data:%d%% ",temp);
+                    case 0x0E: // 日期
+                        temp = little_endian_read_32(&data[data_position],0);  
+                        log_info("Time Data:%d%% ",temp);
+                        break;
+                    case 0x0F: //太阳能
+                        temp = little_endian_read_32(&data[data_position],0);  
+                        log_info("Solar Mode:%d%% ",temp);
+                        RoterData.Mppt_ConSetPara_Info.Solar_Mode = temp;
+                        break;
+                    case 0x10:
+                        temp = little_endian_read_32(&data[data_position],0);  
+                        log_info("Extern_Mode Mode:%d%% ",temp);
+                         RoterData.Mppt_ConSetPara_Info.Extern_Mode = temp;
+                        break;
+                    case 0x11:
                         break;
 
                     default:    
@@ -713,6 +812,7 @@ static int multi_client_event_packet_handler(int event, u8 *packet, u16 size, u8
 
             memcpy(cur_conn_info.peer_address_info, &ext_param[7], 7); // 当前连接的MAC地址
             cur_conn_info.conn_handle =   little_endian_read_16(packet, 0);
+            RoterData.conn_handle = cur_conn_info.conn_handle;
             cur_conn_info.conn_interval = little_endian_read_16(ext_param, 14 + 0);
             cur_conn_info.conn_latency =  little_endian_read_16(ext_param, 14 + 2);
             cur_conn_info.conn_timeout =  little_endian_read_16(ext_param, 14 + 4);
@@ -953,7 +1053,8 @@ void multi_client_init(void)
     multi_scan_conn_config_set(NULL);
 
     #if MULTI_TEST_WRITE_SEND_DATA  //测试写数据
-   sys_timer_add(0, Mppt_Set_Para_Send, 1000);
+    // sys_timer_add(0, Mppt_Set_Para_Send, 1000);
+    // sys_timer_add(0, Get_Mppt_Report, 1000);
     #endif
 }
 

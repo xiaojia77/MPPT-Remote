@@ -46,7 +46,7 @@ typedef struct
 {
     uint8_t mac[6]; // 10
     uint8_t useflag;   // 使用标志位
-    uint8_t IsconnectFlag; // 被连接过的
+    uint8_t IsModifyFlag; // 被连接过的
     uint8_t Timeout; //超时清除
     int8_t rssi; //强度；
 }Ble_Adv_Rp_t;
@@ -54,38 +54,41 @@ typedef struct
 typedef struct 
 {
     float Bat_Capcity;  //电池容量
-    float Charge_Power_Max;
     float Charge_Current_Max;
+    float Charge_Power_Max;
     float Trickle_Current; //涓流电流
 
     float Low_voltage_Protect; //低压保护电压
-    uint8_t Current_Gear; // 0 - 20 电压挡位
-    uint8_t Ledar_Dly_Time; // 0 - 20 电压挡位
-    uint8_t Ledar_Pwm; // 0 - 20 电压挡位
-    uint8_t Led_Set_Pwm;
-    uint8_t Solar_Mode;
+    uint32_t Current_Gear; // 0 - 20 电压挡位
+    uint32_t Ledar_Pwm; // 0 - 20 电压挡位
+    uint32_t Ledar_Dly_Time; // 0 - 20 电压挡位
+    uint32_t Led_Set_Pwm; 
+   
+   
 
-    uint8_t DischarCurve_Moed; // 0 pwm模式 电流 AI
+    uint32_t DischarCurve_Moed; // 0 pwm模式 电流 AI
 
     float Curv_Data[8][2]; 
+
+    uint32_t Solar_Mode;
+    
+    uint32_t Lock_Mode; //锁定模式
+
+    uint32_t Extern_Mode; //控制模式
 
 }Mppt_Set_Parm_t ;
 
 typedef struct 
 {
     float Charge_Capcity;          
-    float Charge_Current; 
-    float Dischar_Current;      
-    float Charge_Power;        
-    float Bat_Voltage;         // unit: V
-
+    float Charge_Current;   
+    float Charge_Power; 
+    float Dischar_Current;         
     uint8_t  Bat_Resistance;      // unit: mΩ
     uint8_t  Bat_Capcity;         // unit: %
-   
     uint8_t  OutPut_Staus;        // unit:   
-  
+    float Bat_Voltage;           // unit: V 
 }Mppt_Info_Para_t;
-
 
 typedef struct 
 {
@@ -100,8 +103,17 @@ typedef struct
     Ble_Adv_Rp_t Ble_Adv_rp[14]; //蓝牙报告
     uint8_t      Ble_Adv_Rp_Count;
     uint8_t      Ble_Connect_Mac[6];//目前蓝牙连接的地址 // 可以省略
+    uint16_t    conn_handle;
+    uint16_t Usercode; //用户码
+    uint16_t SetCount; //已计数
+
+    uint8_t ConnenctOnFlag; //允许连接标志位
+
+    uint8_t   Ble_SetConnect_Mac[6]; //设置蓝牙连接的地址
 
 }roter_t;
+
+
 
 MenuData_t MenuData; //显示数据
 roter_t RoterData; // 遥控器数据 显示用
@@ -224,15 +236,15 @@ static Menu_Tab_t const Menu_Tab[]=
 {
     {MAIN_MENU,NULL,5,Mppt_Main_Menu_Operation,Mppt_Main_Menu}, //主菜单 次级菜单
 
-    {BLE_BATCHSET_MENU,MAIN_MENU,5,Mppt_Ble_BatchSet_Menu_Operation,Mppt_Ble_BatchSet_Menu}, // 批量设置菜单
+    {BLE_BATCHSET_MENU,MAIN_MENU,6,Mppt_Ble_BatchSet_Menu_Operation,Mppt_Ble_BatchSet_Menu}, // 批量设置菜单
         {CHAEGE_SET_MENU,BLE_BATCHSET_MENU,4,Mppt_Charge_Set_Menu_Operation,Mppt_Charge_Set_Menu}, // 次级菜单
         {DISCHAR_SET_MENU,BLE_BATCHSET_MENU,6,Mppt_Dischar_Set_Menu_Operation,Mppt_Dischar_Set_Menu},
         {DISCHAR_CURVE_SET_MENU,BLE_BATCHSET_MENU,16,Mppt_Dischar_Curve_Set_Operation,Mppt_Dischar_Curve_Set_Menu},
-        {BL_ATCON_SET_MENU,BLE_BATCHSET_MENU,8,Mppt_Normal_Menu_Select,Mppt_Ble_AutoConnect_set_Menu},
+        {BL_ATCON_SET_MENU,BLE_BATCHSET_MENU,8,Mppt_Ble_AutoConnect_set_Menu_Operation,Mppt_Ble_AutoConnect_set_Menu},
 
     {BL_CON_SELECT_MENU,MAIN_MENU,8,Mppt_Ble_con_Select_Menu_Operation,Mppt_Ble_con_Select_Menu},
         {BL_CON_MENU,MAIN_MENU,NULL,Mppt_Ble_con_Menu_Operation,Mppt_Ble_con_Menu},
-            {BL_CON_SET_MENU,MAIN_MENU,6,Mppt_Ble_Set_Operation,Mppt_Ble_Set_Menu},
+            {BL_CON_SET_MENU,MAIN_MENU,7,Mppt_Ble_Set_Operation,Mppt_Ble_Set_Menu},
                 {MPPT_INFO,BL_CON_SET_MENU,2,Mppt_Main_Menu_Operation,Mppt_Info_Menu},
                 {CHAEGE_PARA_MODIFY,BL_CON_SET_MENU,4,Mppt_ChargePara_Modify_Menu_Operation,Mppt_ChargePara_Modify_Menu},
                 {DISCHAR_PARA_MODIFY,BL_CON_SET_MENU,6,Mppt_DischarPara_Modify_Menu_Operation,Mppt_DischarPara_Modify_Menu},

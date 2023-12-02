@@ -65,7 +65,8 @@
         "norflash.h": "c",
         "config_transport.h": "c",
         "app_chargestore.h": "c",
-        "math.h": "c"
+        "math.h": "c",
+        "avctp_user.h": "c"
     },
     "C_Cpp.dimInactiveRegions": true
 }
