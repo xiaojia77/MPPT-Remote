@@ -166,7 +166,7 @@ const struct iokey_port iokey_list[] = {
 	{
 		.connect_way = TCFG_IOKEY_POWER_CONNECT_WAY,          //IO按键的连接方式
 		.key_type.one_io.port = TCFG_IOKEY_POWER_ONE_PORT,    //IO按键对应的引脚
-		.key_value = 22,                                       //按键值
+		.key_value = KEY_VALUE_TYPE_ON_OFF,                                       //按键值
 	},
 
 	// {

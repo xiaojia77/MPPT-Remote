@@ -104,8 +104,8 @@ typedef struct
     uint8_t      Ble_Adv_Rp_Count;
     uint8_t      Ble_Connect_Mac[6];//目前蓝牙连接的地址 // 可以省略
     uint16_t    conn_handle;
-    uint16_t Usercode; //用户码
-    uint16_t SetCount; //已计数
+    uint16_t    Usercode; //用户码
+    uint16_t    SetCount; //已计数
 
     uint8_t ConnenctOnFlag; //允许连接标志位
 
@@ -211,8 +211,9 @@ enum
         DISCHAR_CURVE_SET_MENU,
         BL_ATCON_SET_MENU,
 
-    BL_CON_SELECT_MENU,
-        BL_CON_MENU,
+    
+    BL_CON_MENU,
+        BL_CON_SELECT_MENU,
             BL_CON_SET_MENU,
                 MPPT_INFO,
                 CHAEGE_PARA_MODIFY,
@@ -238,18 +239,19 @@ static Menu_Tab_t const Menu_Tab[]=
 
     {BLE_BATCHSET_MENU,MAIN_MENU,6,Mppt_Ble_BatchSet_Menu_Operation,Mppt_Ble_BatchSet_Menu}, // 批量设置菜单
         {CHAEGE_SET_MENU,BLE_BATCHSET_MENU,4,Mppt_Charge_Set_Menu_Operation,Mppt_Charge_Set_Menu}, // 次级菜单
-        {DISCHAR_SET_MENU,BLE_BATCHSET_MENU,6,Mppt_Dischar_Set_Menu_Operation,Mppt_Dischar_Set_Menu},
+        {DISCHAR_SET_MENU,BLE_BATCHSET_MENU,7,Mppt_Dischar_Set_Menu_Operation,Mppt_Dischar_Set_Menu},
         {DISCHAR_CURVE_SET_MENU,BLE_BATCHSET_MENU,16,Mppt_Dischar_Curve_Set_Operation,Mppt_Dischar_Curve_Set_Menu},
         {BL_ATCON_SET_MENU,BLE_BATCHSET_MENU,8,Mppt_Ble_AutoConnect_set_Menu_Operation,Mppt_Ble_AutoConnect_set_Menu},
 
-    {BL_CON_SELECT_MENU,MAIN_MENU,8,Mppt_Ble_con_Select_Menu_Operation,Mppt_Ble_con_Select_Menu},
-        {BL_CON_MENU,MAIN_MENU,NULL,Mppt_Ble_con_Menu_Operation,Mppt_Ble_con_Menu},
+    
+    {BL_CON_MENU,MAIN_MENU,NULL,Mppt_Ble_con_Menu_Operation,Mppt_Ble_con_Menu},
+        {BL_CON_SELECT_MENU,MAIN_MENU,8,Mppt_Ble_con_Select_Menu_Operation,Mppt_Ble_con_Select_Menu},
             {BL_CON_SET_MENU,MAIN_MENU,7,Mppt_Ble_Set_Operation,Mppt_Ble_Set_Menu},
                 {MPPT_INFO,BL_CON_SET_MENU,2,Mppt_Main_Menu_Operation,Mppt_Info_Menu},
                 {CHAEGE_PARA_MODIFY,BL_CON_SET_MENU,4,Mppt_ChargePara_Modify_Menu_Operation,Mppt_ChargePara_Modify_Menu},
-                {DISCHAR_PARA_MODIFY,BL_CON_SET_MENU,6,Mppt_DischarPara_Modify_Menu_Operation,Mppt_DischarPara_Modify_Menu},
+                {DISCHAR_PARA_MODIFY,BL_CON_SET_MENU,7,Mppt_DischarPara_Modify_Menu_Operation,Mppt_DischarPara_Modify_Menu},
                 {CURVE_PARAT_MENU,BL_CON_SET_MENU,16,Mppt_CurvePara_Modify_Menu_Operation,Mppt_CurvePara_Modify_Menu},
-                {ENTRY_MODIFY,BL_CON_SET_MENU,2,Mppt_DischarPara_Modify_Menu_Operation,Mppt_Comfir_Modify_Menu},
+                {ENTRY_MODIFY,BL_CON_SET_MENU,2,Mppt_Comfir_Modify_Menu_Operation,Mppt_Comfir_Modify_Menu},
         
 
     {IR_SET_MENU,MAIN_MENU,3,Mppt_Ir_Set_Menu_Operation,Mppt_Ir_Set_Menu},

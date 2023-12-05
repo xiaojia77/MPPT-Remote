@@ -368,7 +368,7 @@ void Mppt_Data_Decode(u8 *packet,u16 size) // MPPT 信息解码
     u8 command;
     u8 data_i = 0 , next_len;
     uint16_t data_position = 0;
-
+    struct sys_event e;
     if(size < 8)
     {
         log_info("recive data len < 8\r\n");
@@ -390,26 +390,52 @@ void Mppt_Data_Decode(u8 *packet,u16 size) // MPPT 信息解码
     {
         case 0xAA:  // 设置参数返回
             log_info("find data head 0xAA\r\n");
-            if(data[0] == 0x00) 
+            if(data[data_i] == 0x00) 
             {
                 log_info("Set Para Success\r\n");
             }
-            if(data[0] == 0x01) log_info("invail connect\r\n");
-            if(data[0] == 0x02) log_info("invail data len\r\n");
-            if(data[0] == 0x03) log_info("head error\r\n");
-            if(data[0] == 0x04) log_info("invail Curve Data\r\n");
+            if(data[data_i] == 0x01) log_info("invail connect\r\n");
+            if(data[data_i] == 0x02) log_info("invail data len\r\n");
+            if(data[data_i] == 0x03) log_info("head error\r\n");
+            if(data[data_i] == 0x04) log_info("invail Curve Data\r\n");
             if(cur_conn_info.conn_handle)
             {
                 uint8_t location;
-                location = Ble_Find_Mac_RepAddr(RoterData.Ble_Adv_rp,sizeof(RoterData.Ble_Adv_rp)/sizeof(RoterData.Ble_Adv_rp[0]),RoterData.Ble_Connect_Mac);
-                
-                if(!RoterData.Ble_Adv_rp[location].IsModifyFlag)
-                {
-                   RoterData.Ble_Adv_rp[location].IsModifyFlag = 1; 
-                   RoterData.SetCount++;
-                }
 
-                ble_comm_disconnect(cur_conn_info.conn_handle);
+                if(MenuData.current_id == ENTRY_MODIFY)
+                {
+                   // location = Ble_Find_Mac_RepAddr(RoterData.Ble_Adv_rp,sizeof(RoterData.Ble_Adv_rp)/sizeof(RoterData.Ble_Adv_rp[0]),RoterData.Ble_SetConnect_Mac);
+                    e.type = SYS_KEY_EVENT;
+                    e.u.key.init = 1;
+                    e.u.key.type = KEY_DRIVER_TYPE_AD;//区分按键类型
+                    e.u.key.event = 0;
+                    e.u.key.value = KEY_VALUE_TYPE_MODIFY_OK;
+                    e.arg  = (void *)DEVICE_EVENT_FROM_KEY;
+                    sys_event_notify(&e);
+
+                }
+                else
+                {
+                    location = Ble_Find_Mac_RepAddr(RoterData.Ble_Adv_rp,sizeof(RoterData.Ble_Adv_rp)/sizeof(RoterData.Ble_Adv_rp[0]),RoterData.Ble_Connect_Mac);
+                    
+                    if(!RoterData.Ble_Adv_rp[location].IsModifyFlag)
+                    {
+                    RoterData.Ble_Adv_rp[location].IsModifyFlag = 1; 
+
+                        e.type = SYS_KEY_EVENT;
+                        e.u.key.init = 1;
+                        e.u.key.type = KEY_DRIVER_TYPE_AD;//区分按键类型
+                        e.u.key.event = 0;
+                        e.u.key.value = KEY_VALUE_TYPE_MODIFY_OK;
+                        e.arg  = (void *)DEVICE_EVENT_FROM_KEY;
+                        sys_event_notify(&e);
+                        RoterData.SetCount++;
+                    }
+
+                    if(MenuData.current_id != ENTRY_MODIFY)
+                        ble_comm_disconnect(cur_conn_info.conn_handle);
+                }
+                
             }
            // ble_gatt_client_disconnect_all();
             break;
@@ -989,7 +1015,6 @@ static int multi_client_event_packet_handler(int event, u8 *packet, u16 size, u8
     return 0;
 
 }
-
 
 static void multi_scan_conn_config_set(struct ctl_pair_info_t *pair_info)//scan参数设置
 {

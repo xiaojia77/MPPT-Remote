@@ -172,29 +172,29 @@ static void multi_app_start()
 
         RoterData.Mppt_SetPara.Lock_Mode = 0;
 
-        RoterData.Mppt_SetPara.Curv_Data[0][0] = 0.5;
-        RoterData.Mppt_SetPara.Curv_Data[0][1] = 90;
+        RoterData.Mppt_SetPara.Curv_Data[0][0] = 2;
+        RoterData.Mppt_SetPara.Curv_Data[0][1] = 80;
 
-        RoterData.Mppt_SetPara.Curv_Data[1][0] = 1;
-        RoterData.Mppt_SetPara.Curv_Data[1][1] = 80;
+        RoterData.Mppt_SetPara.Curv_Data[1][0] = 4.5;
+        RoterData.Mppt_SetPara.Curv_Data[1][1] = 60;
         
-        RoterData.Mppt_SetPara.Curv_Data[2][0] = 2;
-        RoterData.Mppt_SetPara.Curv_Data[2][1] = 70;
+        RoterData.Mppt_SetPara.Curv_Data[2][0] = 7;
+        RoterData.Mppt_SetPara.Curv_Data[2][1] = 40;
 
-        RoterData.Mppt_SetPara.Curv_Data[3][0] = 3;
-        RoterData.Mppt_SetPara.Curv_Data[3][1] = 60;
+        RoterData.Mppt_SetPara.Curv_Data[3][0] = 8.5;
+        RoterData.Mppt_SetPara.Curv_Data[3][1] = 20;
         
-        RoterData.Mppt_SetPara.Curv_Data[4][0] = 4;
-        RoterData.Mppt_SetPara.Curv_Data[4][1] = 50;
+        RoterData.Mppt_SetPara.Curv_Data[4][0] = 0;
+        RoterData.Mppt_SetPara.Curv_Data[4][1] = 0;
         
-        RoterData.Mppt_SetPara.Curv_Data[5][0] = 5;
-        RoterData.Mppt_SetPara.Curv_Data[5][1] = 40;
+        RoterData.Mppt_SetPara.Curv_Data[5][0] = 0;
+        RoterData.Mppt_SetPara.Curv_Data[5][1] = 0;
         
-        RoterData.Mppt_SetPara.Curv_Data[6][0] = 6;
-        RoterData.Mppt_SetPara.Curv_Data[6][1] = 30;
+        RoterData.Mppt_SetPara.Curv_Data[6][0] = 0;
+        RoterData.Mppt_SetPara.Curv_Data[6][1] = 0;
         
-        RoterData.Mppt_SetPara.Curv_Data[7][0] = 8.5;
-        RoterData.Mppt_SetPara.Curv_Data[7][1] = 15;
+        RoterData.Mppt_SetPara.Curv_Data[7][0] = 0;
+        RoterData.Mppt_SetPara.Curv_Data[7][1] = 0;
 
         Mppt_Main_Menu();
         
@@ -274,8 +274,8 @@ static void multi_key_event_handler(struct sys_event *event)
 
     if (event->arg == (void *)DEVICE_EVENT_FROM_KEY)
     {
-
-        if( (event_type == KEY_EVENT_CLICK) & (key_value == 22) )
+        log_info("app_key_evnet: %d,%d\n", event_type, key_value);
+        if( (event_type == KEY_EVENT_CLICK) & ( key_value == KEY_VALUE_TYPE_ON_OFF ) )
         {
             Beep_Star();
             if(!Power_Flag)
@@ -290,11 +290,10 @@ static void multi_key_event_handler(struct sys_event *event)
                 gpio_write(Power_En, 0);
             }
         }
-        if(key_value < 22)
+        if(key_value < (KEY_VALUE_TYPE_MAX - 1) )
         {
 
             Beep_Star();
-            log_info("app_key_evnet: %d,%d\n", event_type, key_value);
 
             if( Menu_Tab[MenuData.current_id].current_operation != NULL) Menu_Tab[MenuData.current_id].current_operation(key_value);
         }

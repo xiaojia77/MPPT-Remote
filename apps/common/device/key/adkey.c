@@ -21,6 +21,7 @@ struct key_driver_para adkey_scan_para = {
     .key_type		  = KEY_DRIVER_TYPE_AD,
     .get_value 		  = ad_get_key_value,
 };
+
 u8 ad_get_key_value(void)
 {
     u8 i;
