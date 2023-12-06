@@ -66,7 +66,8 @@
         "config_transport.h": "c",
         "app_chargestore.h": "c",
         "math.h": "c",
-        "avctp_user.h": "c"
+        "avctp_user.h": "c",
+        "stdint.h": "c"
     },
     "C_Cpp.dimInactiveRegions": true
 }

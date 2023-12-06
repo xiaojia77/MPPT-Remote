@@ -17,11 +17,9 @@
 #include "app_power_manage.h"
 #include "le_client_demo.h"
 #include "app_comm_bt.h"
+
+
 #include "asm/mcpwm.h"
-
-
-
-
 #include "asm/ledc.h"
 #include "asm/spi.h"
 
@@ -32,8 +30,8 @@
 #define LOG_INFO_ENABLE
 /* #define LOG_DUMP_ENABLE */
 #define LOG_CLI_ENABLE
-#include "debug.h"
 
+#include "debug.h"
 #include "lcd7789.h"
 #include "lcd_data.h"
 
@@ -118,7 +116,130 @@ void Beep_Timer_Del(void)
     }
 }
 
+#define IR_TX_PORT IO_PORTA_08
+void Ir_pwm_init(void)
+{
+    struct pwm_platform_data pwm_p_data;
+    memset((u8 *)&pwm_p_data, 0, sizeof(struct pwm_platform_data));
+    pwm_p_data.pwm_ch_num = pwm_ch3; // 通道0
+    pwm_p_data.frequency = 38000;    // 1KHz
+    pwm_p_data.duty = 0;             // 占空比50%
+    pwm_p_data.h_pin = -1;           // 不用则填 -1
+    pwm_p_data.l_pin = IR_TX_PORT;  // 硬件引脚
+    mcpwm_init(&pwm_p_data);
+}
 
+u8 ir_tx_fsm = 0, ir_Data[4] = {0xAA, 0x55, 0xF0, 0x0F}; // 地址正吗 地址反码 数据正码 数据反码
+void Ir_tx_stop()
+{
+    JL_TIMER3->CON &= ~0x00000001; // 停止模式
+}
+void Ir_tx_star(u8 adr,u8 data) //
+{
+    ir_Data[0] = adr;ir_Data[1] = ~adr;
+    ir_Data[2] = data;ir_Data[3] = ~data;
+    JL_TIMER3->PRD = 16 * 500;
+    JL_TIMER3->CON |= 1; // 计数模式
+    log_info("Ir Tx Data %x", reverse_u32(*(u32 *)ir_Data));
+}
+void Ir_tx_star_adr(u16 adr,u8 data) //
+{
+    ir_Data[0] = adr >> 8;ir_Data[1] = (u8)(adr);
+    ir_Data[2] = data;ir_Data[3] = ~data;
+    JL_TIMER3->PRD = 16 * 500;
+    JL_TIMER3->CON |= 1; // 计数模式
+    log_info("Ir Tx Data %x", reverse_u32(*(u32 *)ir_Data));
+}
+void Ir_tx_star_Def(u8 *data) //
+{
+    memcpy(ir_Data,data,4);
+    JL_TIMER3->PRD = 16 * 500;
+    JL_TIMER3->CON |= 1; // 计数模式
+    log_info("Ir Tx Data %x", reverse_u32(*(u32 *)ir_Data));
+}
+___interrupt
+    AT_VOLATILE_RAM_CODE static void
+    timer3_isr()
+{
+    static u8 i, j, ishighFlag;
+    JL_TIMER3->CON |= BIT(14);
+    switch (ir_tx_fsm)
+    {
+    case 0: // 引导码1
+        mcpwm_set_duty(pwm_ch3, 5000);
+        JL_TIMER3->PRD = 6 * 9000; // 9MS
+        ir_tx_fsm++;
+        break;
+    case 1: // 引导高0
+        mcpwm_set_duty(pwm_ch3, 0);
+        JL_TIMER3->PRD = 6 * 4500; // 9MS
+        ir_tx_fsm++;
+        break;
+    case 2:
+        if (i >= 8)
+        {
+            i = 0;
+            if (++j >= 4)
+            {
+                j = 0;
+                mcpwm_set_duty(pwm_ch3, 5000);
+                JL_TIMER3->PRD = 6 * 560; // 9MS
+                ir_tx_fsm = 5;
+                break;
+            }
+        }
+        if (ir_Data[j] & (0X80 >> i))
+        {
+            ishighFlag = 1;
+        }
+        else
+            ishighFlag = 0;
+        ir_tx_fsm++;
+    case 3: //  数据码1
+        mcpwm_set_duty(pwm_ch3, 5000);
+        JL_TIMER3->PRD = 6 * 560; // 9MS
+        ir_tx_fsm++;
+        break;
+    case 4: //  数据码0
+        mcpwm_set_duty(pwm_ch3, 0);
+        if (ishighFlag)
+            JL_TIMER3->PRD = 6 * 1600; // 9MS
+        else
+            JL_TIMER3->PRD = 6 * 560;
+        i++;
+        ir_tx_fsm = 2;
+        break;
+    case 5: // 结束码
+        mcpwm_set_duty(pwm_ch3, 0);
+        ir_tx_fsm = 0;
+        Ir_tx_stop();
+        break;
+
+    default:
+        ir_tx_fsm = 0;
+        break;
+    }
+}
+void ir_tx_init(void)
+{
+    u32 u_clk = 24000000;
+    JL_TIMER3->CON |= (0b110 << 10); // 时钟源选择STD_24M时钟源
+    JL_TIMER3->CON |= (0b0001 << 4); // 时钟源再4分频
+    JL_TIMER3->CNT = 0;              // 清计数值
+    JL_TIMER3->PRD = 6 * 560;
+    ; // 设置周期 1US + 1
+    // JL_TIMER3->CON |= 1 ;	//计数模式
+    request_irq(IRQ_TIME3_IDX, 3, timer3_isr, 0); // 注册中断函数
+    log_info("Ir Time Init");
+    Ir_pwm_init();
+    log_info("Ir Pwm Init");
+}
+
+void Sys_Auto_Off()
+{
+    gpio_write(Power_En, 0);
+}
+static u16 Sys_Auto_Off_Timer;
 static void multi_app_start()
 {
     uint8_t i;
@@ -145,8 +266,6 @@ static void multi_app_start()
     #endif
          btstack_init();
         
-       
-
         spi_open(SPI1);
         ST7789Lcd_Init();
         Beep_init();
@@ -161,27 +280,27 @@ static void multi_app_start()
         RoterData.Mppt_SetPara.Bat_Capcity = 7.5;
         RoterData.Mppt_SetPara.Charge_Current_Max = 20;
         RoterData.Mppt_SetPara.Charge_Power_Max = 75;
-        RoterData.Mppt_SetPara.Trickle_Current = 0.5;
+        RoterData.Mppt_SetPara.Trickle_Current = 0.5f;
         RoterData.Mppt_SetPara.DischarCurve_Moed = 0;
 
         RoterData.Mppt_SetPara.Current_Gear = 20;
         RoterData.Mppt_SetPara.Ledar_Dly_Time = 15;
         RoterData.Mppt_SetPara.Ledar_Pwm = 10;
         RoterData.Mppt_SetPara.Led_Set_Pwm = 100;
-        RoterData.Mppt_SetPara.Low_voltage_Protect = 2.65;
+        RoterData.Mppt_SetPara.Low_voltage_Protect = 2.65f;
 
         RoterData.Mppt_SetPara.Lock_Mode = 0;
 
         RoterData.Mppt_SetPara.Curv_Data[0][0] = 2;
         RoterData.Mppt_SetPara.Curv_Data[0][1] = 80;
 
-        RoterData.Mppt_SetPara.Curv_Data[1][0] = 4.5;
+        RoterData.Mppt_SetPara.Curv_Data[1][0] = 4.5f;
         RoterData.Mppt_SetPara.Curv_Data[1][1] = 60;
         
         RoterData.Mppt_SetPara.Curv_Data[2][0] = 7;
-        RoterData.Mppt_SetPara.Curv_Data[2][1] = 40;
+        RoterData.Mppt_SetPara.Curv_Data[2][1] = 40; 
 
-        RoterData.Mppt_SetPara.Curv_Data[3][0] = 8.5;
+        RoterData.Mppt_SetPara.Curv_Data[3][0] = 8.5f;
         RoterData.Mppt_SetPara.Curv_Data[3][1] = 20;
         
         RoterData.Mppt_SetPara.Curv_Data[4][0] = 0;
@@ -199,7 +318,11 @@ static void multi_app_start()
         Mppt_Main_Menu();
         
         // Lcd_ShowPicture(0,0,240,240,gImage_image);
-        // sys_timer_add(NULL,Ble_Timeout_Check,2400);
+        sys_timer_add(NULL,Ble_Timeout_Check,500);
+        ir_tx_init();
+
+
+        Sys_Auto_Off_Timer = sys_timer_add(NULL, Sys_Auto_Off, 90000);
 
     #endif
     /* 按键消息使能 */
@@ -274,6 +397,7 @@ static void multi_key_event_handler(struct sys_event *event)
 
     if (event->arg == (void *)DEVICE_EVENT_FROM_KEY)
     {
+        sys_timer_re_run(Sys_Auto_Off_Timer);
         log_info("app_key_evnet: %d,%d\n", event_type, key_value);
         if( (event_type == KEY_EVENT_CLICK) & ( key_value == KEY_VALUE_TYPE_ON_OFF ) )
         {

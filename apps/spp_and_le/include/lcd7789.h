@@ -64,8 +64,6 @@ typedef struct
     uint32_t Ledar_Dly_Time; // 0 - 20 电压挡位
     uint32_t Led_Set_Pwm; 
    
-   
-
     uint32_t DischarCurve_Moed; // 0 pwm模式 电流 AI
 
     float Curv_Data[8][2]; 
@@ -100,16 +98,20 @@ typedef struct
 
     Mppt_Info_Para_t Mppt_Info;  // MPPT 返回的参数
     
-    Ble_Adv_Rp_t Ble_Adv_rp[14]; //蓝牙报告
+    Ble_Adv_Rp_t Ble_Adv_rp[100]; //蓝牙报告
     uint8_t      Ble_Adv_Rp_Count;
     uint8_t      Ble_Connect_Mac[6];//目前蓝牙连接的地址 // 可以省略
     uint16_t    conn_handle;
+
+
     uint16_t    Usercode; //用户码
     uint16_t    SetCount; //已计数
 
+    uint8_t Filter_LockFlag; //过滤锁定的设备
+
     uint8_t ConnenctOnFlag; //允许连接标志位
 
-    uint8_t   Ble_SetConnect_Mac[6]; //设置蓝牙连接的地址
+    uint8_t Ble_SetConnect_Mac[6]; //设置蓝牙连接的地址
 
 }roter_t;
 
@@ -257,7 +259,7 @@ static Menu_Tab_t const Menu_Tab[]=
     {IR_SET_MENU,MAIN_MENU,3,Mppt_Ir_Set_Menu_Operation,Mppt_Ir_Set_Menu},
         {IR_NORMAL_MENU,IR_SET_MENU,NULL,IR_Normal_Menu_Operation,IR_Normal_Menu},
         {IR_ENGINEER_MENU,IR_SET_MENU,NULL,IR_Engineer_Menu_Operation,IR_Engineer_Menu},
-        {IR_USERCODE_MENU,IR_SET_MENU,NULL,IR_Usercode_Menu_Operation,IR_Usercode_Menu},
+        {IR_USERCODE_MENU,IR_SET_MENU,2,IR_Usercode_Menu_Operation,IR_Usercode_Menu},
 
 
     {VERSION_CHECK_MENU,MAIN_MENU,NULL,Mppt_Normal_Menu_Select,Mppt_Version_Info_menu},

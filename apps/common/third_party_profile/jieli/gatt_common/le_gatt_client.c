@@ -938,9 +938,9 @@ static bool __resolve_adv_report(adv_report_t *report_pt, u16 len) //检测是�
                     break;
 
                 case 0x20:
-                    if(*adv_data_pt == 1)
+                    if(*adv_data_pt)
                     {
-                        find_remoter = 0;
+                        if(RoterData.Filter_LockFlag)find_remoter = 0;
                         log_info("MPPT device is lock %d \n",*adv_data_pt);
                     }
                     else
