@@ -281,14 +281,23 @@ void Get_Mppt_Report(void) // 获取MPPT 信息的指令
     }
 }
 
-void Mppt_Set_Para_Send(void) // 发MPPT的设置参数
+void Mppt_Set_Para_Send(void *priv) // 发MPPT的设置参数
 {
     uint32_t i, ret = 0;
-
     uint8_t *data ;
     uint32_t encry_key[4] ;     //通过+MAC地址来改变密钥
     uint16_t offset = 0;
     uint16_t tmp_handle;
+
+    Mppt_Set_Parm_t *SetParm = priv;
+
+    if( priv == NULL ) 
+    {
+        log_info("SetParm Null");
+        return;
+    }
+
+    
 
     uint16_t  Curv_Data[8][2]=   // 曲线数据  单位S 占空比%
     {
@@ -298,8 +307,8 @@ void Mppt_Set_Para_Send(void) // 发MPPT的设置参数
 
     for(i=0;i<8;i++)
     {
-        Curv_Data[i][0] = 60*60*RoterData.Mppt_SetPara.Curv_Data[i][0];
-        Curv_Data[i][1] = RoterData.Mppt_SetPara.Curv_Data[i][1];
+        Curv_Data[i][0] = 60*60*SetParm->Curv_Data[i][0];
+        Curv_Data[i][1] = SetParm->Curv_Data[i][1];
 
          log_info("curv %d %d", Curv_Data[i][0], Curv_Data[i][1]);
     }
@@ -320,22 +329,22 @@ void Mppt_Set_Para_Send(void) // 发MPPT的设置参数
             for(i=0;i<6;i++) encry_key[i%4] += RoterData.Ble_Connect_Mac[i]; //加密密钥
 
             data[offset++] = 0xAA; //包头
-            offset += make_packet_val(&data[offset],offset,0x01,RoterData.Mppt_SetPara.Bat_Capcity*1000,4); // 发10A
-            offset += make_packet_val(&data[offset],offset,0x02,RoterData.Mppt_SetPara.Charge_Current_Max*1000,4); // 发5A  0.5C;
-            offset += make_packet_val(&data[offset],offset,0x03,RoterData.Mppt_SetPara.Charge_Power_Max*1000,4); // 发50W 
-            offset += make_packet_val(&data[offset],offset,0x04,RoterData.Mppt_SetPara.Trickle_Current*1000,4);   // 发500mah
-            offset += make_packet_val(&data[offset],offset,0x05,RoterData.Mppt_SetPara.Low_voltage_Protect*1000,4);  // 发2600MV
-            offset += make_packet_val(&data[offset],offset,0x06,RoterData.Mppt_SetPara.Current_Gear,4);       // 发20挡位
-            offset += make_packet_val(&data[offset],offset,0x07,RoterData.Mppt_SetPara.Ledar_Pwm,4);          // 雷达10%
-            offset += make_packet_val(&data[offset],offset,0x08,RoterData.Mppt_SetPara.Ledar_Dly_Time,4);     // 雷达延迟15S
-            offset += make_packet_val(&data[offset],offset,0x09,RoterData.Mppt_SetPara.Led_Set_Pwm,4);        // 默认亮度100%
-            offset += make_packet_val(&data[offset],offset,0x0A,RoterData.Mppt_SetPara.DischarCurve_Moed,4);  // 曲线模式0 pwm模式
+            offset += make_packet_val(&data[offset],offset,0x01,SetParm->Bat_Capcity*1000,4); // 发10A
+            offset += make_packet_val(&data[offset],offset,0x02,SetParm->Charge_Current_Max*1000,4); // 发5A  0.5C;
+            offset += make_packet_val(&data[offset],offset,0x03,SetParm->Charge_Power_Max*1000,4); // 发50W 
+            offset += make_packet_val(&data[offset],offset,0x04,SetParm->Trickle_Current*1000,4);   // 发500mah
+            offset += make_packet_val(&data[offset],offset,0x05,SetParm->Low_voltage_Protect*1000,4);  // 发2600MV
+            offset += make_packet_val(&data[offset],offset,0x06,SetParm->Current_Gear,4);       // 发20挡位
+            offset += make_packet_val(&data[offset],offset,0x07,SetParm->Ledar_Pwm,4);          // 雷达10%
+            offset += make_packet_val(&data[offset],offset,0x08,SetParm->Ledar_Dly_Time,4);     // 雷达延迟15S
+            offset += make_packet_val(&data[offset],offset,0x09,SetParm->Led_Set_Pwm,4);        // 默认亮度100%
+            offset += make_packet_val(&data[offset],offset,0x0A,SetParm->DischarCurve_Moed,4);  // 曲线模式0 pwm模式
             offset += make_packet_data(&data[offset],offset,0x0B,&Curv_Data,sizeof(Curv_Data));               // 默认曲线
-            offset += make_packet_val(&data[offset],offset,0x0C,RoterData.Mppt_SetPara.Lock_Mode,4);          // 锁定模式
-            offset += make_packet_val(&data[offset],offset,0x0D,RoterData.Usercode,4);                        // 用户数据
+            offset += make_packet_val(&data[offset],offset,0x0C,SetParm->Lock_Mode,4);          // 锁定模式
+            offset += make_packet_val(&data[offset],offset,0x0D,SetParm->Usercode,4);           // 用户数据
             offset += make_packet_data(&data[offset],offset,0x0E,&Time_Data,sizeof(Time_Data));               // 时间参数
-            offset += make_packet_data(&data[offset],offset,0x0F,RoterData.Mppt_SetPara.Solar_Mode,4);        // 太阳能模式
-            offset += make_packet_data(&data[offset],offset,0x10,RoterData.Mppt_SetPara.Extern_Mode,4);       // 外部通信方式
+            offset += make_packet_val(&data[offset],offset,0x0F,SetParm->Solar_Mode,4);         // 太阳能模式
+            offset += make_packet_val(&data[offset],offset,0x10,SetParm->Extern_Mode,4);        // 外部通信方式
 
             data[offset++] = 0X55;//包尾
             for(i=0;i<offset%4;i++)
@@ -359,6 +368,28 @@ void Mppt_Set_Para_Send(void) // 发MPPT的设置参数
     }
     
   
+}
+
+static u16 Get_Info_Timer = 0;
+static void  MPPT_Get_Info_Timer_Star(void)
+{
+    log_info("%s[id:%d] star", __func__, Get_Info_Timer);
+    if(Get_Info_Timer)
+    {
+        sys_timer_del(Get_Info_Timer);
+        Get_Info_Timer = 0; 
+    }   
+    Get_Info_Timer = sys_timer_add(NULL, Get_Mppt_Report1, 1000);
+}
+
+static void Get_Info_Timer_Del(void)
+{
+    log_info("%s[id:%d]", __func__, Get_Info_Timer);
+    if(Get_Info_Timer)
+    {
+        sys_timer_del(Get_Info_Timer);
+        Get_Info_Timer = 0;
+    }
 }
 
 void Mppt_Data_Decode(u8 *packet,u16 size) // MPPT 信息解码
@@ -420,7 +451,7 @@ void Mppt_Data_Decode(u8 *packet,u16 size) // MPPT 信息解码
                     
                     if(!RoterData.Ble_Adv_rp[location].IsModifyFlag)
                     {
-                    RoterData.Ble_Adv_rp[location].IsModifyFlag = 1; 
+                        RoterData.Ble_Adv_rp[location].IsModifyFlag = 1; 
 
                         e.type = SYS_KEY_EVENT;
                         e.u.key.init = 1;
@@ -482,7 +513,7 @@ void Mppt_Data_Decode(u8 *packet,u16 size) // MPPT 信息解码
                     case 0x05:
                         temp = little_endian_read_32(&data[data_position],0); 
                         log_info("Bat_Resistance :%xMR ",temp);
-                        RoterData.Mppt_Info.Charge_Power = temp; 
+                        RoterData.Mppt_Info.Bat_Resistance = temp; 
                         break;
                     case 0x06:
                         temp = little_endian_read_32(&data[data_position],0);  
@@ -492,7 +523,7 @@ void Mppt_Data_Decode(u8 *packet,u16 size) // MPPT 信息解码
                     case 0x07:
                         temp = little_endian_read_32(&data[data_position],0);     
                         log_info("OutPut_Staus :%d ",temp);
-                        RoterData.Mppt_Info.Charge_Power = temp;
+                        RoterData.Mppt_Info.OutPut_Staus = temp;
                         break;
                     case 0x08:
                         temp = little_endian_read_32(&data[data_position],0);  
@@ -509,6 +540,7 @@ void Mppt_Data_Decode(u8 *packet,u16 size) // MPPT 信息解码
             break;
         case 0xCC:  // 返回设置的信息
             log_info("find data head 0xCC\r\n");
+            Get_Info_Timer_Del(); 
             while(data_i<size)
             {
                 next_len = data[data_i] + 1; //长度

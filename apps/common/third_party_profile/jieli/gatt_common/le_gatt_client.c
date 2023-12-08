@@ -950,14 +950,26 @@ static bool __resolve_adv_report(adv_report_t *report_pt, u16 len) //检测是�
                     break;
                 case 0x21:
                     tmp32 = little_endian_read_16(adv_data_pt,0);
-                    if( tmp32 != RoterData.Usercode)
+                    if( tmp32 != RoterData.Mppt_SetPara.Usercode)
                     {
                         find_remoter = 0;
-                        log_info("Usercode %d pair fail %d \n",RoterData.Usercode,tmp32);
+                        log_info("Usercode %d pair fail %d \n",RoterData.Mppt_SetPara.Usercode,tmp32);
                     }
                     else
                     {
-                         log_info("Usercode pair ok\n");
+                        log_info("Usercode pair ok\n"); //配上才记录
+                        uint8_t location = Ble_Connect_Recode(report_pt->address,report_pt->rssi);
+                        if(RoterData.Ble_Adv_rp[location].IsModifyFlag == 0)
+                        {   
+                           // RoterData.Ble_Adv_rp[location].IsModifyFlag = 1;
+                            if(RoterData.ConnenctOnFlag)find_remoter = 1;
+                            log_info("MPPT device is no ModifyFlag\n");
+                            log_info("catch name ok\n");
+                        }
+                        else
+                        {
+                            log_info("MPPT device is IsModifyFlag\n");
+                        }
                     }
                     break;
 
@@ -984,18 +996,6 @@ static bool __resolve_adv_report(adv_report_t *report_pt, u16 len) //检测是�
                     {       
                         log_info("remoter_name:%s ,rssi:%d\n", adv_data_pt, report_pt->rssi);
                         log_info_hexdump(report_pt->address, 6);
-                        uint8_t location = Ble_Connect_Recode(report_pt->address,report_pt->rssi);
-                        if(RoterData.Ble_Adv_rp[location].IsModifyFlag == 0)
-                        {   
-                           // RoterData.Ble_Adv_rp[location].IsModifyFlag = 1;
-                            if(RoterData.ConnenctOnFlag)find_remoter = 1;
-                            log_info("MPPT device is no ModifyFlag\n");
-                            log_info("catch name ok\n");
-                        }
-                        else
-                        {
-                            log_info("MPPT device is IsModifyFlag\n");
-                        }
                     }
                     break;
                     //TAG名字匹配

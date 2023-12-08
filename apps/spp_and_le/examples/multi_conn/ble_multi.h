@@ -46,7 +46,8 @@ void Ir_tx_star(u8 data,u8 size); // 设置IO 电流大小
 void Ir_tx_star_adr(u16 data,u8 size);
 void Ir_tx_star_Def(u8 *data); //
 
-void Mppt_Set_Para_Send(void);
+void Mppt_Set_Para_Send(void *priv);
 void Get_Mppt_Report(void);
 void Get_Mppt_Report1(void);
+void MPPT_Get_Info_Timer_Star(void);
 #endif

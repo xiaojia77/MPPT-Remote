@@ -38,6 +38,10 @@
 
 #if CONFIG_APP_MULTI
 
+#define CFG_USER_VAR	 2
+#define CFG_USER_BUF	 3
+#define CFG_USER_STRUCT	 4
+
 static u8 is_app_multi_active = 0;
 
 void multi_set_soft_poweroff(void)
@@ -75,6 +79,17 @@ void Power_Port_Init()
 void Power_Lock()
 {
     gpio_write(Power_En, 1);
+}
+void Power_UnLock()
+{
+     int ret = 0;
+    ret = syscfg_write(CFG_USER_STRUCT, &RoterData.Mppt_SetPara, sizeof(RoterData.Mppt_SetPara));
+    log_info("%s[CFG_USER_STRUCT -> syscfg_write:%d]", __func__, ret);
+    if(ret != sizeof(RoterData.Mppt_SetPara))
+        log_error("CFG_USER_STRUCT -> syscfg_write -> err:%d", ret);
+    Power_Flag = 0;
+    gpio_write(Power_En, 0);
+    
 }
 
 static u16 Bepp_timer  = 0;
@@ -235,9 +250,9 @@ void ir_tx_init(void)
     log_info("Ir Pwm Init");
 }
 
-void Sys_Auto_Off()
+void Sys_Auto_Off() // 90秒自动关机
 {
-    gpio_write(Power_En, 0);
+    Power_UnLock();
 }
 static u16 Sys_Auto_Off_Timer;
 static void multi_app_start()
@@ -264,7 +279,7 @@ static void multi_app_start()
         btstack_ble_start_before_init(NULL, 0);
     
     #endif
-         btstack_init();
+        btstack_init();
         
         spi_open(SPI1);
         ST7789Lcd_Init();
@@ -314,6 +329,34 @@ static void multi_app_start()
         
         RoterData.Mppt_SetPara.Curv_Data[7][0] = 0;
         RoterData.Mppt_SetPara.Curv_Data[7][1] = 0;
+
+        char str[10];
+        floatToString(10.0f,1,str);
+        log_info("floatToString%s", str);
+        floatToString(9.0f,1,str);
+        log_info("floatToString%s", str);
+        floatToString(20.0f,1,str);
+        log_info("floatToString%s", str);
+        // floatToString(0.118,3,str);
+        // log_info("floatToString%s", str);
+      
+        // ret = syscfg_write(CFG_USER_STRUCT, &RoterData.Mppt_SetPara, sizeof(RoterData.Mppt_SetPara));
+        // log_info("%s[CFG_USER_STRUCT -> syscfg_write:%d]", __func__, ret);
+        // if(ret != sizeof(RoterData.Mppt_SetPara))
+        //     log_error("CFG_USER_STRUCT -> syscfg_write -> err:%d", ret);
+
+        
+        int ret = 0;
+        ret = syscfg_read(CFG_USER_STRUCT, &RoterData.Mppt_SetPara, sizeof(RoterData.Mppt_SetPara) );
+        log_info("%s[CFG_USER_STRUCT -> syscfg_read:%d]", __func__, ret);
+        if(ret != sizeof(RoterData.Mppt_SetPara))
+        {
+            log_error("CFG_USER_STRUCT -> syscfg_read -> err:%d", ret);
+        }
+        else
+        {
+            log_info("CFG_USER_STRUCT:%d %d", RoterData.Mppt_SetPara.Current_Gear, RoterData.Mppt_SetPara.Led_Set_Pwm);
+        }
 
         Mppt_Main_Menu();
         
@@ -411,7 +454,7 @@ static void multi_key_event_handler(struct sys_event *event)
             else
             {
                 Power_Flag = 0;
-                gpio_write(Power_En, 0);
+                Power_UnLock();
             }
         }
         if(key_value < (KEY_VALUE_TYPE_MAX - 1) )

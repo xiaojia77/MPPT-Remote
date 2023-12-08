@@ -74,6 +74,8 @@ typedef struct
 
     uint32_t Extern_Mode; //控制模式
 
+    uint16_t Usercode; //用户码
+
 }Mppt_Set_Parm_t ;
 
 typedef struct 
@@ -104,7 +106,7 @@ typedef struct
     uint16_t    conn_handle;
 
 
-    uint16_t    Usercode; //用户码
+   // uint16_t    Usercode; //用户码
     uint16_t    SetCount; //已计数
 
     uint8_t Filter_LockFlag; //过滤锁定的设备
@@ -131,7 +133,8 @@ void Lcd_Show8x16(uint8_t x,uint8_t y,uint8_t *p);
 void Lcd_printf20x20(uint8_t x,uint8_t y,uint8_t *format,...);
 void Lcd_printf16x16(uint8_t x,uint8_t y,uint8_t *str);  
 void Lcd_Clear20x20(uint8_t x,uint8_t y);
-uint32_t floatToString(float n, u8 a, char *str);
+//uint32_t floatToString(float n, u8 a, char *str);
+void floatToString(float d, int l,char *str) ;
 void Lcd_ShowPicture(u16 x,u16 y,u16 length,u16 width,const u8 pic[]);
 
 void Lcd_Clear(u16 color);
@@ -155,6 +158,7 @@ void Mppt_Ble_BatchSet_Menu(void);
     void Mppt_Dischar_Set_Menu(void);
     void Mppt_Dischar_Set_Menu_Operation(uint8_t key);
 
+    //放电曲线设置
     void Mppt_Dischar_Curve_Set_Menu(void);
     void Mppt_Dischar_Curve_Set_Operation(uint8_t key);
 
@@ -172,8 +176,9 @@ void Mppt_Ble_con_Select_Menu_Operation(uint8_t key);
         void Mppt_Ble_Set_Menu(void);
         void Mppt_Ble_Set_Operation(uint8_t key);
 
-            void Mppt_Info_Display(Mppt_Info_Para_t *Info); // MPPT参数配置
+            void Mppt_Info_Display(void *priv); // MPPT参数配置
             void Mppt_Info_Menu(void); //充电信息配置
+            void Mppt_Info_Menu_Operation(uint8_t key);
 
             void Mppt_ChargePara_Modify_Menu(void);
             void Mppt_ChargePara_Modify_Menu_Operation(uint8_t key);
@@ -201,6 +206,9 @@ void Mppt_Ir_Set_Menu_Operation(uint8_t key) ;
     void IR_Usercode_Menu_Operation(uint8_t key);
 
 void Mppt_Version_Info_menu(void);
+
+void SYS_Set_Menu(void);
+
 void Mppt_Version_Select_Menu(void);
 
 enum
@@ -213,7 +221,6 @@ enum
         DISCHAR_CURVE_SET_MENU,
         BL_ATCON_SET_MENU,
 
-    
     BL_CON_MENU,
         BL_CON_SELECT_MENU,
             BL_CON_SET_MENU,
@@ -221,14 +228,16 @@ enum
                 CHAEGE_PARA_MODIFY,
                 DISCHAR_PARA_MODIFY,
                 CURVE_PARAT_MENU,
-                ENTRY_MODIFY,
-    
+                ENTRY_MODIFY,    
+                
     IR_SET_MENU,
         IR_NORMAL_MENU,
         IR_ENGINEER_MENU,
         IR_USERCODE_MENU,
 
     VERSION_CHECK_MENU,
+    
+    SYS_SET_MENU,
 
     MPPT_VERSION_SELECT_MENU,
 
@@ -237,19 +246,19 @@ enum
 
 static Menu_Tab_t const Menu_Tab[]=
 {
-    {MAIN_MENU,NULL,5,Mppt_Main_Menu_Operation,Mppt_Main_Menu}, //主菜单 次级菜单
+    {MAIN_MENU,NULL,6,Mppt_Main_Menu_Operation,Mppt_Main_Menu}, //主菜单 次级菜单
 
     {BLE_BATCHSET_MENU,MAIN_MENU,6,Mppt_Ble_BatchSet_Menu_Operation,Mppt_Ble_BatchSet_Menu}, // 批量设置菜单
         {CHAEGE_SET_MENU,BLE_BATCHSET_MENU,4,Mppt_Charge_Set_Menu_Operation,Mppt_Charge_Set_Menu}, // 次级菜单
         {DISCHAR_SET_MENU,BLE_BATCHSET_MENU,7,Mppt_Dischar_Set_Menu_Operation,Mppt_Dischar_Set_Menu},
         {DISCHAR_CURVE_SET_MENU,BLE_BATCHSET_MENU,16,Mppt_Dischar_Curve_Set_Operation,Mppt_Dischar_Curve_Set_Menu},
-        {BL_ATCON_SET_MENU,BLE_BATCHSET_MENU,8,Mppt_Ble_AutoConnect_set_Menu_Operation,Mppt_Ble_AutoConnect_set_Menu},
+        {BL_ATCON_SET_MENU,BLE_BATCHSET_MENU,3,Mppt_Ble_AutoConnect_set_Menu_Operation,Mppt_Ble_AutoConnect_set_Menu},
 
     
     {BL_CON_MENU,MAIN_MENU,NULL,Mppt_Ble_con_Menu_Operation,Mppt_Ble_con_Menu},
         {BL_CON_SELECT_MENU,MAIN_MENU,8,Mppt_Ble_con_Select_Menu_Operation,Mppt_Ble_con_Select_Menu},
             {BL_CON_SET_MENU,MAIN_MENU,7,Mppt_Ble_Set_Operation,Mppt_Ble_Set_Menu},
-                {MPPT_INFO,BL_CON_SET_MENU,2,Mppt_Main_Menu_Operation,Mppt_Info_Menu},
+                {MPPT_INFO,BL_CON_SET_MENU,2,Mppt_Info_Menu_Operation,Mppt_Info_Menu},
                 {CHAEGE_PARA_MODIFY,BL_CON_SET_MENU,4,Mppt_ChargePara_Modify_Menu_Operation,Mppt_ChargePara_Modify_Menu},
                 {DISCHAR_PARA_MODIFY,BL_CON_SET_MENU,7,Mppt_DischarPara_Modify_Menu_Operation,Mppt_DischarPara_Modify_Menu},
                 {CURVE_PARAT_MENU,BL_CON_SET_MENU,16,Mppt_CurvePara_Modify_Menu_Operation,Mppt_CurvePara_Modify_Menu},
@@ -263,6 +272,8 @@ static Menu_Tab_t const Menu_Tab[]=
 
 
     {VERSION_CHECK_MENU,MAIN_MENU,NULL,Mppt_Normal_Menu_Select,Mppt_Version_Info_menu},
+
+    {SYS_SET_MENU,MAIN_MENU,NULL,Mppt_Normal_Menu_Select,SYS_Set_Menu},
 
     {MPPT_VERSION_SELECT_MENU,MAIN_MENU,1,Mppt_Normal_Menu_Select,Mppt_Version_Select_Menu},
 
