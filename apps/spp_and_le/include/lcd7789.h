@@ -140,6 +140,9 @@ void Lcd_ShowPicture(u16 x,u16 y,u16 length,u16 width,const u8 pic[]);
 void Lcd_Clear(u16 color);
 void ST7789Lcd_Init(void);
 
+void Mppt_Log_Menu(void);
+void Mppt_Log_Menu_Operation(uint8_t key);
+
 //主菜单
 void Mppt_Normal_Menu_Select(uint8_t key);
 void Mppt_Main_Menu(void);
@@ -213,6 +216,9 @@ void Mppt_Version_Select_Menu(void);
 
 enum
 {
+
+    LOG_MENU,
+
     MAIN_MENU,
 
     BLE_BATCHSET_MENU,
@@ -246,7 +252,10 @@ enum
 
 static Menu_Tab_t const Menu_Tab[]=
 {
-    {MAIN_MENU,NULL,6,Mppt_Main_Menu_Operation,Mppt_Main_Menu}, //主菜单 次级菜单
+    
+    {LOG_MENU,NULL,NULL,Mppt_Log_Menu_Operation,Mppt_Log_Menu}, //主菜单 次级菜单
+
+    {MAIN_MENU,LOG_MENU,6,Mppt_Main_Menu_Operation,Mppt_Main_Menu}, //主菜单 次级菜单
 
     {BLE_BATCHSET_MENU,MAIN_MENU,6,Mppt_Ble_BatchSet_Menu_Operation,Mppt_Ble_BatchSet_Menu}, // 批量设置菜单
         {CHAEGE_SET_MENU,BLE_BATCHSET_MENU,4,Mppt_Charge_Set_Menu_Operation,Mppt_Charge_Set_Menu}, // 次级菜单

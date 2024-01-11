@@ -434,7 +434,7 @@ static int multi_make_set_adv_data(void)
     u8 *buf = multi_adv_data;
 
     offset += make_eir_packet_val(&buf[offset], offset, HCI_EIR_DATATYPE_FLAGS, FLAGS_GENERAL_DISCOVERABLE_MODE | FLAGS_EDR_NOT_SUPPORTED, 1);
-    offset += make_eir_packet_val(&buf[offset], offset, HCI_EIR_DATATYPE_COMPLETE_16BIT_SERVICE_UUIDS, 0xAF30, 2);
+   
 
     char *gap_name = ble_comm_get_gap_name();
     u8 name_len = strlen(gap_name);
@@ -462,6 +462,8 @@ static int multi_make_set_rsp_data(void)
 {
     u8 offset = 0;
     u8 *buf = multi_scan_rsp_data;
+
+     offset += make_eir_packet_val(&buf[offset], offset, HCI_EIR_DATATYPE_COMPLETE_16BIT_SERVICE_UUIDS, 0xAF30, 2);
 
 #if RCSP_BTMATE_EN
     u8  tag_len = sizeof(user_tag_string);

@@ -379,7 +379,7 @@
 //*********************************************************************************//
 #define TCFG_USER_TWS_ENABLE                      0   //tws功能使能
 #define TCFG_USER_BLE_ENABLE                      1   //BLE功能使能,---使能后,请配置TCFG_BLE_DEMO_SELECT选择DEMO例子
-#define TCFG_USER_EDR_ENABLE                      0 //1   //EDR功能使能
+#define TCFG_USER_EDR_ENABLE                      0   //EDR功能使能
 
 #if TCFG_USER_EDR_ENABLE
 #define USER_SUPPORT_PROFILE_SPP    1

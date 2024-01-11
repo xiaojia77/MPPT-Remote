@@ -43,9 +43,9 @@ typedef enum __DEVICE_REFRESH_FW_STATUS {
 } DEVICE_UPDATE_STA;
 
 enum {
-    BT_UPDATE_OVER = 0,
-    BT_UPDATE_KEY_ERR,
-    BT_UPDATE_CONNECT_ERR,
+    BT_UPDATE_OVER = 0,     //更新完成
+    BT_UPDATE_KEY_ERR,      //按键错误
+    BT_UPDATE_CONNECT_ERR,  //连接错误
 };
 
 typedef enum {
@@ -340,6 +340,8 @@ void rcsp_update_data_api_unregister(void)
 void rcsp_ch_update_init(void (*resume_hdl)(void *priv), int (*sleep_hdl)(void *priv))
 {
     deg_puts("------------rcsp_ch_update_init\n");
+
+    uart_dev_close();
 
     rcsp_update_resume_hdl_register(resume_hdl, sleep_hdl);
     //register_receive_fw_update_block_handle(rcsp_updata_handle);

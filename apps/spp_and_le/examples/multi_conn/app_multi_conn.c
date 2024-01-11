@@ -254,7 +254,14 @@ void Sys_Auto_Off() // 90秒自动关机
 {
     Power_UnLock();
 }
+
 static u16 Sys_Auto_Off_Timer;
+void Timer_Auto_Off_ReCount()
+{
+    sys_timer_re_run(Sys_Auto_Off_Timer);
+}
+
+
 static void multi_app_start()
 {
     uint8_t i;
@@ -293,7 +300,7 @@ static void multi_app_start()
             RoterData.Ble_Adv_rp[i].rssi = -99;
 
         RoterData.Mppt_SetPara.Bat_Capcity = 7.5;
-        RoterData.Mppt_SetPara.Charge_Current_Max = 20;
+        RoterData.Mppt_SetPara.Charge_Current_Max = 10;
         RoterData.Mppt_SetPara.Charge_Power_Max = 75;
         RoterData.Mppt_SetPara.Trickle_Current = 0.5f;
         RoterData.Mppt_SetPara.DischarCurve_Moed = 0;
@@ -330,13 +337,13 @@ static void multi_app_start()
         RoterData.Mppt_SetPara.Curv_Data[7][0] = 0;
         RoterData.Mppt_SetPara.Curv_Data[7][1] = 0;
 
-        char str[10];
-        floatToString(10.0f,1,str);
-        log_info("floatToString%s", str);
-        floatToString(9.0f,1,str);
-        log_info("floatToString%s", str);
-        floatToString(20.0f,1,str);
-        log_info("floatToString%s", str);
+        // char str[10];
+        // floatToString(10.0f,1,str);
+        // log_info("floatToString%s", str);
+        // floatToString(9.0f,1,str);
+        // log_info("floatToString%s", str);
+        // floatToString(20.0f,1,str);
+        // log_info("floatToString%s", str);
         // floatToString(0.118,3,str);
         // log_info("floatToString%s", str);
       
@@ -345,6 +352,7 @@ static void multi_app_start()
         // if(ret != sizeof(RoterData.Mppt_SetPara))
         //     log_error("CFG_USER_STRUCT -> syscfg_write -> err:%d", ret);
 
+        
         
         int ret = 0;
         ret = syscfg_read(CFG_USER_STRUCT, &RoterData.Mppt_SetPara, sizeof(RoterData.Mppt_SetPara) );
@@ -358,14 +366,15 @@ static void multi_app_start()
             log_info("CFG_USER_STRUCT:%d %d", RoterData.Mppt_SetPara.Current_Gear, RoterData.Mppt_SetPara.Led_Set_Pwm);
         }
 
-        Mppt_Main_Menu();
-        
-        // Lcd_ShowPicture(0,0,240,240,gImage_image);
+       // Mppt_Main_Menu();
+          Mppt_Log_Menu();   
+       Mppt_Info_Display(&RoterData.Mppt_Info);
+       // Lcd_ShowPicture(0,0,240,240,gImage_image);
         sys_timer_add(NULL,Ble_Timeout_Check,500);
         ir_tx_init();
 
 
-        Sys_Auto_Off_Timer = sys_timer_add(NULL, Sys_Auto_Off, 90000);
+        Sys_Auto_Off_Timer = sys_timer_add(NULL, Sys_Auto_Off, 60000 * 2);
 
     #endif
     /* 按键消息使能 */
@@ -451,14 +460,19 @@ static void multi_key_event_handler(struct sys_event *event)
                 Power_Lock(); 
                 
             }
-            else
+            // else
+            // {
+            //     Power_Flag = 0;
+            //     Power_UnLock();
+            // }
+        }
+        if(key_value < (KEY_VALUE_TYPE_MAX - 1) )
+        {
+            if( key_value == KEY_VALUE_TYPE_OFF)
             {
                 Power_Flag = 0;
                 Power_UnLock();
             }
-        }
-        if(key_value < (KEY_VALUE_TYPE_MAX - 1) )
-        {
 
             Beep_Star();
 

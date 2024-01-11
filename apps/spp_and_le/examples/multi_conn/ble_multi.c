@@ -64,7 +64,7 @@ static const sm_cfg_t sm_init_config = {
     .master_security_auto_req = 1,
     .master_set_wait_security = 1,
     .slave_security_auto_req = 0,
-    .slave_set_wait_security = 1,
+    .slave_set_wait_security = 0,
 
 #if PASSKEY_ENABLE
     .io_capabilities = IO_CAPABILITY_DISPLAY_ONLY,

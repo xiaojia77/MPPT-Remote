@@ -67,7 +67,14 @@
         "app_chargestore.h": "c",
         "math.h": "c",
         "avctp_user.h": "c",
-        "stdint.h": "c"
+        "stdint.h": "c",
+        "rcsp_user_update.h": "c",
+        "app_charge.h": "c",
+        "btctrler_task.h": "c",
+        "os_api.h": "c",
+        "update_loader_download.h": "c",
+        "jl_rcsp_protocol.h": "c",
+        "uart_dev.h": "c"
     },
     "C_Cpp.dimInactiveRegions": true
 }
