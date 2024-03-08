@@ -151,12 +151,12 @@ static const target_uuid_t  jl_multi_search_uuid_table[] =
     // CHARACTERISTIC,  ae01, WRITE_WITHOUT_RESPONSE | DYNAMIC,
     // CHARACTERISTIC,  ae02, NOTIFY,
     {
-        .services_uuid16 = 0xae00,
+        .services_uuid16 = 0xae30,
         .characteristic_uuid16 = 0xae01,
         .opt_type = ATT_PROPERTY_WRITE_WITHOUT_RESPONSE,
     },
     {
-        .services_uuid16 = 0xae00,
+        .services_uuid16 = 0xae30,
         .characteristic_uuid16 = 0xae02,
         .opt_type = ATT_PROPERTY_NOTIFY,
     },
@@ -1037,6 +1037,7 @@ static int multi_client_event_packet_handler(int event, u8 *packet, u16 size, u8
 
 
             *key = key_t%999999;
+            RoterData.paircode = key_t%999999;
           //  *key = 777777;
             r_printf("input_key:%6u\n", *key);
         }

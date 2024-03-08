@@ -366,9 +366,9 @@ void ST7789Lcd_Init(void)
 
    
     //Lcd_WriteCmd(0x21); // Display inversion on
-    
-     Lcd_WriteCmd(0x29); // Display o
     Lcd_Clear(WHITE);
+    Lcd_WriteCmd(0x29); // Display o
+   
 }
 
 void floatToString(float d, int l,char *str) 
@@ -1639,7 +1639,18 @@ void Mppt_Ble_con_Menu_Operation(uint8_t key)
         Lcd_printf20x20(30,120,"曲线模式修改：%s",Curve_Mode_Str[RoterData.Mppt_ConSetPara_Info.DischarCurve_Moed]);
         Lcd_printf20x20(30,150,"放电曲线修改");
         Lcd_printf20x20(30,180,"锁定模式：%s",Lock_Mode_Str[RoterData.Mppt_ConSetPara_Info.Lock_Mode]);
-        Lcd_printf20x20(30,210,"确认修改");
+
+        uint32_t const bl_ckey[4]= {12,34,56,78}; 
+        uint8_t data[8]  =
+        {
+            0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+        };
+        for(int i=0;i<6;i++)data[i] = RoterData.Ble_Connect_Mac[i];
+        btea(data,2,bl_ckey);
+        RoterData.paircode = little_endian_read_32(data,0);
+         RoterData.paircode%=999999;
+
+        Lcd_printf20x20(30,210,"确认修改 code:%d",RoterData.paircode);
         Lcd_printf20x20(5, 30 * MenuData.index[MenuData.current_id], "＞");
         //MPPT_Get_Info_Timer_Star();
     }     
@@ -1697,7 +1708,7 @@ void Mppt_Ble_con_Menu_Operation(uint8_t key)
             const char* OutPut_Status_Str[]={"正常，短路"};
             Timer_Auto_Off_ReCount();
             Lcd_printf20x20(120 - 24 * 3, 0, "ＭＰＰＴ信息");
-            Info->Charge_Capcity = 0.004;
+          //  Info->Charge_Capcity = 0.004;
            floatToString(Info->Charge_Capcity,3,str);
             Lcd_printf20x20(30, 25 * 1, "已充电量:%sAh   ",str);
             floatToString(Info->Charge_Current,3,str);
@@ -1900,17 +1911,17 @@ void Mppt_Ir_Set_Menu_Operation(uint8_t key)
                 Ir_tx_star_adr(0x861b,0x39);
                 break;
             case KEY_VALUE_TYPE_2:
-                Ir_tx_star_adr(0x861B,0X9B);
+                Ir_tx_star_adr(0x861B,0XB9);
                 break;  
             case KEY_VALUE_TYPE_6:
-                Ir_tx_star_adr(0x861B,IR_Current_Code[Ir_current_Gear]);
+                Ir_tx_star_adr(0x861B,IR_Current_Code[Ir_current_Gear-1]);
                 break;
             case KEY_VALUE_TYPE_INCRE:
                 if(Ir_current_Gear<20)Ir_current_Gear++;
                 Lcd_printf20x20(30, 150,"6:Current Gare:%d ",Ir_current_Gear);
                 break;
             case KEY_VALUE_TYPE_DECRE:
-                if(Ir_current_Gear>1)Ir_current_Gear--;
+                if(Ir_current_Gear>2)Ir_current_Gear--;
                 Lcd_printf20x20(30, 150,"6:Current Gare:%d ",Ir_current_Gear);
                 break;
         }

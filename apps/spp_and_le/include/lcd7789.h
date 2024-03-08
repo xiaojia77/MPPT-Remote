@@ -109,6 +109,8 @@ typedef struct
    // uint16_t    Usercode; //用户码
     uint16_t    SetCount; //已计数
 
+    uint32_t paircode;
+
     uint8_t Filter_LockFlag; //过滤锁定的设备
 
     uint8_t ConnenctOnFlag; //允许连接标志位

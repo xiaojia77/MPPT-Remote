@@ -82,7 +82,7 @@ void Power_Lock()
 }
 void Power_UnLock()
 {
-     int ret = 0;
+    int ret = 0;
     ret = syscfg_write(CFG_USER_STRUCT, &RoterData.Mppt_SetPara, sizeof(RoterData.Mppt_SetPara));
     log_info("%s[CFG_USER_STRUCT -> syscfg_write:%d]", __func__, ret);
     if(ret != sizeof(RoterData.Mppt_SetPara))
@@ -363,12 +363,12 @@ static void multi_app_start()
         }
         else
         {
-            log_info("CFG_USER_STRUCT:%d %d", RoterData.Mppt_SetPara.Current_Gear, RoterData.Mppt_SetPara.Led_Set_Pwm);
+            log_info("CFG_USER_STRUCT1:%d %d", RoterData.Mppt_SetPara.Current_Gear, RoterData.Mppt_SetPara.Led_Set_Pwm);
         }
 
        // Mppt_Main_Menu();
           Mppt_Log_Menu();   
-       Mppt_Info_Display(&RoterData.Mppt_Info);
+      // Mppt_Info_Display(&RoterData.Mppt_Info);
        // Lcd_ShowPicture(0,0,240,240,gImage_image);
         sys_timer_add(NULL,Ble_Timeout_Check,500);
         ir_tx_init();
