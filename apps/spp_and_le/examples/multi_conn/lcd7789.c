@@ -759,7 +759,7 @@ void Mppt_Ble_BatchSet_Menu_Operation(uint8_t key)
                             break;
                         case 2:
                             if(indata<5) indata = 5;
-                            if(indata>20) indata = 20;
+                            if(indata>25) indata = 25;
                             SetPara->Charge_Current_Max=indata;
                             break;
                         case 3:
@@ -799,10 +799,10 @@ void Mppt_Ble_BatchSet_Menu_Operation(uint8_t key)
             }
             else if(MenuData.index[MenuData.current_id] == 2)
             {
-                if( input_num > 20)
+                if( input_num > 25)
                 {
-                    strcpy(instr,"20"); 
-                    input_index = sizeof("20") - 1;
+                    strcpy(instr,"25"); 
+                    input_index = sizeof("25") - 1;
                 }
                 Lcd_printf20x20(30, 60,"充电电流:%sA    ",instr);
             }
@@ -1806,14 +1806,19 @@ void Mppt_Ir_Set_Menu(void)
 {
     Lcd_Clear(BLACK);   
     Lcd_printf20x20(120 - 24 * 3, 0, "红外参数设置");
-    Lcd_printf20x20(30, 30, "常规遥控器");
-    Lcd_printf20x20(30, 60, "工程遥控器");
-    Lcd_printf20x20(30, 90, "用户码设置");
-  //  Lcd_printf20x20(30, 120, "放电曲线设置");
+    Lcd_printf20x20(30, 30,  "常规遥控器");
+    Lcd_printf20x20(30, 60,  "工程遥控器");
+    Lcd_printf20x20(30, 90,  "用户码设置");
+    Lcd_printf20x20(30, 120, "放电曲线模式：%s",Curve_Mode_Str[RoterData.Mppt_SetPara.DischarCurve_Moed]);
+    Lcd_printf20x20(30, 150, "曲线设置");
+    Lcd_printf20x20(30, 180, "曲线确认");
     Lcd_printf20x20(5, 30 * MenuData.index[MenuData.current_id], "＞");
 }
 void Mppt_Ir_Set_Menu_Operation(uint8_t key)  
 {
+    uint8_t i;
+    uint8_t ir_tx_data[20];
+    uint16_t Check_Sum = 0;
     Mppt_Normal_Menu_Select(key);
     switch (key)
     {
@@ -1830,6 +1835,29 @@ void Mppt_Ir_Set_Menu_Operation(uint8_t key)
                 case 3:
                      MenuData.current_id = IR_USERCODE_MENU; // 切换到下级菜单
                     break;
+                case 4:
+                    if(++RoterData.Mppt_SetPara.DischarCurve_Moed>2)RoterData.Mppt_SetPara.DischarCurve_Moed = 0;
+                    Mppt_Ir_Set_Menu();
+                    break;
+                case 5:
+                     MenuData.current_id = IR_CRUVESET_MENU; // 切换到下级菜单
+                    break;
+                case 6: //红外数据发送
+                    memset(&ir_tx_data,0,sizeof(ir_tx_data)) ;    //清空数据
+                    ir_tx_data[0] = 0X5F; ir_tx_data[1] = 0XF5;  //头码
+                    for(i=0;i<=8;i++)   //曲线数据发送
+                    {
+                        ir_tx_data[2 + i*2] = (uint8_t)(RoterData.Mppt_SetPara.Curv_Data[i][0] * 10);
+                        ir_tx_data[2 + i*2 + 1] = (uint8_t)(RoterData.Mppt_SetPara.Curv_Data[i][1]);
+                    }
+                    Check_Sum = 0;
+                    for(i=0;i<18;i++)Check_Sum += ir_tx_data[i];
+                    ir_tx_data[18] = Check_Sum >> 8;    // 高位
+                    ir_tx_data[19] = Check_Sum & 0xff;  //地位
+                    //ir_tx_data[18] = 0XAA;    // 高位
+                    //ir_tx_data[19] = 0Xbb;  //地位
+                    Ir_tx_star_x(ir_tx_data,sizeof(ir_tx_data));
+                    break; 
             }           
             if (Menu_Tab[MenuData.current_id].display_operation != NULL)
                  Menu_Tab[MenuData.current_id].display_operation();                                
@@ -2015,6 +2043,16 @@ void Mppt_Ir_Set_Menu_Operation(uint8_t key)
         
     }
 
+    void IR_CruveSet_Menu(void)
+    {
+         Lcd_Clear(BLACK);
+        Mppt_DischarCurve_Display(&RoterData.Mppt_SetPara); 
+    }
+
+    void IR_CruveSet_Menu_Operation(uint8_t key)
+    {
+          Mppt_CurveSet_Operation(&RoterData.Mppt_SetPara,key);
+    }
 
 void Mppt_Version_Info_menu(void)
 {

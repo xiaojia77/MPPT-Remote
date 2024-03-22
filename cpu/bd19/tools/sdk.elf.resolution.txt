@@ -3211,6 +3211,7 @@ objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o
 -r=objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o,Ir_tx_star_adr,pl
 -r=objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o,Ir_tx_star_Def,pl
 -r=objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o,memcpy,l
+-r=objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o,Ir_tx_star_x,pl
 -r=objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o,ir_tx_init,pl
 -r=objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o,request_irq,l
 -r=objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o,Sys_Auto_Off,pl
@@ -3266,6 +3267,8 @@ objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o
 -r=objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o,IR_Engineer_Menu,l
 -r=objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o,IR_Usercode_Menu_Operation,l
 -r=objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o,IR_Usercode_Menu,l
+-r=objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o,IR_CruveSet_Menu_Operation,l
+-r=objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o,IR_CruveSet_Menu,l
 -r=objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o,Mppt_Normal_Menu_Select,l
 -r=objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o,Mppt_Version_Info_menu,l
 -r=objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o,SYS_Set_Menu,l
@@ -3277,6 +3280,7 @@ objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o
 -r=objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o,log_tag_const_e_MULTI_CONN,l
 -r=objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o,ir_tx_fsm,pl
 -r=objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o,ir_Data,pl
+-r=objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o,Ir_tx_num,pl
 -r=objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o,multi_state_lp_target,pl
 -r=objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o,MenuData,l
 -r=objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o,Menu_Tab_e,l
@@ -3460,6 +3464,7 @@ objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o
 -r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Mppt_Comfir_Modify_Menu_Operation,pl
 -r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Mppt_Ir_Set_Menu,pl
 -r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Mppt_Ir_Set_Menu_Operation,pl
+-r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Ir_tx_star_x,l
 -r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,IR_Normal_Menu,pl
 -r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,IR_Normal_Menu_Operation,pl
 -r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Ir_tx_star,l
@@ -3469,6 +3474,8 @@ objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o
 -r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,IR_Usercode_Menu,pl
 -r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,IR_Usercode_Menu_Operation,pl
 -r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Ir_tx_star_Def,l
+-r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,IR_CruveSet_Menu,pl
+-r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,IR_CruveSet_Menu_Operation,pl
 -r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Mppt_Version_Info_menu,pl
 -r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,SYS_Set_Menu,pl
 -r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Mppt_Version_Select_Menu,pl

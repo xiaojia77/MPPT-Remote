@@ -144,7 +144,8 @@ void Ir_pwm_init(void)
     mcpwm_init(&pwm_p_data);
 }
 
-u8 ir_tx_fsm = 0, ir_Data[4] = {0xAA, 0x55, 0xF0, 0x0F}; // 地址正吗 地址反码 数据正码 数据反码
+u8 ir_tx_fsm = 0, ir_Data[20] = {0xAA, 0x55, 0xF0, 0x0F}; // 地址正吗 地址反码 数据正码 数据反码
+u8 Ir_tx_num;
 void Ir_tx_stop()
 {
     JL_TIMER3->CON &= ~0x00000001; // 停止模式
@@ -153,6 +154,7 @@ void Ir_tx_star(u8 adr,u8 data) //
 {
     ir_Data[0] = adr;ir_Data[1] = ~adr;
     ir_Data[2] = data;ir_Data[3] = ~data;
+    Ir_tx_num = 4;
     JL_TIMER3->PRD = 16 * 500;
     JL_TIMER3->CON |= 1; // 计数模式
     log_info("Ir Tx Data %x", reverse_u32(*(u32 *)ir_Data));
@@ -161,6 +163,7 @@ void Ir_tx_star_adr(u16 adr,u8 data) //
 {
     ir_Data[0] = adr >> 8;ir_Data[1] = (u8)(adr);
     ir_Data[2] = data;ir_Data[3] = ~data;
+     Ir_tx_num = 4;
     JL_TIMER3->PRD = 16 * 500;
     JL_TIMER3->CON |= 1; // 计数模式
     log_info("Ir Tx Data %x", reverse_u32(*(u32 *)ir_Data));
@@ -168,10 +171,29 @@ void Ir_tx_star_adr(u16 adr,u8 data) //
 void Ir_tx_star_Def(u8 *data) //
 {
     memcpy(ir_Data,data,4);
+     Ir_tx_num = 4;
     JL_TIMER3->PRD = 16 * 500;
     JL_TIMER3->CON |= 1; // 计数模式
     log_info("Ir Tx Data %x", reverse_u32(*(u32 *)ir_Data));
 }
+static uint8_t ConvertChar(uint8_t u8Inchar)
+{
+    u8Inchar = (char) ((u8Inchar << 4) + (u8Inchar >> 4));
+    u8Inchar = ((u8Inchar & 0x33) << 2) + ((u8Inchar & 0xCC) >> 2);
+    u8Inchar = ((u8Inchar & 0x55) << 1) + ((u8Inchar & 0xAA) >> 1);
+    return u8Inchar;
+}
+void Ir_tx_star_x(uint8_t *data,uint8_t len) //
+{
+    uint8_t i;
+    memcpy(ir_Data,data,len);
+   // for(i=0;i<len;i++)ir_Data[i] = ConvertChar(ir_Data[i]);
+    Ir_tx_num = len;
+    JL_TIMER3->PRD = 16 * 500;
+    JL_TIMER3->CON |= 1; // 计数模式
+   // log_info("Ir Tx Data %x", reverse_u32(*(u32 *)ir_Data));
+}
+
 ___interrupt
     AT_VOLATILE_RAM_CODE static void
     timer3_isr()
@@ -194,7 +216,7 @@ ___interrupt
         if (i >= 8)
         {
             i = 0;
-            if (++j >= 4)
+            if (++j >= Ir_tx_num)
             {
                 j = 0;
                 mcpwm_set_duty(pwm_ch3, 5000);

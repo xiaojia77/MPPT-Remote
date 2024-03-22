@@ -210,6 +210,9 @@ void Mppt_Ir_Set_Menu_Operation(uint8_t key) ;
     void IR_Usercode_Menu(void);
     void IR_Usercode_Menu_Operation(uint8_t key);
 
+    void IR_CruveSet_Menu(void);
+    void IR_CruveSet_Menu_Operation(uint8_t key);
+
 void Mppt_Version_Info_menu(void);
 
 void SYS_Set_Menu(void);
@@ -242,6 +245,7 @@ enum
         IR_NORMAL_MENU,
         IR_ENGINEER_MENU,
         IR_USERCODE_MENU,
+        IR_CRUVESET_MENU,
 
     VERSION_CHECK_MENU,
     
@@ -276,10 +280,11 @@ static Menu_Tab_t const Menu_Tab[]=
                 {ENTRY_MODIFY,BL_CON_SET_MENU,2,Mppt_Comfir_Modify_Menu_Operation,Mppt_Comfir_Modify_Menu},
         
 
-    {IR_SET_MENU,MAIN_MENU,3,Mppt_Ir_Set_Menu_Operation,Mppt_Ir_Set_Menu},
+    {IR_SET_MENU,MAIN_MENU,5,Mppt_Ir_Set_Menu_Operation,Mppt_Ir_Set_Menu},
         {IR_NORMAL_MENU,IR_SET_MENU,NULL,IR_Normal_Menu_Operation,IR_Normal_Menu},
         {IR_ENGINEER_MENU,IR_SET_MENU,NULL,IR_Engineer_Menu_Operation,IR_Engineer_Menu},
         {IR_USERCODE_MENU,IR_SET_MENU,2,IR_Usercode_Menu_Operation,IR_Usercode_Menu},
+        {IR_CRUVESET_MENU,IR_SET_MENU,16,IR_CruveSet_Menu_Operation,IR_CruveSet_Menu},
 
 
     {VERSION_CHECK_MENU,MAIN_MENU,NULL,Mppt_Normal_Menu_Select,Mppt_Version_Info_menu},
