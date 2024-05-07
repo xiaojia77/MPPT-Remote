@@ -44,7 +44,7 @@ typedef u32 OS_MUTEX, OS_ERR;
 extern "C" {
 #endif
 
-struct dev_mutex {
+struct dev_mutex {              //互斥
     OS_MUTEX *write_mutex;
     OS_MUTEX *read_mutex;
 };
@@ -80,9 +80,9 @@ typedef struct DEV_IO {
     const char name[8];
     s32(*mount)(void *volatile parm);
     s32(*unmount)();
-    s32(*read)(u8 *volatile buf, u32 addr, u32 len);
-    s32(*write)(u8 *volatile buf, u32 addr, u32 len);
-    s32(*ioctrl)(void *volatile parm, u32 cmd);
+    s32(*read)(u8 *volatile buf, u32 addr, u32 len);    // 读
+    s32(*write)(u8 *volatile buf, u32 addr, u32 len);   // 写
+    s32(*ioctrl)(void *volatile parm, u32 cmd);         // io控制
     s32(*power)(u32 mod);
     s32(*detect)(); //设备状态检测
 

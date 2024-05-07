@@ -74,7 +74,8 @@
     "os_api.h": "c",
     "update_loader_download.h": "c",
     "jl_rcsp_protocol.h": "c",
-    "uart_dev.h": "c"
+    "uart_dev.h": "c",
+    "adc_dtemp_alog.h": "c"
   },
   "C_Cpp.dimInactiveRegions": true,
   "C_Cpp_Runner.msvcBatchPath": "",

@@ -3239,6 +3239,8 @@ objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o
 -r=objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o,Mppt_Charge_Set_Menu,l
 -r=objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o,Mppt_Dischar_Set_Menu_Operation,l
 -r=objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o,Mppt_Dischar_Set_Menu,l
+-r=objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o,Mppt_Curce_Set_Menu_Operation,l
+-r=objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o,Mppt_Curce_Set_Menu,l
 -r=objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o,Mppt_Dischar_Curve_Set_Operation,l
 -r=objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o,Mppt_Dischar_Curve_Set_Menu,l
 -r=objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o,Mppt_Ble_AutoConnect_set_Menu_Operation,l
@@ -3255,8 +3257,12 @@ objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o
 -r=objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o,Mppt_ChargePara_Modify_Menu,l
 -r=objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o,Mppt_DischarPara_Modify_Menu_Operation,l
 -r=objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o,Mppt_DischarPara_Modify_Menu,l
+-r=objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o,Mppt_Curce_Modify_Menu_Operation,l
+-r=objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o,Mppt_Curce_Modify_Menu,l
 -r=objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o,Mppt_CurvePara_Modify_Menu_Operation,l
 -r=objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o,Mppt_CurvePara_Modify_Menu,l
+-r=objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o,Mppt_Modify_Menu_Operation,l
+-r=objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o,Mppt_Modify_Menu,l
 -r=objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o,Mppt_Comfir_Modify_Menu_Operation,l
 -r=objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o,Mppt_Comfir_Modify_Menu,l
 -r=objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o,Mppt_Ir_Set_Menu_Operation,l
@@ -3419,6 +3425,8 @@ objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o
 -r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Mppt_Dischar_Set_Menu,pl
 -r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Mppt_DischarSet_Operation,pl
 -r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Mppt_Dischar_Set_Menu_Operation,pl
+-r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Mppt_Curce_Set_Menu,pl
+-r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Mppt_Curce_Set_Menu_Operation,pl
 -r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Mppt_Curve_InPutFlash,pl
 -r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Mppt_Curve_Menu_Select_Display,pl
 -r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Mppt_DischarCurve_Display,pl
@@ -3458,8 +3466,12 @@ objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o
 -r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Mppt_ChargePara_Modify_Menu_Operation,pl
 -r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Mppt_DischarPara_Modify_Menu,pl
 -r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Mppt_DischarPara_Modify_Menu_Operation,pl
+-r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Mppt_Curce_Modify_Menu,pl
+-r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Mppt_Curce_Modify_Menu_Operation,pl
 -r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Mppt_CurvePara_Modify_Menu,pl
 -r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Mppt_CurvePara_Modify_Menu_Operation,pl
+-r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Mppt_Modify_Menu,pl
+-r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Mppt_Modify_Menu_Operation,pl
 -r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Mppt_Comfir_Modify_Menu,pl
 -r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Mppt_Comfir_Modify_Menu_Operation,pl
 -r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Mppt_Ir_Set_Menu,pl
