@@ -17,7 +17,7 @@
 #include "app_power_manage.h"
 #include "le_client_demo.h"
 #include "app_comm_bt.h"
-
+#include "norflash.h"
 
 #include "asm/mcpwm.h"
 #include "asm/ledc.h"
@@ -34,6 +34,8 @@
 #include "debug.h"
 #include "lcd7789.h"
 #include "lcd_data.h"
+
+#define Enable_beep 0
 
 
 #if CONFIG_APP_MULTI
@@ -282,8 +284,19 @@ void Timer_Auto_Off_ReCount()
 {
     sys_timer_re_run(Sys_Auto_Off_Timer);
 }
-
-
+/*
+NORFLASH_DEV_PLATFORM_DATA_BEGIN(norflash_fat_dev_datatest)
+    .spi_hw_num     = TCFG_FLASH_DEV_SPI_HW_NUM,
+    .spi_cs_port    = TCFG_FLASH_DEV_SPI_CS_PORT,
+    .spi_read_width = 4,
+#if (TCFG_FLASH_DEV_SPI_HW_NUM == 1)
+    .spi_pdata      = &spi1_p_data,
+#elif (TCFG_FLASH_DEV_SPI_HW_NUM == 2)
+    .spi_pdata      = &spi2_p_data,
+#endif
+    .start_addr     = 0,
+    .size           = 16*1024*1024,
+NORFLASH_DEV_PLATFORM_DATA_END()*/
 static void multi_app_start()
 {
     uint8_t i;
@@ -309,14 +322,62 @@ static void multi_app_start()
     
     #endif
         btstack_init();
+
+    // WP 
+    gpio_set_pull_up(IO_PORTB_04, 0);
+    gpio_set_pull_down(IO_PORTB_04, 0); 
+    gpio_set_direction(IO_PORTB_04, 0);
+    gpio_write(IO_PORTB_04, 1);
+
+    //HOLD
+    gpio_set_pull_up(IO_PORTB_08, 0);
+    gpio_set_pull_down(IO_PORTB_08, 0); 
+    gpio_set_direction(IO_PORTB_08, 0);
+    gpio_write(IO_PORTB_08, 1);
+    
+    //LOCK
+    Power_Port_Init();
+        //SPI测试
+      //  devices_init();
+
+        uint32_t temp = 0xfffffffff;
+       // uint8_t *Rtemp = malloc(512);
+
+       // for(int i =0;i<512;i++)Rtemp[i]=0;
+      
+        //log_info("Rtemp = %s", Rtemp);
+        /*struct  device *Norflashdevice;        
+        norfs_dev_ops.open("lcdtxt",&Norflashdevice,NULL);
+        norfs_dev_ops.write(Norflashdevice,DotTbl16,512,0);
+        norfs_dev_ops.read(Norflashdevice,Rtemp,512,0);*/
+        
+     
+        void *Norflash_Device = dev_open("lcdtxt",NULL);
+        log_info("Norflash_Device = %d", Norflash_Device);
+        // dev_bulk_write(Norflash_Device,&ttemp,0,sizeof(ttemp));    // 第一次烧进 225300
+        // dev_bulk_write(Norflash_Device,&ttemp,225300,sizeof(ttemp)); // 180480
+        // dev_bulk_write(Norflash_Device,&ttemp,225300,sizeof(ttemp)); // 180480
+        // dev_bulk_write(Norflash_Device,&gImage_image,405780,sizeof(gImage_image)); // 180480
+        // dev_bulk_read(Norflash_Device,Rtemp,225300-60,512);
+        
+
+        // Rtemp[511] = 0;
+        // log_info("Rtemp = %s", Rtemp);
+        // put_buf(Rtemp,512);
+
         
         spi_open(SPI1);
         ST7789Lcd_Init();
+        Lcd_SetFlashDevice(Norflash_Device);
+        
+
+        
+        #if Enable_beep
         Beep_init();
-
-        Power_Port_Init();
         Beep_Star();
+        #endif
 
+        //默认
         for(i=0;i<sizeof(MenuData.index);i++)MenuData.index[i] = 1;
         for(i=0;i<sizeof(RoterData.Ble_Adv_rp)/sizeof(RoterData.Ble_Adv_rp[0]);i++)
             RoterData.Ble_Adv_rp[i].rssi = -99;
@@ -475,7 +536,10 @@ static void multi_key_event_handler(struct sys_event *event)
         log_info("app_key_evnet: %d,%d\n", event_type, key_value);
         if( (event_type == KEY_EVENT_CLICK) & ( key_value == KEY_VALUE_TYPE_ON_OFF ) )
         {
+            #if Enable_beep
             Beep_Star();
+            #endif
+
             if(!Power_Flag)
             {
                 Power_Flag = 1;
@@ -496,7 +560,9 @@ static void multi_key_event_handler(struct sys_event *event)
                 Power_UnLock();
             }
 
+            #if Enable_beep
             Beep_Star();
+            #endif
 
             if( Menu_Tab[MenuData.current_id].current_operation != NULL) Menu_Tab[MenuData.current_id].current_operation(key_value);
         }

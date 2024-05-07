@@ -12,7 +12,9 @@
 
 #define log_info(x, ...) printf("[INFO]" x " ", ##__VA_ARGS__)
 
-// æ˜¾ç¤ºå­—ç¬¦ä¸²ç”¨
+static void* spiflashdevice;    // FLASHÉè±¸
+
+// ÏÔÊ¾×Ö·û´®ÓÃ
 static uint8_t InputMode = 0;
 static uint8_t input_index = 0; 
 static char instr[10];
@@ -24,11 +26,16 @@ static const uint8_t Num_Map_Tab[] =
     KEY_VALUE_TYPE_3,KEY_VALUE_TYPE_4,KEY_VALUE_TYPE_5,
     KEY_VALUE_TYPE_6,KEY_VALUE_TYPE_7,KEY_VALUE_TYPE_8,
     KEY_VALUE_TYPE_9,
-}; // ç»™æŒ‰é”®åšæ˜ å°„è¡¨
+}; // ¸ø°´¼ü×öÓ³Éä±í
 
-MenuData_t MenuData = {0}; // 5ä¸ªèœå•
+MenuData_t MenuData = {0}; // 5¸ö²Ëµ¥
 
 roter_t RoterData = {0};
+
+void Lcd_SetFlashDevice(void *device)
+{
+    spiflashdevice = device;
+}
 
 void Lcd_WriteCmd(uint8_t cmd)
 {
@@ -37,7 +44,6 @@ void Lcd_WriteCmd(uint8_t cmd)
     spi_send_byte(SPI1, cmd);
     gpio_write(LCD_CS, 1);
 }
-
 void Lcd_WriteData(uint8_t data)
 {
     gpio_write(LCD_RS, 1);
@@ -45,7 +51,6 @@ void Lcd_WriteData(uint8_t data)
     spi_send_byte(SPI1, data);
     gpio_write(LCD_CS, 1);
 }
-
 void Lcd_WriteRgbData(uint16_t data)
 {
     uint8_t spi_tx_buf[2];
@@ -88,7 +93,7 @@ void PutPixel(uint x_start, uint y_start, uint color)
 void Lcd_Show20x20(uint8_t x, uint8_t y, uint8_t *p)
 {
     uint8_t i, j, k;
-    uint8_t temp; // ç¼“å­˜
+    uint8_t temp; // »º´æ
     Lcd_Address_Set(x, y, x + 19, y + 19);
     for (i = 1; i <= 60; i++)
     {
@@ -118,11 +123,10 @@ void Lcd_Show20x20(uint8_t x, uint8_t y, uint8_t *p)
      
     }
 }
-
-void Lcd_Show16x24(uint8_t x, uint8_t y, uint8_t *p)
+void Lcd_Show10x20(uint8_t x, uint8_t y, uint8_t *p)
 {
     uint8_t i, j, k;
-    uint8_t temp; // ç¼“å­˜
+    uint8_t temp; // »º´æ
   
     Lcd_Address_Set(x, y, x + 9, y + 19);
     for (i = 1; i <= 40; i++)
@@ -153,11 +157,28 @@ void Lcd_Show16x24(uint8_t x, uint8_t y, uint8_t *p)
       
     }
 }
-
+void Lcd_Show16x16(uint8_t x, uint8_t y, uint8_t *p)
+{
+    uint8_t i, j, k;
+    uint8_t temp; // »º´æ
+    Lcd_Address_Set(x, y, x + 15, y + 15);
+    for (i = 1; i <= 32; i++)
+    {
+        temp = *p++;
+        for (k = 0; k < 8; k++)
+        {
+            if (temp & 0x80)
+                Lcd_WriteRgbData(BLUE);
+            else
+                Lcd_WriteRgbData(BLACK);
+            temp <<= 1;
+        }
+    }
+}
 void Lcd_Show8x16(uint8_t x, uint8_t y, uint8_t *p)
 {
     uint8_t i, j, k;
-    uint8_t temp; // ç¼“å­˜
+    uint8_t temp; // »º´æ
     Lcd_Address_Set(x, y, x + 7, y + 15);
     for (i = 0; i < 16; i++)
     {
@@ -173,28 +194,68 @@ void Lcd_Show8x16(uint8_t x, uint8_t y, uint8_t *p)
     }
 }
 
+// void Lcd_printf20x20(uint8_t x, uint8_t y, uint8_t *format, ...) // must be string
+// {
+//     uint8_t SearchData[4];
+//     char *str_data = malloc(128);
+//     va_list ap;
+//     va_start(ap, format);
+//     vsnprintf(str_data, 128, format, ap);
+//     char *str = str_data;
+//     char *w;
+//     while (*str)
+//     {
+//         if (*str & 0x80) // ºº×Ö
+//         {
+//             SearchData[0] = str[0];
+//             SearchData[1] = str[1];
+//             SearchData[2] = str[2];
+//             SearchData[3] = 0;
+//             w = strstr(DotTbl24String, SearchData);
+//             if (!w)break;
+//             Lcd_Show20x20(x, y, DotTbl24[ (w - DotTbl24String)/3 ]);
+//             x += 20;
+//             str += 3;
+//         }
+//         else
+//         {
+//             SearchData[0] = str[0];
+//             SearchData[1] = 0;
+//             w = strstr(DotTbl24AsciiString, SearchData);
+//             if (!w)break;
+//             Lcd_Show10x20(x, y, DotTbl24Ascii[w - DotTbl24AsciiString]);
+//             x += 10;
+//             str++;
+//         }
+//     }
+//     free(str_data);
+// }
+
 void Lcd_printf20x20(uint8_t x, uint8_t y, uint8_t *format, ...) // must be string
 {
     uint8_t SearchData[4];
     char *str_data = malloc(128);
+    char *fon_data = malloc(64);
     va_list ap;
     va_start(ap, format);
     vsnprintf(str_data, 128, format, ap);
     char *str = str_data;
     char *w;
+    uint8_t BH ;
+    uint8_t BL ;
+    uint32_t py_add ;
     while (*str)
     {
-        if (*str & 0x80) // æ±‰å­—
+        if (*str & 0x80) // ºº×Ö
         {
-            SearchData[0] = str[0];
-            SearchData[1] = str[1];
-            SearchData[2] = str[2];
-            SearchData[3] = 0;
-            w = strstr(DotTbl24String, SearchData);
-            if (!w)break;
-            Lcd_Show20x20(x, y, DotTbl24[ (w - DotTbl24String)/3 ]);
+            BH = str[0];
+            BL = str[1];
+            py_add=((BH-0xb0)*94+BL-0xa1)*60; 
+            if(BH >= 0XD8)py_add -= 5*60;
+            dev_bulk_read(spiflashdevice,fon_data,py_add,60);
+            Lcd_Show20x20(x, y, fon_data);
             x += 20;
-            str += 3;
+            str += 2;
         }
         else
         {
@@ -202,32 +263,46 @@ void Lcd_printf20x20(uint8_t x, uint8_t y, uint8_t *format, ...) // must be stri
             SearchData[1] = 0;
             w = strstr(DotTbl24AsciiString, SearchData);
             if (!w)break;
-            Lcd_Show16x24(x, y, DotTbl24Ascii[w - DotTbl24AsciiString]);
+            Lcd_Show10x20(x, y, DotTbl24Ascii[w - DotTbl24AsciiString]);
             x += 10;
             str++;
+            
         }
     }
     free(str_data);
+    free(fon_data);
 }
  
 void Lcd_printf16x16(uint8_t x, uint8_t y, uint8_t *str) // must be string
 {
     uint8_t SearchData[4] = {0, 0, 0};
     char *w;
+    uint8_t BH ;
+    uint8_t BL ;
+    uint32_t py_add ;
     while (*str)
     {
-        if (*str & 0x80) // æ±‰å­—
+        if (*str & 0x80) // ºº×Ö
         {
-            SearchData[0] = str[0];
+            /*SearchData[0] = str[0];
             SearchData[1] = str[1];
             SearchData[2] = str[2];
             SearchData[3] = 0;
             w = strstr(DotTbl24String, SearchData);
             if (!w)
                 return;
-            Lcd_Show16x24(x, y, DotTbl24[w - DotTbl24String]);
+            Lcd_Show10x20(x, y, DotTbl24[w - DotTbl24String]);
             x += 24;
+            str += 3;*/
+        //    BH = str[0];
+        //    BL = str[1];
+            BH = 0XBF;
+            BL = 0XBF;
+            py_add=((BH-0xb0)*94+BL-0xa1)*32;
+          //  Lcd_Show16x16(x, y,&DotTbl16[py_add]);
+            x += 16;
             str += 3;
+           
         }
         else
         {
@@ -237,6 +312,7 @@ void Lcd_printf16x16(uint8_t x, uint8_t y, uint8_t *str) // must be string
             Lcd_Show8x16(x, y, DotTbl16Ascii[w - DotTbl16AsciiString]);
             x += 8;
             str++;
+          
         }
     }
 }
@@ -244,7 +320,7 @@ void Lcd_printf16x16(uint8_t x, uint8_t y, uint8_t *str) // must be string
 void Lcd_Clear20x20(uint8_t x, uint8_t y)
 {
     uint8_t i, j, k;
-    uint8_t temp; // ç¼“å­˜
+    uint8_t temp; // »º´æ
     Lcd_Address_Set(x, y, x + 19, y + 19);
     for (i = 0; i < 60; i++)
     {
@@ -287,7 +363,7 @@ void ST7789Lcd_Init(void)
     os_time_dly(15);
     gpio_write(LCD_RST, 1);
     os_time_dly(15);
-    Lcd_WriteCmd(0x11); // æ— æ­¤æŒ‡ä»¤ï¼Œä¸èƒ½æ­£å¸¸åˆå§‹åŒ–èŠ¯ç‰‡ï¼Œæ— æ˜¾ç¤º
+    Lcd_WriteCmd(0x11); // ÎŞ´ËÖ¸Áî£¬²»ÄÜÕı³£³õÊ¼»¯Ğ¾Æ¬£¬ÎŞÏÔÊ¾
     os_time_dly(12);
     //--------------------------------ST7789S Frame rate setting----------------------------------//
     Lcd_WriteCmd(0x2a);  // Column address set
@@ -361,7 +437,7 @@ void ST7789Lcd_Init(void)
 
     Lcd_WriteCmd(0x3A);  // Interface pixel format
     Lcd_WriteData(0x55); // 65K
-    Lcd_WriteCmd(0xe7);  // SPI2 enable    å¯ç”¨2æ•°æ®é€šé“æ¨¡å¼
+    Lcd_WriteCmd(0xe7);  // SPI2 enable    ÆôÓÃ2Êı¾İÍ¨µÀÄ£Ê½
     Lcd_WriteData(0x00);
 
    
@@ -374,7 +450,7 @@ void ST7789Lcd_Init(void)
 void floatToString(float d, int l,char *str) 
 {
 
-    int n = (int)d; //å»æ‰å°æ•°ç‚¹
+    int n = (int)d; //È¥µôĞ¡Êıµã
 
     int b = 0;
 
@@ -383,14 +459,15 @@ void floatToString(float d, int l,char *str)
 
     u8 len;
 
-    char *buf;
+     // char *buf;
+    char buf[15];
 
-    buf = malloc(128);
+   //buf = malloc(128);
     itoa(n,str,10);
     i=strlen(str);
 
     
-    str[i] = '.'; //å°æ•°ç‚¹
+    str[i] = '.'; //Ğ¡Êıµã
     str[i+1] = 0;
     len = i+1;
     while(d>0.99999f)
@@ -401,7 +478,7 @@ void floatToString(float d, int l,char *str)
 
     for(i=0;i<l;i++)
     {
-        m *= 10;//æ‰©å¤§
+        m *= 10;//À©´ó
         if(!(int)m%10)
         {
             str[len] = '0';
@@ -410,11 +487,11 @@ void floatToString(float d, int l,char *str)
         }
     }
 
-    n = (int)m; //æ”¾å¼ƒå…¶ä»–å°æ•°ç‚¹
+    n = (int)m; //·ÅÆúÆäËûĞ¡Êıµã
 
      //log_info("floatToString%d B IS %d ", n , b);
 
-    itoa(n,buf,10);//è½¬æ¢æˆå­—ç¬¦ä¸²ï¼Œæ›´å¥½æ“ä½œ
+    itoa(n,buf,10);//×ª»»³É×Ö·û´®£¬¸üºÃ²Ù×÷
 
     //log_info("floatToString%s %d %d ", buf ,strlen(str) , strlen(buf));
 
@@ -429,39 +506,39 @@ void floatToString(float d, int l,char *str)
 
     //log_info("floatToString%s %d %d ", str ,strlen(str) , strlen(buf)); 
          
-    free(buf);
+    //free(buf);
 } 
 
-float string_to_float(char *string)
+float stringtofloat(char *string)
 {
 	unsigned int i=0,j=0;
-	unsigned char flag=0;  			//åˆ¤æ–­æ­£è´Ÿå·çš„æ ‡å¿—
-	unsigned char flag_dot=1; 	//åˆ¤æ–­å°æ•°ç‚¹çš„æ ‡å¿—
-	float num=0,data =0;     					//ä¸´æ—¶å­˜å‚¨è®¡ç®—ç»“æœçš„å˜é‡
+	unsigned char flag=0;  			//ÅĞ¶ÏÕı¸ººÅµÄ±êÖ¾
+	unsigned char flag_dot=1; 	//ÅĞ¶ÏĞ¡ÊıµãµÄ±êÖ¾
+	float num=0,data =0;     					//ÁÙÊ±´æ´¢¼ÆËã½á¹ûµÄ±äÁ¿
 	
-	for(i=0;string[i];i++) //å¾ªç¯ç›´åˆ°å­—ç¬¦ä¸²ç»“å°¾
+	for(i=0;string[i];i++) //Ñ­»·Ö±µ½×Ö·û´®½áÎ²
 	{
-		if(string[i]>='0'&&string[i]<='9'&&flag_dot==1)  //å¦‚æœå½“å‰å­—ç¬¦ä¸ºæ•°å­—ä¸”åœ¨å°æ•°ç‚¹ä¹‹å‰
+		if(string[i]>='0'&&string[i]<='9'&&flag_dot==1)  //Èç¹ûµ±Ç°×Ö·ûÎªÊı×ÖÇÒÔÚĞ¡ÊıµãÖ®Ç°
 		{
-			if(j==0) num = num*pow(10,j)+(double)(string[i]-'0');     //è¿ç®—å¹¶å­˜å‚¨ä¸­é—´è®¡ç®—ç»“æœ
+			if(j==0) num = num*pow(10,j)+(double)(string[i]-'0');     //ÔËËã²¢´æ´¢ÖĞ¼ä¼ÆËã½á¹û
 			else     num = num*pow(10,1)+(double)(string[i]-'0');
 			j++;
 		}
-		else if(string[i]>='0'&&string[i]<='9'&&flag_dot==0) //å¦‚æœå½“å‰å­—ç¬¦ä¸ºæ•°å­—ä¸”åœ¨å°æ•°ç‚¹ä¹‹å
+		else if(string[i]>='0'&&string[i]<='9'&&flag_dot==0) //Èç¹ûµ±Ç°×Ö·ûÎªÊı×ÖÇÒÔÚĞ¡ÊıµãÖ®ºó
 		{
-			num = num+(double)(string[i]-'0')*pow(0.1,j+1);     //è¿ç®—å¹¶å­˜å‚¨ä¸­é—´è®¡ç®—ç»“æœ
+			num = num+(double)(string[i]-'0')*pow(0.1,j+1);     //ÔËËã²¢´æ´¢ÖĞ¼ä¼ÆËã½á¹û
 			j++;
 		}
-		else if(string[i]=='.')                               //è¯»åˆ°äº†å°æ•°ç‚¹åˆ™å°†å¯¹åº”æ ‡å¿—ä½æ•°å€¼æ”¹å˜
+		else if(string[i]=='.')                               //¶Áµ½ÁËĞ¡ÊıµãÔò½«¶ÔÓ¦±êÖ¾Î»ÊıÖµ¸Ä±ä
 		{
 			flag_dot=0;
 			j=0;
 		}
-		else if(string[i]=='-')                              //è¯»åˆ°å‡å·åŒæ ·æ”¹å˜å¯¹åº”æ ‡å¿—ä½çš„å€¼
+		else if(string[i]=='-')                              //¶Áµ½¼õºÅÍ¬Ñù¸Ä±ä¶ÔÓ¦±êÖ¾Î»µÄÖµ
 		{
 			flag = 1;
 		}
-		else if(string[i]==',')                             //è¯»å®Œä¸€ä¸ªæ•°æ®ï¼Œé‡ç½®æ ‡å¿—ä½ï¼Œè®°å½•æœ€ç»ˆè®¡ç®—ç»“æœ
+		else if(string[i]==',')                             //¶ÁÍêÒ»¸öÊı¾İ£¬ÖØÖÃ±êÖ¾Î»£¬¼ÇÂ¼×îÖÕ¼ÆËã½á¹û
 		{
 			data = num*pow(-1,flag);
 			flag = 0;
@@ -470,7 +547,7 @@ float string_to_float(char *string)
 			num = 0;
 		}
 	}
-	data = num*pow(-1,flag);                            //è¡¥ä¸Šæœ€åä¸€ä¸ªæ•°
+	data = num*pow(-1,flag);                            //²¹ÉÏ×îºóÒ»¸öÊı
     return data;
 }
 
@@ -490,7 +567,7 @@ void Lcd_ShowPicture(u16 x,u16 y,u16 length,u16 width,const u8 pic[])
 	}			
 }
 
-int Get_Num_Map(uint8_t key)
+int Key_NumberMap(uint8_t key)
 {
     uint8_t i;
     for(i=0;i<sizeof(Num_Map_Tab);i++)
@@ -501,23 +578,75 @@ int Get_Num_Map(uint8_t key)
 }
 
 
+static void Lcd_SwitchWindows(uint8_t id)  // ÇĞ»»´°¿Ú
+{
+    MenuData.current_id = id;
+    Menu_Tab[id].display_operation();
+}
+static void Lcd_BackPreWindows()       //·µ»ØÉÏ¸ö´°¿Ú
+{
+    MenuData.current_id = Menu_Tab[MenuData.current_id].up_id;
+    Menu_Tab[MenuData.current_id].display_operation();
+}
+static void Lcd_IndexDec()
+{
+
+}
+static void Lcd_IndexInc()
+{
+
+}
+
 void Mppt_Log_Menu(void)
 {
-    Lcd_ShowPicture(0,0,240,240,gImage_image);
+   //Lcd_ShowPicture(0,0,240,240,gImage_image);
+  //Lcd_printf20x20(0,0,"ÄãºÃÊÀ½ç×÷×ø×ùØ¡Ø¢Ø£");
+    // u16 i,j;
+	// u32 k=0;
+    // u8 length = 240;
+    // u8 width = 240;
+	// Lcd_Address_Set(0,0,0+length-1,0+width-1);
+    // u8 data;
+	// for(i=0;i<length;i++)
+	// {
+	// 	for(j=0;j<width;j++)
+	// 	{
+    //         dev_bulk_read(spiflashdevice,&data,405780+(k*2+1),1);
+	// 		Lcd_WriteData(data);
+    //         dev_bulk_read(spiflashdevice,&data,405780+(k*2),1);
+    //         Lcd_WriteData(data);
+	// 		k++;
+	// 	}
+	// }		
+
+     u16 i,j;
+	u32 k=0;
+    u8 length = 240;
+    u8 width  = 240;
+    u8 *data   = malloc(512);
+    Lcd_Address_Set(0,0,0+length-1,0+width-1);
+	for(i=0;i<length;i++)
+	{
+        dev_bulk_read(spiflashdevice,data,405780+(i*480),480);
+        k = 0;
+		for(j=0;j<width;j++)
+		{
+			Lcd_WriteData(data[k*2+1]);
+            Lcd_WriteData(data[k*2]);
+			k++;
+		}
+	}		
+    free(data);
 }
-void Mppt_Log_Menu_Operation(uint8_t key)
+void Mppt_Log_MenuOps(uint8_t key)
 {
-    
     switch (key)
     {
         case KEY_VALUE_TYPE_ENTRE:
-        case KEY_VALUE_TYPE_RIGHT: // 
-            MenuData.current_id = MAIN_MENU; // åˆ‡æ¢åˆ°ä¸‹çº§èœå•
-            if (Menu_Tab[MenuData.current_id].display_operation != NULL)
-                 Menu_Tab[MenuData.current_id].display_operation();        
+        case KEY_VALUE_TYPE_RIGHT: 
+            Lcd_SwitchWindows (MAIN_MENU); 
             break;
     }   
-    //Mppt_Normal_Menu_Select(key);
 }
 
 
@@ -527,18 +656,18 @@ void Mppt_Menu_Select_Display(void)
     for (i = 1; i <= 7; i++)
         Lcd_Clear20x20(5, 30 * i);
 
-    // é™åˆ¶ä¸‹æ ‡é•¿åº¦
+    // ÏŞÖÆÏÂ±ê³¤¶È
     if (!MenuData.index[MenuData.current_id])
         MenuData.index[MenuData.current_id] = 1;
     if (MenuData.index[MenuData.current_id] > 7)
         MenuData.index[MenuData.current_id] = 7;
-    Lcd_printf20x20(5, 30 * MenuData.index[MenuData.current_id], "ï¼");
+    Lcd_printf20x20(5, 30 * MenuData.index[MenuData.current_id], "->");
 }
 void Mppt_Normal_Menu_Select(uint8_t key)
 {
     switch (key)
     {
-        case KEY_VALUE_TYPE_UP: // ä¸Š
+        case KEY_VALUE_TYPE_UP: // ÉÏ
             if(!Menu_Tab[MenuData.current_id].max_menu_num)return;
             if (MenuData.index[MenuData.current_id] > 1)
                 MenuData.index[MenuData.current_id]--;
@@ -549,7 +678,7 @@ void Mppt_Normal_Menu_Select(uint8_t key)
                 
             Mppt_Menu_Select_Display();
             break;
-        case KEY_VALUE_TYPE_DOWN: // ä¸‹
+        case KEY_VALUE_TYPE_DOWN: // ÏÂ
             if(!Menu_Tab[MenuData.current_id].max_menu_num)return;
             if (MenuData.index[MenuData.current_id] < Menu_Tab[MenuData.current_id].max_menu_num)
                 MenuData.index[MenuData.current_id]++;
@@ -557,25 +686,23 @@ void Mppt_Normal_Menu_Select(uint8_t key)
                 MenuData.index[MenuData.current_id] = 1;
             Mppt_Menu_Select_Display();
             break;
-        case KEY_VALUE_TYPE_LEFT: // â†
-            MenuData.current_id = Menu_Tab[MenuData.current_id].up_id;
-            if (Menu_Tab[MenuData.current_id].display_operation != NULL)
-                Menu_Tab[MenuData.current_id].display_operation();
+        case KEY_VALUE_TYPE_LEFT: // ¡û
+            Lcd_BackPreWindows();
             break;
     }
 }
-void Mppt_Main_Menu(void) // ä¸»èœå•
+void Mppt_Main_Menu(void) // Ö÷²Ëµ¥
 {
     Lcd_Clear(BLACK);
-    Lcd_printf20x20(120 - 20 * 5, 0, "ï¼­ï¼°ï¼°ï¼´å¤ªé˜³èƒ½æ§åˆ¶å™¨");
-    Lcd_printf20x20(30, 30, "è“ç‰™æ‰¹é‡è®¾ç½®");
-    Lcd_printf20x20(30, 60, "è“ç‰™æŒ‡å®šè¿æ¥");
-    Lcd_printf20x20(30, 90, "çº¢å¤–å‚æ•°è®¾ç½®");
-    Lcd_printf20x20(30, 120, "ç³»ç»Ÿä¿¡æ¯æŸ¥è¯¢");
-    Lcd_printf20x20(30, 150, "ç³»ç»Ÿå‚æ•°æŸ¥è¯¢");
-    Lcd_printf20x20(30, 180, "ï¼­ï¼°ï¼°ï¼´ç‰ˆæœ¬è®¾ç½®"); 
-    Lcd_printf20x20(30, 210, "å½“å‰ç‰ˆæœ¬:%s","SQ20P75SA-B"); 
-    Lcd_printf20x20(5, 30 * MenuData.index[MenuData.current_id], "ï¼");
+    Lcd_printf20x20(120 - 20 * 4, 0, "MPPTÌ«ÑôÄÜ¿ØÖÆÆ÷");
+    Lcd_printf20x20(30, 30, "À¶ÑÀÅúÁ¿ÉèÖÃ");
+    Lcd_printf20x20(30, 60, "À¶ÑÀÖ¸¶¨Á¬½Ó");
+    Lcd_printf20x20(30, 90, "ºìÍâ²ÎÊıÉèÖÃ");
+    Lcd_printf20x20(30, 120, "ÏµÍ³ĞÅÏ¢²éÑ¯");
+    Lcd_printf20x20(30, 150, "ÏµÍ³²ÎÊı²éÑ¯");
+    Lcd_printf20x20(30, 180, "MPPT°æ±¾ÉèÖÃ"); 
+    Lcd_printf20x20(30, 210, "µ±Ç°°æ±¾:%s","SQ20P75SA-B "); 
+    Lcd_printf20x20(5, 30 * MenuData.index[MenuData.current_id], "->");
 }
 void Mppt_Main_Menu_Operation(uint8_t key)
 {
@@ -587,54 +714,52 @@ void Mppt_Main_Menu_Operation(uint8_t key)
             switch (MenuData.index[MenuData.current_id])
             {
                 case 1:
-                    MenuData.current_id = CHAEGE_SET_MENU; // åˆ‡æ¢åˆ°ä¸‹çº§èœå•
+                    Lcd_SwitchWindows(CHAEGE_SET_MENU);
                     break;
                 case 2:
-                     MenuData.current_id = BL_CON_MENU; // åˆ‡æ¢åˆ°ä¸‹çº§èœå•
+                    Lcd_SwitchWindows(BL_CON_MENU);
                     break;
                 case 3:
-                     MenuData.current_id = IR_SET_MENU; // åˆ‡æ¢åˆ°ä¸‹çº§èœå•
+                    Lcd_SwitchWindows(IR_SET_MENU);
                     break;
                 case 4:
-                    MenuData.current_id = VERSION_CHECK_MENU; // åˆ‡æ¢åˆ°ä¸‹çº§èœå•
+                    Lcd_SwitchWindows(VERSION_CHECK_MENU);
                     break;
                 case 5:
-                    MenuData.current_id = SYS_SET_MENU; // åˆ‡æ¢åˆ°ä¸‹çº§èœå•
+                    Lcd_SwitchWindows(SYS_SET_MENU);
                     break;
                 case 6:
-                    MenuData.current_id = MPPT_VERSION_SELECT_MENU; // åˆ‡æ¢åˆ°ä¸‹çº§èœå•
+                    Lcd_SwitchWindows(MPPT_VERSION_SELECT_MENU);
                     break;
-            }           
-            if (Menu_Tab[MenuData.current_id].display_operation != NULL)
-                 Menu_Tab[MenuData.current_id].display_operation();                                
+            }                                      
             break;
     }
 }
 
-const char *Curve_Mode_Str[]={"PWM ","ç”µæµ","AI  "};
-const char *Connect_Mode_Str[]={"IO","ä¸²å£"}; 
-const char *AotoSetStr[]={"å…³","å¼€"};
-const char *Lock_Mode_Str[]={"å…³","å¼€"}; 
-const char *SolarModeStr[]={"å¼€","å…³"};
+const char *Curve_Mode_Str[]={"PWM ","µçÁ÷","AI  "};
+const char *Connect_Mode_Str[]={"IO","´®¿Ú"}; 
+const char *AotoSetStr[]={"¹Ø","¿ª"};
+const char *Lock_Mode_Str[]={"¹Ø","¿ª"}; 
+const char *SolarModeStr[]={"¿ª","¹Ø"};
 const char *Dischar_Curve_Str[]={"PWM","Cur","AI"};
 
 void Mppt_Ble_BatchSet_Display()
 {
-    Lcd_printf20x20(120 - 20 * 3, 0, "è“ç‰™æ‰¹é‡è®¾ç½®");
-    Lcd_printf20x20(30, 30, "å……ç”µå‚æ•°è®¾ç½®");
-    /*Lcd_printf20x20(30, 60, "æ”¾ç”µå‚æ•°è®¾ç½®");
-    Lcd_printf20x20(30, 90, "æ”¾ç”µæ›²çº¿æ¨¡å¼ï¼š%s",Curve_Mode_Str[RoterData.Mppt_SetPara.DischarCurve_Moed]);
-    Lcd_printf20x20(30, 120,"æ”¾ç”µæ›²çº¿è®¾ç½®");
-    Lcd_printf20x20(30, 150,"é”å®šæ¨¡å¼ï¼š%s",Lock_Mode_Str[RoterData.Mppt_SetPara.Lock_Mode]);
-    Lcd_printf20x20(30, 180,"æ‰¹é‡è®¾ç½®");*/
-    Lcd_printf20x20(5, 30 * MenuData.index[BLE_BATCHSET_MENU], "ï¼");
+    Lcd_printf20x20(120 - 20 * 3, 0, "À¶ÑÀÅúÁ¿ÉèÖÃ");
+    Lcd_printf20x20(30, 30, "³äµç²ÎÊıÉèÖÃ");
+    /*Lcd_printf20x20(30, 60, "·Åµç²ÎÊıÉèÖÃ");
+    Lcd_printf20x20(30, 90, "·ÅµçÇúÏßÄ£Ê½£º%s",Curve_Mode_Str[RoterData.Mppt_SetPara.DischarCurve_Moed]);
+    Lcd_printf20x20(30, 120,"·ÅµçÇúÏßÉèÖÃ");
+    Lcd_printf20x20(30, 150,"Ëø¶¨Ä£Ê½£º%s",Lock_Mode_Str[RoterData.Mppt_SetPara.Lock_Mode]);
+    Lcd_printf20x20(30, 180,"ÅúÁ¿ÉèÖÃ");*/
+    Lcd_printf20x20(5, 30 * MenuData.index[BLE_BATCHSET_MENU], "->");
 }
 void Mppt_Ble_BatchSet_Menu(void)
 {
     Lcd_Clear(BLACK);
     Mppt_Ble_BatchSet_Display();
 }
-void Mppt_Ble_BatchSet_Menu_Operation(uint8_t key)
+void Mppt_Ble_BatchSet_MenuOps(uint8_t key)
 {
     Mppt_Normal_Menu_Select(key);
     switch (key)
@@ -644,13 +769,13 @@ void Mppt_Ble_BatchSet_Menu_Operation(uint8_t key)
                 switch (MenuData.index[MenuData.current_id])
                 {
                     case 1:
-                        MenuData.current_id = CHAEGE_SET_MENU; // åˆ‡æ¢åˆ°ä¸‹çº§èœå•
+                        MenuData.current_id = CHAEGE_SET_MENU; // ÇĞ»»µ½ÏÂ¼¶²Ëµ¥
                         if (Menu_Tab[MenuData.current_id].display_operation != NULL)
                                 Menu_Tab[MenuData.current_id].display_operation();
                         return ;
                          break;
                     case 2:
-                        MenuData.current_id = DISCHAR_SET_MENU; // åˆ‡æ¢åˆ°ä¸‹çº§èœå•
+                        MenuData.current_id = DISCHAR_SET_MENU; // ÇĞ»»µ½ÏÂ¼¶²Ëµ¥
                         if (Menu_Tab[MenuData.current_id].display_operation != NULL)
                              Menu_Tab[MenuData.current_id].display_operation();
                         return ;
@@ -660,7 +785,7 @@ void Mppt_Ble_BatchSet_Menu_Operation(uint8_t key)
                         Mppt_Ble_BatchSet_Display();
                         break;
                     case 4:
-                        MenuData.current_id = DISCHAR_CURVE_SET_MENU; // åˆ‡æ¢åˆ°ä¸‹çº§èœå•
+                        MenuData.current_id = DISCHAR_CURVE_SET_MENU; // ÇĞ»»µ½ÏÂ¼¶²Ëµ¥
                         if (Menu_Tab[MenuData.current_id].display_operation != NULL)
                              Menu_Tab[MenuData.current_id].display_operation();
                          return ;
@@ -670,7 +795,7 @@ void Mppt_Ble_BatchSet_Menu_Operation(uint8_t key)
                         Mppt_Ble_BatchSet_Display();
                         break;
                     case 6:
-                        MenuData.current_id = BL_ATCON_SET_MENU; // åˆ‡æ¢åˆ°ä¸‹çº§èœå•
+                        MenuData.current_id = BL_ATCON_SET_MENU; // ÇĞ»»µ½ÏÂ¼¶²Ëµ¥
                         if (Menu_Tab[MenuData.current_id].display_operation != NULL)
                              Menu_Tab[MenuData.current_id].display_operation();
                          return ;
@@ -689,22 +814,23 @@ void Mppt_Ble_BatchSet_Menu_Operation(uint8_t key)
     {
         static u8 flash = 1;
         flash = !flash;
-        if(flash)Lcd_printf20x20(5, 30 * MenuData.index[MenuData.current_id], "ï¼");
+        if(flash)Lcd_printf20x20(5, 30 * MenuData.index[MenuData.current_id], "->");
         else Lcd_printf20x20(5, 30 * MenuData.index[MenuData.current_id], "  ");
     }
     void Mppt_ChargePara_Display(Mppt_Set_Parm_t *SetPara)
     {
         char str[10] = ""; 
-        Lcd_printf20x20(120 - 24 * 3, 0, "å……ç”µå‚æ•°è®¾ç½®");
+        Lcd_printf20x20(120 - 24 * 3, 0, "³äµç²ÎÊıÉèÖÃ");
         floatToString(SetPara->Bat_Capcity,1,str);
-        Lcd_printf20x20(30, 30,"ç”µæ± å®¹é‡:%sAh  ",str);
+        Lcd_printf20x20(30, 30,"µç³ØÈİÁ¿:%sAh  ",str);
         floatToString(SetPara->Charge_Current_Max,1,str);
-        Lcd_printf20x20(30,60,"å……ç”µç”µæµ:%sA    ",str);
+        Lcd_printf20x20(30,60,"³äµçµçÁ÷:%sA    ",str);
         floatToString(SetPara->Charge_Power_Max,1,str);
-        Lcd_printf20x20(30,90,"æœ€å¤§åŠŸç‡:%sw    ",str);
+        Lcd_printf20x20(30,90,"×î´ó¹¦ÂÊ:%sw    ",str);
         floatToString(SetPara->Trickle_Current,1,str);
-        Lcd_printf20x20(30,120,"æ¶“æµç”µæµ:%sA   ",str);
-        Lcd_printf20x20(5, 30 * MenuData.index[MenuData.current_id], "ï¼");
+        Lcd_printf20x20(30,120,"ä¸Á÷µçÁ÷:%sA   ",str);
+        Lcd_printf20x20(5, 30 * MenuData.index[MenuData.current_id], "->");
+        Lcd_printf20x20(30,150,"ÏÂÒ»Ò³");
 
     }
     void Mppt_Charge_Set_Menu(void)
@@ -715,13 +841,13 @@ void Mppt_Ble_BatchSet_Menu_Operation(uint8_t key)
     }
     void Mppt_ChargeSet_Operation(Mppt_Set_Parm_t *SetPara,uint8_t key)
     {
-        int num_key = Get_Num_Map(key);
+        int num_key = Key_NumberMap(key);
         float indata;
-        if(num_key != -1) // æœ‰æ•°å­—è¾“å…¥ ç¬¬ä¸€ä¸ªç‚¹ä¸èƒ½æ˜¯å­—ç¬¦ä¸²è¾“å…¥
+        if(num_key != -1) // ÓĞÊı×ÖÊäÈë µÚÒ»¸öµã²»ÄÜÊÇ×Ö·û´®ÊäÈë
         {
             if(!InputMode)
             {
-                InputMode = 1; //  è¾“å…¥æ¨¡å¼
+                InputMode = 1; //  ÊäÈëÄ£Ê½
                 InputFlash_Timer = sys_timer_add(NULL,Mppt_Normal_InPutFlash,300);
                 input_index = 0;
                 memset(instr,0,sizeof(instr));
@@ -738,13 +864,13 @@ void Mppt_Ble_BatchSet_Menu_Operation(uint8_t key)
             switch (key)
             {
 
-                case KEY_VALUE_TYPE_DOT: // è¾“å…¥å°æ•°ç‚¹
+                case KEY_VALUE_TYPE_DOT: // ÊäÈëĞ¡Êıµã
                     if(input_index<5)input_index++;
                     instr[input_index - 1] = '.';
                     instr[input_index] = 0;
                     break;
                 
-                case KEY_VALUE_TYPE_BACKSPACE: // é€€æ ¼
+                case KEY_VALUE_TYPE_BACKSPACE: // ÍË¸ñ
                     if(input_index)
                     {   
                         if(input_index == 1)instr[input_index - 1] = '0';
@@ -753,7 +879,7 @@ void Mppt_Ble_BatchSet_Menu_Operation(uint8_t key)
                     }
                     break;
                 case KEY_VALUE_TYPE_ENTRE:
-                    indata = string_to_float(instr);
+                    indata = stringtofloat(instr);
                     switch (MenuData.index[MenuData.current_id])
                     {
                         case 1:
@@ -790,7 +916,7 @@ void Mppt_Ble_BatchSet_Menu_Operation(uint8_t key)
                     break;
             }
 
-            float input_num = string_to_float(instr);
+            float input_num = stringtofloat(instr);
             if(MenuData.index[MenuData.current_id] == 1)
             {
                 if( input_num > 100)
@@ -798,7 +924,7 @@ void Mppt_Ble_BatchSet_Menu_Operation(uint8_t key)
                     strcpy(instr,"100"); 
                     input_index = sizeof("100") - 1;
                 }
-                Lcd_printf20x20(30, 30,"ç”µæ± å®¹é‡:%sAh    ",instr);
+                Lcd_printf20x20(30, 30,"µç³ØÈİÁ¿:%sAh    ",instr);
                
             }
             else if(MenuData.index[MenuData.current_id] == 2)
@@ -808,7 +934,7 @@ void Mppt_Ble_BatchSet_Menu_Operation(uint8_t key)
                     strcpy(instr,"25"); 
                     input_index = sizeof("25") - 1;
                 }
-                Lcd_printf20x20(30, 60,"å……ç”µç”µæµ:%sA    ",instr);
+                Lcd_printf20x20(30, 60,"³äµçµçÁ÷:%sA    ",instr);
             }
             if(MenuData.index[MenuData.current_id] == 3)
             {
@@ -817,7 +943,7 @@ void Mppt_Ble_BatchSet_Menu_Operation(uint8_t key)
                     strcpy(instr,"100"); 
                     input_index = sizeof("100") - 1;
                 }
-                Lcd_printf20x20(30, 90,"æœ€å¤§åŠŸç‡:%sw    ",instr);
+                Lcd_printf20x20(30, 90,"×î´ó¹¦ÂÊ:%sw    ",instr);
             }
             if(MenuData.index[MenuData.current_id] == 4)
             {
@@ -826,7 +952,7 @@ void Mppt_Ble_BatchSet_Menu_Operation(uint8_t key)
                     strcpy(instr,"5"); 
                     input_index = sizeof("5") - 1;
                 }
-                Lcd_printf20x20(30, 120,"æ¶“æµç”µæµ:%sA   ",instr);
+                Lcd_printf20x20(30, 120,"ä¸Á÷µçÁ÷:%sA   ",instr);
             }
              
             log_info("KEY %d NUMKRY %d input_index %d",key,num_key,input_index);
@@ -838,7 +964,7 @@ void Mppt_Ble_BatchSet_Menu_Operation(uint8_t key)
             //Mppt_Normal_Menu_Select(key);
             switch (key)
             {
-                case KEY_VALUE_TYPE_INCRE: // â†’
+                case KEY_VALUE_TYPE_INCRE: // ¡ú
                         switch (MenuData.index[MenuData.current_id])
                         {
                             case 1:
@@ -882,57 +1008,47 @@ void Mppt_Ble_BatchSet_Menu_Operation(uint8_t key)
         }
 
     }
-    void Mppt_Charge_Set_Menu_Operation(uint8_t key)
+    void Mppt_Charge_Set_MenuOps(uint8_t key)
     {
         Mppt_ChargeSet_Operation(&RoterData.Mppt_SetPara,key);
         switch (key)
         {
-            case KEY_VALUE_TYPE_UP: // ä¸Š
+            case KEY_VALUE_TYPE_UP: // ÉÏ
                 if (MenuData.index[MenuData.current_id] > 1)
                     MenuData.index[MenuData.current_id]--;
-                else
-                {
-                    MenuData.current_id = Menu_Tab[MenuData.current_id].up_id;
-                    Menu_Tab[MenuData.current_id].display_operation();
+                else{
+                    Lcd_BackPreWindows();
                 }
-                    
                 Mppt_Menu_Select_Display();
                 break;
-            case KEY_VALUE_TYPE_DOWN: // ä¸‹
-                if(!Menu_Tab[MenuData.current_id].max_menu_num)return;
+            case KEY_VALUE_TYPE_DOWN: // ÏÂ
                 if (MenuData.index[MenuData.current_id] < Menu_Tab[MenuData.current_id].max_menu_num)
                     MenuData.index[MenuData.current_id]++;
                 else{
-                     MenuData.current_id = DISCHAR_SET_MENU;
-                     Menu_Tab[MenuData.current_id].display_operation();
+                     Lcd_SwitchWindows(DISCHAR_SET_MENU);
                 }
                 Mppt_Menu_Select_Display();
                 break;
-            case KEY_VALUE_TYPE_LEFT: // â†
-                MenuData.current_id = Menu_Tab[MenuData.current_id].up_id;
-                Menu_Tab[MenuData.current_id].display_operation();
+            case KEY_VALUE_TYPE_LEFT: // ¡û
+                Lcd_BackPreWindows();
                 break;
         }
-        // if(key == KEY_VALUE_TYPE_RIGHT)
-        // {
-        //     MenuData.current_id = DISCHAR_SET_MENU;
-        //     Menu_Tab[MenuData.current_id].display_operation();
-        // }
     }
   
     void Mppt_DischarPara_Display(Mppt_Set_Parm_t *SetPara)
     {   
         char str[7] = "";      
-        Lcd_printf20x20(120 - 24 * 3, 0, "æ”¾ç”µå‚æ•°è®¾ç½®"); 
+        Lcd_printf20x20(120 - 24 * 3, 0, "·Åµç²ÎÊıÉèÖÃ"); 
         floatToString(SetPara->Low_voltage_Protect,2,str);
-        Lcd_printf20x20(30, 30, "ä½å‹ä¿æŠ¤:%sv    ",str);
-        Lcd_printf20x20(30, 60, "ç”µæµæŒ¡ä½:%d     ",SetPara->Current_Gear);
-        Lcd_printf20x20(30, 90, "é›·è¾¾æ„Ÿåº”:%d%%   ",SetPara->Ledar_Pwm);
-        Lcd_printf20x20(30, 120, "é›·è¾¾æ—¶é—´:%dS   ",SetPara->Ledar_Dly_Time);
-        Lcd_printf20x20(30, 150, "äº®åº¦è®¾ç½®:%d%%  ",SetPara->Led_Set_Pwm);
-        Lcd_printf20x20(30, 180, "å…‰æ§æ¨¡å¼:%s   ",SolarModeStr[SetPara->Solar_Mode]);
-        Lcd_printf20x20(30, 210, "é€šä¿¡æ¨¡å¼:%s   ",Connect_Mode_Str[SetPara->Extern_Mode]);
-        Lcd_printf20x20(5, 30 * MenuData.index[MenuData.current_id], "ï¼");
+        Lcd_printf20x20(30, 30, "µÍÑ¹±£»¤:%sv    ",str);
+        Lcd_printf20x20(30, 60, "µçÁ÷µ²Î»:%d     ",SetPara->Current_Gear);
+        Lcd_printf20x20(30, 90, "À×´ï¸ĞÓ¦:%d%%   ",SetPara->Ledar_Pwm);
+        Lcd_printf20x20(30, 120, "À×´ïÊ±¼ä:%dS   ",SetPara->Ledar_Dly_Time);
+       // Lcd_printf20x20(30, 150, "ÁÁ¶ÈÉèÖÃ:%d%%  ",SetPara->Led_Set_Pwm);
+        Lcd_printf20x20(30, 150, "¹â¿ØÄ£Ê½:%s   ",SolarModeStr[SetPara->Solar_Mode]);
+        Lcd_printf20x20(30, 180, "Í¨ĞÅÄ£Ê½:%s   ",Connect_Mode_Str[SetPara->Extern_Mode]);
+        Lcd_printf20x20(30, 210, "ÏÂÒ»Ò³");
+        Lcd_printf20x20(5, 30 * MenuData.index[MenuData.current_id], "->");
     }
     void Mppt_Dischar_Set_Menu(void)
     {
@@ -942,13 +1058,13 @@ void Mppt_Ble_BatchSet_Menu_Operation(uint8_t key)
     }
     void Mppt_DischarSet_Operation(Mppt_Set_Parm_t *SetPara,uint8_t key)
     {
-        int num_key = Get_Num_Map(key);
+        int num_key = Key_NumberMap(key);
         float indata; 
-        if(num_key != -1) // æœ‰æ•°å­—è¾“å…¥ ç¬¬ä¸€ä¸ªç‚¹ä¸èƒ½æ˜¯å­—ç¬¦ä¸²è¾“å…¥
+        if(num_key != -1) // ÓĞÊı×ÖÊäÈë µÚÒ»¸öµã²»ÄÜÊÇ×Ö·û´®ÊäÈë
         {
             if(!InputMode && MenuData.index[MenuData.current_id]<=5)
             {
-                InputMode = 1; //  è¾“å…¥æ¨¡å¼
+                InputMode = 1; //  ÊäÈëÄ£Ê½
                 InputFlash_Timer = sys_timer_add(NULL,Mppt_Normal_InPutFlash,300);
                 input_index = 0;
                 memset(instr,0,sizeof(instr));
@@ -965,12 +1081,12 @@ void Mppt_Ble_BatchSet_Menu_Operation(uint8_t key)
             switch (key)
             {
 
-                case KEY_VALUE_TYPE_DOT: // è¾“å…¥å°æ•°ç‚¹
+                case KEY_VALUE_TYPE_DOT: // ÊäÈëĞ¡Êıµã
                     if(input_index<6)input_index++;
                     instr[input_index - 1] = '.';
                     break;
                 
-                case KEY_VALUE_TYPE_BACKSPACE: // é€€æ ¼
+                case KEY_VALUE_TYPE_BACKSPACE: // ÍË¸ñ
                     if(input_index)
                     {   
                         if(input_index == 1)instr[input_index - 1] = '0';
@@ -979,7 +1095,7 @@ void Mppt_Ble_BatchSet_Menu_Operation(uint8_t key)
                     }
                     break;
                 case KEY_VALUE_TYPE_ENTRE:
-                    indata = string_to_float(instr);
+                    indata = stringtofloat(instr);
                     switch (MenuData.index[MenuData.current_id])
                     {
                         case 1:          
@@ -1002,11 +1118,11 @@ void Mppt_Ble_BatchSet_Menu_Operation(uint8_t key)
                             if(indata>60)indata = 60;
                             SetPara->Ledar_Dly_Time=indata;
                             break; 
-                        case 5:
+                    /*    case 5:
                             if(indata<10)indata = 10;
                             if(indata>100)indata = 100;
                             SetPara->Led_Set_Pwm=indata;
-                            break;      
+                            break;  */    
                     }    
                     InputMode = 0;
                     sys_timer_del(InputFlash_Timer);
@@ -1021,7 +1137,7 @@ void Mppt_Ble_BatchSet_Menu_Operation(uint8_t key)
                     break;
             }
             
-            float input_num = string_to_float(instr);
+            float input_num = stringtofloat(instr);
             if(MenuData.index[MenuData.current_id] == 1)
             {
                 if( input_num > 2.85)
@@ -1029,7 +1145,7 @@ void Mppt_Ble_BatchSet_Menu_Operation(uint8_t key)
                     strcpy(instr,"2.85"); 
                     input_index = sizeof("2.85") - 1;
                 }
-                Lcd_printf20x20(30, 30,"ä½å‹ä¿æŠ¤:%sV   ",instr);
+                Lcd_printf20x20(30, 30,"µÍÑ¹±£»¤:%sV   ",instr);
             }
             else if(MenuData.index[MenuData.current_id] == 2)
             {
@@ -1038,7 +1154,7 @@ void Mppt_Ble_BatchSet_Menu_Operation(uint8_t key)
                     strcpy(instr,"20"); 
                     input_index = sizeof("20") - 1;
                 }
-                Lcd_printf20x20(30, 60,"ç”µæµæŒ¡ä½:%s     ",instr);
+                Lcd_printf20x20(30, 60,"µçÁ÷µ²Î»:%s     ",instr);
             }
             else if(MenuData.index[MenuData.current_id] == 3)
             {
@@ -1047,7 +1163,7 @@ void Mppt_Ble_BatchSet_Menu_Operation(uint8_t key)
                     strcpy(instr,"30"); 
                     input_index = sizeof("30") - 1;
                 }
-                Lcd_printf20x20(30, 90,"é›·è¾¾æ„Ÿåº”:%s%%    ",instr);
+                Lcd_printf20x20(30, 90,"À×´ï¸ĞÓ¦:%s%%    ",instr);
             }
             else if(MenuData.index[MenuData.current_id] == 4)
             {
@@ -1056,21 +1172,21 @@ void Mppt_Ble_BatchSet_Menu_Operation(uint8_t key)
                     strcpy(instr,"60"); 
                     input_index = sizeof("60") - 1;
                 }
-                 Lcd_printf20x20(30, 120,"é›·è¾¾æ—¶é—´:%sS   ",instr);
+                 Lcd_printf20x20(30, 120,"À×´ïÊ±¼ä:%sS   ",instr);
             }
-            else if(MenuData.index[MenuData.current_id] == 5)
+           /* else if(MenuData.index[MenuData.current_id] == 5)
             {
                 if( input_num > 100)
                 {
                     strcpy(instr,"100"); 
                     input_index = sizeof("100") - 1;
                 }
-                Lcd_printf20x20(30, 150,"äº®åº¦è®¾ç½®:%s%%  ",instr);
-            }
+                Lcd_printf20x20(30, 150,"ÁÁ¶ÈÉèÖÃ:%s%%  ",instr);
+            }*/
             
              
             log_info("KEY %d NUMKRY %d input_index %d",key,num_key,input_index);
-            log_info("instr %s  value: %d",instr,(uint32_t)(string_to_float(instr)*100));
+            log_info("instr %s  value: %d",instr,(uint32_t)(stringtofloat(instr)*100));
 
         }
         else
@@ -1145,105 +1261,83 @@ void Mppt_Ble_BatchSet_Menu_Operation(uint8_t key)
     void Mppt_Dischar_Set_Menu_Operation(uint8_t key)
     {
         Mppt_DischarSet_Operation(&RoterData.Mppt_SetPara,key);
-         switch (key)
+        switch (key)
         {
-            case KEY_VALUE_TYPE_UP: // ä¸Š
+            case KEY_VALUE_TYPE_UP: // ÉÏ
                 if (MenuData.index[MenuData.current_id] > 1)
                     MenuData.index[MenuData.current_id]--;
                 else
                 {
-                    MenuData.current_id = Menu_Tab[MenuData.current_id].up_id;
-                    Menu_Tab[MenuData.current_id].display_operation();
-                }
-                    
+                    Lcd_BackPreWindows();
+                }      
                 Mppt_Menu_Select_Display();
                 break;
-            case KEY_VALUE_TYPE_DOWN: // ä¸‹
-                if(!Menu_Tab[MenuData.current_id].max_menu_num)return;
+            case KEY_VALUE_TYPE_DOWN: // ÏÂ
                 if (MenuData.index[MenuData.current_id] < Menu_Tab[MenuData.current_id].max_menu_num)
                     MenuData.index[MenuData.current_id]++;
                 else{
-                        MenuData.current_id = CURVE_SET_MENU;
-                        Menu_Tab[MenuData.current_id].display_operation();
+                    Lcd_SwitchWindows(CURVE_SET_MENU);
                 }
                 Mppt_Menu_Select_Display();
                 break;
-            case KEY_VALUE_TYPE_LEFT: // â†
-                MenuData.current_id = Menu_Tab[MenuData.current_id].up_id;
-                Menu_Tab[MenuData.current_id].display_operation();
+            case KEY_VALUE_TYPE_LEFT: // ¡û
+                Lcd_BackPreWindows();
                 break;
         }
-        // if(key == KEY_VALUE_TYPE_RIGHT)
-        // {
-        //     MenuData.current_id = CURVE_SET_MENU;
-        //     Menu_Tab[MenuData.current_id].display_operation();
-        // }
     }
 
     void Mppt_Curce_Set_Menu(void)
     {
         Lcd_Clear(BLACK);
         MenuData.index[MenuData.current_id] = 1;
-        Lcd_printf20x20(120 - 20 * 3, 0, "æ›²çº¿å‚æ•°è®¾ç½®");
-        Lcd_printf20x20(30, 30, "æ”¾ç”µæ›²çº¿æ¨¡å¼ï¼š%s",Curve_Mode_Str[RoterData.Mppt_SetPara.DischarCurve_Moed]);
-        Lcd_printf20x20(30, 60,"æ”¾ç”µæ›²çº¿è®¾ç½®");
-        Lcd_printf20x20(5, 30 * MenuData.index[MenuData.current_id], "ï¼");
+        Lcd_printf20x20(120 - 20 * 3, 0, "ÇúÏß²ÎÊıÉèÖÃ");
+        Lcd_printf20x20(30, 30, "·ÅµçÇúÏßÄ£Ê½:%s",Curve_Mode_Str[RoterData.Mppt_SetPara.DischarCurve_Moed]);
+        Lcd_printf20x20(30, 60,"·ÅµçÇúÏßÉèÖÃ");
+        Lcd_printf20x20(30, 90,"ÏÂÒ»Ò³");
+        Lcd_printf20x20(5, 30 * MenuData.index[MenuData.current_id], "->");
     }
-    void Mppt_Curce_Set_Menu_Operation(uint8_t key)
+    void Mppt_Curce_Set_MenuOps(uint8_t key)
     {
-       // Mppt_Normal_Menu_Select(key);
+        uint8_t id = MenuData.current_id;
         switch (key)
         {
-            case KEY_VALUE_TYPE_UP: // ä¸Š
-                if (MenuData.index[MenuData.current_id] > 1)
-                    MenuData.index[MenuData.current_id]--;
+            case KEY_VALUE_TYPE_UP: // ÉÏ
+                if (MenuData.index[id] > 1)
+                    MenuData.index[id]--;
                 else
                 {
-                    MenuData.current_id = Menu_Tab[MenuData.current_id].up_id;
-                    Menu_Tab[MenuData.current_id].display_operation();
-                }
-                    
+                    Lcd_BackPreWindows();
+                }               
                 Mppt_Menu_Select_Display();
                 break;
-            case KEY_VALUE_TYPE_DOWN: // ä¸‹
-                if(!Menu_Tab[MenuData.current_id].max_menu_num)return;
-                if (MenuData.index[MenuData.current_id] < Menu_Tab[MenuData.current_id].max_menu_num)
-                    MenuData.index[MenuData.current_id]++;
+
+            case KEY_VALUE_TYPE_DOWN: // ÏÂ
+                if(!Menu_Tab[id].max_menu_num)return;
+                if (MenuData.index[id] < Menu_Tab[id].max_menu_num)
+                    MenuData.index[id]++;
                 else{
-                        MenuData.current_id = BL_ATCON_SET_MENU;
-                        Menu_Tab[MenuData.current_id].display_operation();
+                    Lcd_SwitchWindows(BL_ATCON_SET_MENU);
                 }
                 Mppt_Menu_Select_Display();
                 break;
-            case KEY_VALUE_TYPE_LEFT: // â†
-                MenuData.current_id = Menu_Tab[MenuData.current_id].up_id;
-                Menu_Tab[MenuData.current_id].display_operation();
+
+            case KEY_VALUE_TYPE_LEFT: // ¡û
+                Lcd_BackPreWindows();
                 break;
-        }
-        switch (key)
-        {
+
+            case KEY_VALUE_TYPE_RIGHT: 
             case KEY_VALUE_TYPE_ENTRE:
-              switch (MenuData.index[MenuData.current_id])
-                {
-                    case 2:
-                        MenuData.current_id = DISCHAR_CURVE_SET_MENU; // åˆ‡æ¢åˆ°ä¸‹çº§èœå•
-                        Menu_Tab[MenuData.current_id].display_operation();
-                        return ;
-                        break;
-                }  
-            case KEY_VALUE_TYPE_INCRE:
-                switch (MenuData.index[MenuData.current_id])
-                {
+                switch (MenuData.index[id])
+                {  
                     case 1:
                         if(++RoterData.Mppt_SetPara.DischarCurve_Moed>2)RoterData.Mppt_SetPara.DischarCurve_Moed = 0;
                         Mppt_Curce_Set_Menu();
-                        return ;
                         break;      
+                    case 2:
+                        Lcd_SwitchWindows(DISCHAR_CURVE_SET_MENU);
+                        break;
                 }  
-            // case KEY_VALUE_TYPE_RIGHT: // 
-            //     MenuData.current_id = BL_ATCON_SET_MENU; // åˆ‡æ¢åˆ°ä¸‹çº§èœå•       
-            //     Menu_Tab[MenuData.current_id].display_operation();
-            //     break;
+                break;
         }   
     }
 
@@ -1255,9 +1349,9 @@ void Mppt_Ble_BatchSet_Menu_Operation(uint8_t key)
         if(flash)
         {
             if( MenuData.index[MenuId] / 9 )
-                 Lcd_printf20x20(24 + 10*10, 20 * (MenuData.index[MenuId]-8) + 10, "ï¼");
+                 Lcd_printf20x20(24 + 10*10, 20 * (MenuData.index[MenuId]-8) + 10, "->");
             else
-                Lcd_printf20x20(0, 20 * MenuData.index[MenuId] + 10, "ï¼");
+                Lcd_printf20x20(0, 20 * MenuData.index[MenuId] + 10, "->");
         }
         else
         {
@@ -1276,14 +1370,14 @@ void Mppt_Ble_BatchSet_Menu_Operation(uint8_t key)
               Lcd_Clear20x20(0, 20 * i + 10);
               Lcd_Clear20x20(24 + 10*10, 20 * i + 10);
         }
-        //é™åˆ¶ä¸‹æ ‡é•¿åº¦
+        //ÏŞÖÆÏÂ±ê³¤¶È
         if (!MenuData.index[MenuId])MenuData.index[MenuId] = 1;        
         if (MenuData.index[MenuId] >= 16)MenuData.index[MenuId] = 16;
         
         if( MenuData.index[MenuId] / 9 )
-            Lcd_printf20x20(24 + 10*10, 20 * (MenuData.index[MenuId]-8) + 10, "ï¼");
+            Lcd_printf20x20(24 + 10*10, 20 * (MenuData.index[MenuId]-8) + 10, "->");
         else
-            Lcd_printf20x20(0, 20 * MenuData.index[MenuId] + 10, "ï¼");
+            Lcd_printf20x20(0, 20 * MenuData.index[MenuId] + 10, "->");
     }
     void Mppt_DischarCurve_Display(Mppt_Set_Parm_t *Para)
     {
@@ -1294,11 +1388,11 @@ void Mppt_Ble_BatchSet_Menu_Operation(uint8_t key)
         char *Curvestr = Dischar_Curve_Str[Para->DischarCurve_Moed];
         if(Para->DischarCurve_Moed < 2)
         {     
-            Lcd_printf20x20(120 - 20 * 3, 0, "æ”¾ç”µæ›²çº¿è®¾ç½®");
+            Lcd_printf20x20(120 - 20 * 3, 0, "·ÅµçÇúÏßÉèÖÃ");
             for(i=0;i<8;i++)
             {    
                 floatToString(CurvData[i][0],1,str);
-                Lcd_printf20x20(24,20*(i+1)+ 10,"æ›²%d %sH ",i+1,str);
+                Lcd_printf20x20(24,20*(i+1)+ 10,"Çú%d %sH ",i+1,str);
             }
             for(i=0;i<8;i++)
             {   
@@ -1307,13 +1401,13 @@ void Mppt_Ble_BatchSet_Menu_Operation(uint8_t key)
         }
         else
         {  
-            Lcd_printf20x20(120 - 20 * 3, 0, "æ”¾ç”µæ›²çº¿è®¾ç½®");
-            Lcd_printf20x20(120 - 10 * 3, 30,"Aiæ¨¡å¼");
+            Lcd_printf20x20(120 - 20 * 3, 0, "·ÅµçÇúÏßÉèÖÃ");
+            Lcd_printf20x20(120 - 10 * 3, 30,"AiÄ£Ê½");
         }
         if( MenuData.index[MenuData.current_id] / 9 )
-            Lcd_printf20x20(24 + 10* 10, 20 * (MenuData.index[MenuData.current_id]-8) + 10, "ï¼");
+            Lcd_printf20x20(24 + 10* 10, 20 * (MenuData.index[MenuData.current_id]-8) + 10, "->");
         else
-            Lcd_printf20x20(0, 20 * MenuData.index[MenuData.current_id] + 10, "ï¼");
+            Lcd_printf20x20(0, 20 * MenuData.index[MenuData.current_id] + 10, "->");
     }
     void Mppt_Dischar_Curve_Set_Menu(void)
     {   
@@ -1324,17 +1418,17 @@ void Mppt_Ble_BatchSet_Menu_Operation(uint8_t key)
     {
         float (*CurvData)[2] = Para->Curv_Data;
         char *Curvestr = Dischar_Curve_Str[Para->DischarCurve_Moed];
-        uint8_t Menu_Id = MenuData.current_id; // å½“å‰IDå·
+        uint8_t Menu_Id = MenuData.current_id; // µ±Ç°IDºÅ
         uint8_t *Menu_Index = &MenuData.index[Menu_Id];
         uint8_t data_index;
-        int num_key = Get_Num_Map(key);
+        int num_key = Key_NumberMap(key);
         float indata;
 
-        if(num_key != -1) // æœ‰æ•°å­—è¾“å…¥ ç¬¬ä¸€ä¸ªç‚¹ä¸èƒ½æ˜¯å­—ç¬¦ä¸²è¾“å…¥
+        if(num_key != -1) // ÓĞÊı×ÖÊäÈë µÚÒ»¸öµã²»ÄÜÊÇ×Ö·û´®ÊäÈë
         {
             if(!InputMode && *Menu_Index<=16)
             {
-                InputMode = 1; //  è¾“å…¥æ¨¡å¼
+                InputMode = 1; //  ÊäÈëÄ£Ê½
                 InputFlash_Timer = sys_timer_add(NULL,Mppt_Curve_InPutFlash,300);
                 input_index = 0;
                 memset(instr,0,sizeof(instr));
@@ -1351,12 +1445,12 @@ void Mppt_Ble_BatchSet_Menu_Operation(uint8_t key)
             switch (key)
             {
 
-                case KEY_VALUE_TYPE_DOT: // è¾“å…¥å°æ•°ç‚¹
+                case KEY_VALUE_TYPE_DOT: // ÊäÈëĞ¡Êıµã
                     if(input_index<4)input_index++;
                     instr[input_index - 1] = '.';
                     break;
                 
-                case KEY_VALUE_TYPE_BACKSPACE: // é€€æ ¼
+                case KEY_VALUE_TYPE_BACKSPACE: // ÍË¸ñ
                     if(input_index)
                     {   
                         if(input_index == 1)instr[input_index - 1] = '0';
@@ -1365,7 +1459,7 @@ void Mppt_Ble_BatchSet_Menu_Operation(uint8_t key)
                     }
                     break;
                 case KEY_VALUE_TYPE_ENTRE:
-                    indata = string_to_float(instr);
+                    indata = stringtofloat(instr);
                     data_index = (*Menu_Index-1)%8;  
                     if((*Menu_Index)/9)
                     {
@@ -1379,7 +1473,7 @@ void Mppt_Ble_BatchSet_Menu_Operation(uint8_t key)
                     }
                     else
                     {
-                        if(data_index == 0) // å‰é¢çš„å¿…é¡»å°äºåé¢çš„
+                        if(data_index == 0) // Ç°ÃæµÄ±ØĞëĞ¡ÓÚºóÃæµÄ
                         {
                             if(indata >= CurvData[1][0]) indata = CurvData[1][0];
                         }
@@ -1388,7 +1482,7 @@ void Mppt_Ble_BatchSet_Menu_Operation(uint8_t key)
                             
                             if(indata > CurvData[data_index+1][0] &&  (abs(CurvData[data_index+1][0])>1e-6) ) 
                                 indata = CurvData[data_index+1][0];
-                            if(abs(indata) < 1e-6) // å¦‚æœè¾“å…¥0
+                            if(abs(indata) < 1e-6) // Èç¹ûÊäÈë0
                             {
                                 if(abs(CurvData[data_index+1][0]) > 1e-6  ) indata = CurvData[data_index-1][0];
                             }
@@ -1419,9 +1513,9 @@ void Mppt_Ble_BatchSet_Menu_Operation(uint8_t key)
                     break;
             }
              
-            float input_num = string_to_float(instr);
+            float input_num = stringtofloat(instr);
             log_info("KEY %d NUMKRY %d input_index %d",key,num_key,input_index);
-            log_info("instr %s  value: %d",instr,(uint32_t)(input_num*100)); //æ”¾å¤§å°æ•°ç‚¹ çœ‹æ˜¯å¦æœ‰é”™è¯¯
+            log_info("instr %s  value: %d",instr,(uint32_t)(input_num*100)); //·Å´óĞ¡Êıµã ¿´ÊÇ·ñÓĞ´íÎó
 
             if( (*Menu_Index/9) == 0)
             {
@@ -1430,7 +1524,7 @@ void Mppt_Ble_BatchSet_Menu_Operation(uint8_t key)
                     strcpy(instr,"24"); 
                     input_index = sizeof("24") - 1;
                 }    
-                Lcd_printf20x20(24,20*(*Menu_Index) + 10,"æ›²%d %sH   ",*Menu_Index,instr);
+                Lcd_printf20x20(24,20*(*Menu_Index) + 10,"Çú%d %sH   ",*Menu_Index,instr);
             }
             else
             {
@@ -1447,21 +1541,21 @@ void Mppt_Ble_BatchSet_Menu_Operation(uint8_t key)
         {
             switch (key)
             {
-                case KEY_VALUE_TYPE_UP: // ä¸Š
+                case KEY_VALUE_TYPE_UP: // ÉÏ
                     if(Para->DischarCurve_Moed > 1)return;
                     if(!Menu_Tab[Menu_Id].max_menu_num)return;
                     if (*Menu_Index > 1)*Menu_Index-=1;    
                     else *Menu_Index = Menu_Tab[Menu_Id].max_menu_num;                
                     Mppt_Curve_Menu_Select_Display();
                     break;
-                case KEY_VALUE_TYPE_DOWN: // ä¸‹
+                case KEY_VALUE_TYPE_DOWN: // ÏÂ
                     if(Para->DischarCurve_Moed > 1)return;
                     if(!Menu_Tab[Menu_Id].max_menu_num)return;
                     if (*Menu_Index < Menu_Tab[Menu_Id].max_menu_num)*Menu_Index+=1;
                     else *Menu_Index = 1;
                     Mppt_Curve_Menu_Select_Display();
                     break;
-                case KEY_VALUE_TYPE_LEFT: // â†    
+                case KEY_VALUE_TYPE_LEFT: // ¡û    
                     if( ( *Menu_Index / 9 ) && Para->DischarCurve_Moed <= 1)
                     {
                         *Menu_Index -= 8;
@@ -1486,7 +1580,7 @@ void Mppt_Ble_BatchSet_Menu_Operation(uint8_t key)
                     if( ( *Menu_Index / 9 ) == 0)
                     {
                         data_index =  *Menu_Index -1;
-                        // 1 - 8  å‰é¢è¦å°äºåé¢ || åé¢çš„<0.1  
+                        // 1 - 8  Ç°ÃæÒªĞ¡ÓÚºóÃæ || ºóÃæµÄ<0.1  
                         if((CurvData[data_index][0] < 0.000001f) && data_index )CurvData[data_index][0] = CurvData[data_index-1][0]; 
                         if(  data_index == 7 || (CurvData[data_index][0]+0.5) < CurvData[data_index+1][0] || (CurvData[data_index+1][0] < 0.000001f) )
                         {   
@@ -1548,13 +1642,13 @@ void Mppt_Ble_BatchSet_Menu_Operation(uint8_t key)
         {
             Mppt_Set_Para_Send(&RoterData.Mppt_SetPara);
         }
-        Lcd_printf20x20(120 - 24 * 3, 0, "è“ç‰™è‡ªåŠ¨è®¾ç½®");
-        Lcd_printf20x20(30, 30, "è‡ªåŠ¨è®¾ç½®ï¼š%s",AotoSetStr[RoterData.ConnenctOnFlag]);
-        Lcd_printf20x20(30, 60, "æ¸…ç©ºè®¾ç½®è®°å½•");
-        Lcd_printf20x20(30, 90, "è¿‡æ»¤é”å®šï¼š%s",Lock_Mode_Str[RoterData.Filter_LockFlag]);
-        Lcd_printf20x20(30, 120,"åœ¨çº¿æ•°ï¼š%d",RoterData.Ble_Adv_Rp_Count);
-        Lcd_printf20x20(30, 150,"å·²è®¾ç½®ï¼š%d",RoterData.SetCount);
-        Lcd_printf20x20(5, 30 * MenuData.index[MenuData.current_id], "ï¼");
+        Lcd_printf20x20(120 - 24 * 3, 0, "À¶ÑÀÅúÁ¿ÉèÖÃ");
+        Lcd_printf20x20(30, 30, "¿ªÊ¼ÉèÖÃ:%s",AotoSetStr[RoterData.ConnenctOnFlag]);
+        Lcd_printf20x20(30, 60, "Çå¿ÕÉèÖÃ¼ÇÂ¼");
+        Lcd_printf20x20(30, 90, "¹ıÂËËø¶¨:%s",Lock_Mode_Str[RoterData.Filter_LockFlag]);
+        Lcd_printf20x20(30, 120,"ÔÚÏßÊı:%d",RoterData.Ble_Adv_Rp_Count);
+        Lcd_printf20x20(30, 150,"ÒÑÉèÖÃ:%d",RoterData.SetCount);
+        Lcd_printf20x20(5, 30 * MenuData.index[MenuData.current_id], "->");
     }
     void Mppt_Ble_AutoConnect_set_Menu(void)
     {
@@ -1613,7 +1707,7 @@ void Mppt_BLe_Menu_Select_Display(void)
     uint8_t i;
     for (i = 1; i <= 13; i++)
         Lcd_printf16x16(5, 8 + 16 * i, " ");
-    // é™åˆ¶ä¸‹æ ‡é•¿åº¦
+    // ÏŞÖÆÏÂ±ê³¤¶È
     if (!MenuData.index[MenuData.current_id])
         MenuData.index[MenuData.current_id] = 1;
     if (MenuData.index[MenuData.current_id] > 13)
@@ -1637,7 +1731,7 @@ void Mppt_Ble_Mac_Info_Display(void)
                 RoterData.Ble_Adv_rp[i].mac[4],
                 RoterData.Ble_Adv_rp[i].mac[5],
                 RoterData.Ble_Adv_rp[i].rssi);
-        //Lcd_printf16x16(16 + 184, 16 + 16 * (i + 1),"    ");    // æ¸…ç©ºåé¢çš„æ˜¾ç¤º é˜²æ­¢ä¹‹å‰çš„æ®‹ç•™
+        //Lcd_printf16x16(16 + 184, 16 + 16 * (i + 1),"    ");    // Çå¿ÕºóÃæµÄÏÔÊ¾ ·ÀÖ¹Ö®Ç°µÄ²ĞÁô
         Lcd_printf16x16(16, 8 + 16 * (i + 1), str);
     }
 }
@@ -1645,7 +1739,7 @@ void Mppt_Ble_con_Select_Menu(void)
 {
     MPPT_Get_Info_Timer_Star();
     Lcd_Clear(BLACK); 
-    Lcd_printf20x20(120 - 24 * 3, 0, "è“ç‰™æŒ‡å®šè¿æ¥");
+    Lcd_printf20x20(120 - 24 * 3, 0, "À¶ÑÀÖ¸¶¨Á¬½Ó");
     MenuData.index[MenuData.current_id] = 1;
     Lcd_printf16x16(5, 8 + 16 * MenuData.index[MenuData.current_id], ">");
     Mppt_Ble_Mac_Info_Display();
@@ -1657,7 +1751,7 @@ void Mppt_Ble_con_Select_Menu_Operation(uint8_t key)
     uint8_t *index = &MenuData.index[MenuData.current_id];
     switch (key) 
     {
-        case KEY_VALUE_TYPE_UP: // ä¸Š
+        case KEY_VALUE_TYPE_UP: // ÉÏ
             if (index[0] > 1)index[0]--;      
             else index[0] = Menu_Tab[MenuData.current_id].max_menu_num;
 
@@ -1672,7 +1766,7 @@ void Mppt_Ble_con_Select_Menu_Operation(uint8_t key)
 
             
             break;
-        case KEY_VALUE_TYPE_DOWN: // ä¸‹
+        case KEY_VALUE_TYPE_DOWN: // ÏÂ
 
          
             if (index[0] < Menu_Tab[MenuData.current_id].max_menu_num)
@@ -1686,7 +1780,7 @@ void Mppt_Ble_con_Select_Menu_Operation(uint8_t key)
             Mppt_BLe_Menu_Select_Display();
 
             break;
-        case KEY_VALUE_TYPE_LEFT: // â†
+        case KEY_VALUE_TYPE_LEFT: // ¡û
             sys_timer_del(bl_con_menu_timer); 
             
             ble_gatt_client_disconnect_all();
@@ -1695,10 +1789,10 @@ void Mppt_Ble_con_Select_Menu_Operation(uint8_t key)
             MenuData.current_id = Menu_Tab[MenuData.current_id].up_id;
             Menu_Tab[MenuData.current_id].display_operation();
             break;
-        case KEY_VALUE_TYPE_RIGHT: // â†’
+        case KEY_VALUE_TYPE_RIGHT: // ¡ú
             sys_timer_del(bl_con_menu_timer);
             //ble_gatt_client_disconnect_all();
-            MenuData.current_id = BL_CON_SET_MENU; //åˆ‡æ¢åˆ°ä¸‹çº§èœå•
+            MenuData.current_id = BL_CON_SET_MENU; //ÇĞ»»µ½ÏÂ¼¶²Ëµ¥
             if( Menu_Tab[MenuData.current_id].current_operation != NULL)Menu_Tab[MenuData.current_id].display_operation();
             break;
     }
@@ -1706,13 +1800,13 @@ void Mppt_Ble_con_Select_Menu_Operation(uint8_t key)
 
 
 static u16 Cutdown_cnt_Timer = 0;
-static u8 Cutdown_cnt = 5;  //å€’è®¡æ—¶
+static u8 Cutdown_cnt = 5;  //µ¹¼ÆÊ±
 void Mppt_Ble_connCount_Cutdown()
 {
     int len = sizeof(RoterData.Ble_Adv_rp)/sizeof(RoterData.Ble_Adv_rp[0]);
     int size = sizeof(RoterData.Ble_Adv_rp[0]);
     Cutdown_cnt--;
-    Lcd_printf20x20(120 - 10 * 4, 120, "å€’è®¡æ—¶:%d",Cutdown_cnt);
+    Lcd_printf20x20(120 - 10 * 4, 120, "µ¹¼ÆÊ±:%d",Cutdown_cnt);
     qsort(&RoterData.Ble_Adv_rp,len,size,Rssi_Cmpsort);
     if(!Cutdown_cnt)
     {
@@ -1727,12 +1821,12 @@ void Mppt_Ble_connCount_Cutdown()
         //MPPT_Get_Info_Timer_Star();
     }
 }
-void Mppt_Ble_con_Menu(void) //ç•Œé¢åˆå§‹åŒ–
+void Mppt_Ble_con_Menu(void) //½çÃæ³õÊ¼»¯
 {
     Lcd_Clear(BLACK);
     Cutdown_cnt = 5;
-    Lcd_printf20x20(120 - 20 * 4, 120 - 20, "è“ç‰™æœç´¢ä¸­......");
-    Lcd_printf20x20(120 - 10 * 4, 120, "å€’è®¡æ—¶:%d",Cutdown_cnt);
+    Lcd_printf20x20(120 - 20 * 4, 120 - 20, "À¶ÑÀËÑË÷ÖĞ......");
+    Lcd_printf20x20(120 - 10 * 4, 120, "µ¹¼ÆÊ±:%d",Cutdown_cnt);
     Cutdown_cnt_Timer = sys_timer_add(NULL,Mppt_Ble_connCount_Cutdown,1000);
 }
 void Mppt_Ble_con_Menu_Operation(uint8_t key)
@@ -1740,8 +1834,9 @@ void Mppt_Ble_con_Menu_Operation(uint8_t key)
     switch (key)
     {
         case KEY_VALUE_TYPE_RIGHT: 
-            MenuData.current_id = BL_CON_SELECT_MENU;
-            Menu_Tab[MenuData.current_id].display_operation();
+            Lcd_SwitchWindows(BL_CON_SELECT_MENU);
+            //  MenuData.current_id = BL_CON_SELECT_MENU;
+            //  Menu_Tab[MenuData.current_id].display_operation();
             memcpy(RoterData.Ble_SetConnect_Mac,RoterData.Ble_Adv_rp[0].mac,6);
             if(Cutdown_cnt_Timer)
             {
@@ -1750,9 +1845,7 @@ void Mppt_Ble_con_Menu_Operation(uint8_t key)
             }
             break;
         case KEY_VALUE_TYPE_LEFT: 
-            MenuData.current_id = Menu_Tab[MenuData.current_id].up_id;
-            if (Menu_Tab[MenuData.current_id].display_operation != NULL)
-                Menu_Tab[MenuData.current_id].display_operation();
+            Lcd_BackPreWindows();
             if(Cutdown_cnt_Timer)
             {
                 sys_timer_del(Cutdown_cnt_Timer);
@@ -1769,13 +1862,14 @@ void Mppt_Ble_con_Menu_Operation(uint8_t key)
     void Mppt_Ble_Set_Menu(void)
     {
         Lcd_Clear(BLACK);
-        Lcd_printf20x20(120 - 24 * 3, 0, "è“ç‰™æŒ‡å®šè¿æ¥");
-        Lcd_printf20x20(30,30, "ï¼­ï¼°ï¼°ï¼´ä¿¡æ¯æŸ¥è¯¢");
-        Lcd_printf20x20(30,60, "å……ç”µå‚æ•°ä¿®æ”¹");
-        /*Lcd_printf20x20(30,90, "æ”¾ç”µå‚æ•°ä¿®æ”¹");
-        Lcd_printf20x20(30,120,"æ›²çº¿æ¨¡å¼ä¿®æ”¹ï¼š%s",Curve_Mode_Str[RoterData.Mppt_ConSetPara_Info.DischarCurve_Moed]);
-        Lcd_printf20x20(30,150,"æ”¾ç”µæ›²çº¿ä¿®æ”¹");
-        Lcd_printf20x20(30,180,"é”å®šæ¨¡å¼ï¼š%s",Lock_Mode_Str[RoterData.Mppt_ConSetPara_Info.Lock_Mode]);*/
+        Lcd_printf20x20(120 - 24 * 3, 0, "À¶ÑÀÖ¸¶¨Á¬½Ó");
+        Lcd_printf20x20(30,30, "MPPTĞÅÏ¢²éÑ¯");
+        Lcd_printf20x20(30,60, "³äµç²ÎÊıĞŞ¸Ä");
+        Lcd_printf20x20(30,90, "À¶ÑÀ¿ØÖÆ");
+        /*Lcd_printf20x20(30,90, "·Åµç²ÎÊıĞŞ¸Ä");
+        Lcd_printf20x20(30,120,"ÇúÏßÄ£Ê½ĞŞ¸Ä£º%s",Curve_Mode_Str[RoterData.Mppt_ConSetPara_Info.DischarCurve_Moed]);
+        Lcd_printf20x20(30,150,"·ÅµçÇúÏßĞŞ¸Ä");
+        Lcd_printf20x20(30,180,"Ëø¶¨Ä£Ê½£º%s",Lock_Mode_Str[RoterData.Mppt_ConSetPara_Info.Lock_Mode]);*/
 
         uint32_t const bl_ckey[4]= {12,34,56,78}; 
         uint8_t data[8]  =
@@ -1787,8 +1881,8 @@ void Mppt_Ble_con_Menu_Operation(uint8_t key)
         RoterData.paircode = little_endian_read_32(data,0);
          RoterData.paircode%=999999;
 
-        Lcd_printf20x20(30,90,"code:%d",RoterData.paircode);
-        Lcd_printf20x20(5, 30 * MenuData.index[MenuData.current_id], "ï¼");
+        Lcd_printf20x20(30,120,"À¶ÑÀÁ¬½ÓÃÜÂë:%d",RoterData.paircode);
+        Lcd_printf20x20(5, 30 * MenuData.index[MenuData.current_id], "->");
         //MPPT_Get_Info_Timer_Star();
     }     
     void Mppt_Ble_Set_Operation(uint8_t key)
@@ -1801,75 +1895,89 @@ void Mppt_Ble_con_Menu_Operation(uint8_t key)
                     {
                         case 1:
                             Get_Info_Timer = sys_timer_add(NULL,Get_Mppt_Report,500);
-                            MenuData.current_id = MPPT_INFO; // åˆ‡æ¢åˆ°ä¸‹çº§èœå•
+                            Lcd_SwitchWindows(MPPT_INFO);
                             break;
-                        case 2:
-                            MenuData.current_id = CHAEGE_PARA_MODIFY; // åˆ‡æ¢åˆ°ä¸‹çº§èœå•
+                        case 2:               
+                            Lcd_SwitchWindows(CHAEGE_PARA_MODIFY);
                             break;
                         case 3:
-                            MenuData.current_id = DISCHAR_PARA_MODIFY; // åˆ‡æ¢åˆ°ä¸‹çº§èœå•
-                            break;
-                        case 4:
-                            if(++RoterData.Mppt_ConSetPara_Info.DischarCurve_Moed>2)RoterData.Mppt_ConSetPara_Info.DischarCurve_Moed = 0;
-                            Lcd_printf20x20(30,120,"æ›²çº¿æ¨¡å¼ä¿®æ”¹ï¼š%s",Curve_Mode_Str[RoterData.Mppt_ConSetPara_Info.DischarCurve_Moed]);
-                            return ;
-                            break;
-                        case 5:
-                            MenuData.current_id = CURVE_PARAT_MENU;
-                            break;
-                        case 6:
-                            RoterData.Mppt_ConSetPara_Info.Lock_Mode = !RoterData.Mppt_ConSetPara_Info.Lock_Mode;
-                            Lcd_printf20x20(30,180,"é”å®šæ¨¡å¼ï¼š%s",Lock_Mode_Str[RoterData.Mppt_ConSetPara_Info.Lock_Mode]);
-                            return ;
-                            break;
-                        case 7:
-                            Modify_Info_Timer = sys_timer_add(&RoterData.Mppt_ConSetPara_Info,Mppt_Set_Para_Send,1000);
-                            MenuData.current_id = ENTRY_MODIFY; // åˆ‡æ¢åˆ°ä¸‹çº§èœå•
+                            Lcd_SwitchWindows(BLE_CTR);
                             break;
                     }
-                    if (Menu_Tab[MenuData.current_id].display_operation != NULL)
-                                Menu_Tab[MenuData.current_id].display_operation();
                 break;
-            case KEY_VALUE_TYPE_LEFT: //æ–­å¼€æ‰€æœ‰è¿æ¥
+            case KEY_VALUE_TYPE_LEFT: //¶Ï¿ªËùÓĞÁ¬½Ó
                 memset(RoterData.Ble_SetConnect_Mac,0,6);
                 ble_gatt_client_disconnect_all();
                 break;
         }  
         Mppt_Normal_Menu_Select(key);
     }
-    
+
+        void Mppt_BleCtr_Menu(void) 
+        {
+             Lcd_Clear(BLACK);
+            Lcd_printf20x20(120 - 20 * 3, 0, "À¶ÑÀÖ¸Áî¿ØÖÆ");
+            Lcd_printf20x20(30, 30, "1:¿ªµÆ");
+            Lcd_printf20x20(30, 60, "2:¹ØµÆ");
+            Lcd_printf20x20(30, 90, "3:È«ÁÁ");
+            Lcd_printf20x20(30, 120, "4:°ëÁÁ");
+        }
+        void Mppt_BleCtr_Menu_Ops(uint8_t key)
+        {
+            switch (key)
+            {
+                case KEY_VALUE_TYPE_LEFT:
+                    Lcd_BackPreWindows();
+                    break;
+                case KEY_VALUE_TYPE_1:
+                    Mppt_CmdSend(0x01);
+                    break;
+                case KEY_VALUE_TYPE_2:
+                    Mppt_CmdSend(0x02);
+                    break;
+                case KEY_VALUE_TYPE_3:
+                    Mppt_CmdSend(0x03);
+                    break;
+                case KEY_VALUE_TYPE_4:
+                    Mppt_CmdSend(0x04);
+                    break;
+                default:
+                    break;
+            }
+        }
+
         void Mppt_Info_Display(void *priv)
         {
             Mppt_Info_Para_t *Info= priv;
             char *str[10];
-            const char* OutPut_Status_Str[]={"æ­£å¸¸ï¼ŒçŸ­è·¯"};
+            const char* OutPut_Status_Str[]={"Õı³££¬¶ÌÂ·"};
             Timer_Auto_Off_ReCount();
-            Lcd_printf20x20(120 - 24 * 3, 0, "ï¼­ï¼°ï¼°ï¼´ä¿¡æ¯");
+            Lcd_printf20x20(120 - 20 * 2, 0, "MPPTĞÅÏ¢");
           //  Info->Charge_Capcity = 0.004;
-           floatToString(Info->Charge_Capcity,3,str);
-            Lcd_printf20x20(30, 20 * 1, "å·²å……ç”µé‡:%sAh   ",str);
+            floatToString(Info->Charge_Capcity,3,str);
+            Lcd_printf20x20(30, 20 * 1, "ÒÑ³äµçÁ¿:%sAh   ",str);
             floatToString(Info->Charge_Current,3,str);
-            Lcd_printf20x20(30, 20 * 2, "å……ç”µç”µæµ:%sA    ",str);
+            Lcd_printf20x20(30, 20 * 2, "³äµçµçÁ÷:%sA    ",str);
             floatToString(Info->Dischar_Current,3,str);
            // floatToString(0.118f,3,str);
-            Lcd_printf20x20(30, 20 * 3, "æ”¾ç”µç”µæµ:%sA    ",str);
+            Lcd_printf20x20(30, 20 * 3, "·ÅµçµçÁ÷:%sA    ",str);
             floatToString(Info->Charge_Power,3,str);
-            Lcd_printf20x20(30, 20 * 4, "å……ç”µåŠŸç‡:%sW    ",str);
-            Lcd_printf20x20(30, 20 * 5, "ç”µæ± å†…é˜»:%dm    ",Info->Bat_Resistance);
-            Lcd_printf20x20(30, 20 * 6, "ç”µæ± ç”µé‡:%d%%   ",Info->Bat_Capcity);
+            Lcd_printf20x20(30, 20 * 4, "³äµç¹¦ÂÊ:%sW    ",str);
+            Lcd_printf20x20(30, 20 * 5, "µç³ØÄÚ×è:%dm    ",Info->Bat_Resistance);
+            Lcd_printf20x20(30, 20 * 6, "µç³ØµçÁ¿:%d%%   ",Info->Bat_Capcity);
             floatToString(Info->Bat_Voltage,3,str);
-            Lcd_printf20x20(30, 20 * 7, "ç”µæ± ç”µå‹:%sV    ",str);
-            //Lcd_printf20x20(30, 25 * 8, "è¾“å‡ºçŠ¶æ€:%s     ",OutPut_Status_Str[Info->OutPut_Staus]);
+            Lcd_printf20x20(30, 20 * 7, "µç³ØµçÑ¹:%sV    ",str);
+            //Lcd_printf20x20(30, 25 * 8, "Êä³ö×´Ì¬:%s     ",OutPut_Status_Str[Info->OutPut_Staus]);
            
             floatToString(RoterData.Mppt_ConSetPara_Info.Bat_Capcity,1,str);
-            Lcd_printf20x20(30,20 * 8,"ç”µæ± å®¹é‡:%sAh  ",str);
+            Lcd_printf20x20(30,20 * 8,"µç³ØÈİÁ¿:%sAh  ",str);
 
             
             floatToString(Info->Temp,3,str);
-            Lcd_printf20x20(30,20 * 9,"æ¸©åº¦:%sâ„ƒ  ",str);
+            Lcd_printf20x20(30,20 * 9,"ÎÂ¶È:%sC  ",str);
             
         }
-        void Mppt_Info_Menu(void) //å……ç”µä¿¡æ¯é…ç½®
+        void Mppt_Info_Menu(void) //³äµçĞÅÏ¢ÅäÖÃ
         {
             Lcd_Clear(BLACK);
             Mppt_Info_Display(&RoterData.Mppt_Info);
@@ -1897,39 +2005,78 @@ void Mppt_Ble_con_Menu_Operation(uint8_t key)
         void Mppt_ChargePara_Modify_Menu(void)
         {
             Lcd_Clear(BLACK);        
-            Lcd_printf20x20(120 - 24 * 3, 0, "å……ç”µå‚æ•°ä¿®æ”¹");
+            Lcd_printf20x20(120 - 24 * 3, 0, "³äµç²ÎÊıĞŞ¸Ä");
             Mppt_ChargePara_Display(&RoterData.Mppt_ConSetPara_Info);
         }
         void Mppt_ChargePara_Modify_Menu_Operation(uint8_t key)
         {
             Mppt_ChargeSet_Operation(&RoterData.Mppt_ConSetPara_Info,key);
-            Mppt_Normal_Menu_Select(key);
-            if(key == KEY_VALUE_TYPE_LEFT)
+            switch (key)
             {
-                MenuData.current_id = BL_CON_SET_MENU;
-                Menu_Tab[MenuData.current_id].display_operation();
-            }
-            if(key == KEY_VALUE_TYPE_RIGHT)
-            {
-                MenuData.current_id = DISCHAR_PARA_MODIFY;
-                Menu_Tab[MenuData.current_id].display_operation();
+                case KEY_VALUE_TYPE_UP: // ÉÏ
+                    if (MenuData.index[MenuData.current_id] > 1)
+                        MenuData.index[MenuData.current_id]--;
+                    else
+                    {
+                        Lcd_BackPreWindows();
+                    }
+                        
+                    Mppt_Menu_Select_Display();
+                    break;
+                case KEY_VALUE_TYPE_DOWN: // ÏÂ
+                    if(!Menu_Tab[MenuData.current_id].max_menu_num)return;
+                    if (MenuData.index[MenuData.current_id] < Menu_Tab[MenuData.current_id].max_menu_num)
+                        MenuData.index[MenuData.current_id]++;
+                    else{
+                        Lcd_SwitchWindows(DISCHAR_PARA_MODIFY);
+                    }
+                    Mppt_Menu_Select_Display();
+                    break;
+                case KEY_VALUE_TYPE_LEFT: // ¡û
+                    Lcd_BackPreWindows();
+                    break;
+                case KEY_VALUE_TYPE_RIGHT:
+                    Lcd_SwitchWindows(DISCHAR_PARA_MODIFY);
+                    break;
             }
         }
 
         void Mppt_DischarPara_Modify_Menu(void)
         {
             Lcd_Clear(BLACK);
-            Lcd_printf20x20(120 - 24 * 3, 0, "æ”¾ç”µå‚æ•°ä¿®æ”¹");
+            Lcd_printf20x20(120 - 24 * 3, 0, "·Åµç²ÎÊıĞŞ¸Ä");
             Mppt_DischarPara_Display(&RoterData.Mppt_ConSetPara_Info);
         }
         void Mppt_DischarPara_Modify_Menu_Operation(uint8_t key)
         {
             Mppt_DischarSet_Operation(&RoterData.Mppt_ConSetPara_Info,key);
-             Mppt_Normal_Menu_Select(key);
-              if(key == KEY_VALUE_TYPE_RIGHT)
+            switch (key)
             {
-                MenuData.current_id = CURVE_MODIFY;
-                Menu_Tab[MenuData.current_id].display_operation();
+                case KEY_VALUE_TYPE_UP: // ÉÏ
+                    if (MenuData.index[MenuData.current_id] > 1)
+                        MenuData.index[MenuData.current_id]--;
+                    else
+                    {
+                        Lcd_BackPreWindows();
+                    }
+                        
+                    Mppt_Menu_Select_Display();
+                    break;
+                case KEY_VALUE_TYPE_DOWN: // ÏÂ
+                    if(!Menu_Tab[MenuData.current_id].max_menu_num)return;
+                    if (MenuData.index[MenuData.current_id] < Menu_Tab[MenuData.current_id].max_menu_num)
+                        MenuData.index[MenuData.current_id]++;
+                    else{
+                        Lcd_SwitchWindows(CURVE_MODIFY);
+                    }
+                    Mppt_Menu_Select_Display();
+                    break;
+                case KEY_VALUE_TYPE_LEFT: // ¡û
+                    Lcd_BackPreWindows();
+                    break;
+                case KEY_VALUE_TYPE_RIGHT:
+                    Lcd_SwitchWindows(CURVE_MODIFY);
+                    break;
             }
         }
 
@@ -1937,50 +2084,45 @@ void Mppt_Ble_con_Menu_Operation(uint8_t key)
         {
             Lcd_Clear(BLACK);
             MenuData.index[MenuData.current_id] = 1;
-            Lcd_printf20x20(120 - 20 * 3, 0, "æ›²çº¿å‚æ•°è®¾ç½®");
-            Lcd_printf20x20(30, 30, "æ”¾ç”µæ›²çº¿æ¨¡å¼ï¼š%s",Curve_Mode_Str[RoterData.Mppt_ConSetPara_Info.DischarCurve_Moed]);
-            Lcd_printf20x20(30, 60,"æ”¾ç”µæ›²çº¿è®¾ç½®");
-            Lcd_printf20x20(5, 30 * MenuData.index[MenuData.current_id], "ï¼");
+            Lcd_printf20x20(120 - 20 * 3, 0, "ÇúÏß²ÎÊıÉèÖÃ");
+            Lcd_printf20x20(30, 30, "·ÅµçÇúÏßÄ£Ê½:%s",Curve_Mode_Str[RoterData.Mppt_ConSetPara_Info.DischarCurve_Moed]);
+            Lcd_printf20x20(30, 60,"·ÅµçÇúÏßÉèÖÃ");
+            Lcd_printf20x20(5, 30 * MenuData.index[MenuData.current_id], "->");
         }
         void Mppt_Curce_Modify_Menu_Operation(uint8_t key)
         {
-        // Mppt_Normal_Menu_Select(key);
             switch (key)
             {
-                case KEY_VALUE_TYPE_UP: // ä¸Š
+                case KEY_VALUE_TYPE_UP: // ÉÏ
                     if (MenuData.index[MenuData.current_id] > 1)
                         MenuData.index[MenuData.current_id]--;
                     else
                     {
-                        MenuData.current_id = Menu_Tab[MenuData.current_id].up_id;
-                        Menu_Tab[MenuData.current_id].display_operation();
+                        Lcd_BackPreWindows();
                     }
                         
                     Mppt_Menu_Select_Display();
                     break;
-                case KEY_VALUE_TYPE_DOWN: // ä¸‹
+                case KEY_VALUE_TYPE_DOWN: // ÏÂ
                     if(!Menu_Tab[MenuData.current_id].max_menu_num)return;
                     if (MenuData.index[MenuData.current_id] < Menu_Tab[MenuData.current_id].max_menu_num)
                         MenuData.index[MenuData.current_id]++;
                     else{
-                            MenuData.current_id = MODIFY_MENU;
-                            Menu_Tab[MenuData.current_id].display_operation();
+                            Lcd_SwitchWindows(MODIFY_MENU);
                     }
                     Mppt_Menu_Select_Display();
                     break;
-                case KEY_VALUE_TYPE_LEFT: // â†
-                    MenuData.current_id = Menu_Tab[MenuData.current_id].up_id;
-                    Menu_Tab[MenuData.current_id].display_operation();
+                case KEY_VALUE_TYPE_LEFT: // ¡û
+                    Lcd_BackPreWindows();
                     break;
             }
             switch (key)
             {
                 case KEY_VALUE_TYPE_ENTRE:
-                switch (MenuData.index[MenuData.current_id])
+                    switch (MenuData.index[MenuData.current_id])
                     {
                         case 2:
-                            MenuData.current_id = CURVE_PARAT_MENU; // åˆ‡æ¢åˆ°ä¸‹çº§èœå•
-                            Menu_Tab[MenuData.current_id].display_operation();
+                            Lcd_SwitchWindows(CURVE_PARAT_MENU);
                             return ;
                             break;
                     }  
@@ -1994,8 +2136,7 @@ void Mppt_Ble_con_Menu_Operation(uint8_t key)
                             break;      
                     }  
                 case KEY_VALUE_TYPE_RIGHT: // 
-                    MenuData.current_id = MODIFY_MENU; // åˆ‡æ¢åˆ°ä¸‹çº§èœå•       
-                    Menu_Tab[MenuData.current_id].display_operation();
+                    Lcd_SwitchWindows(MODIFY_MENU);
                     break;
             }   
         }
@@ -2003,7 +2144,7 @@ void Mppt_Ble_con_Menu_Operation(uint8_t key)
         void Mppt_CurvePara_Modify_Menu(void)
         {
             Lcd_Clear(BLACK);
-            Lcd_printf20x20(120 - 20 * 3, 0, "æ”¾ç”µæ›²çº¿ä¿®æ”¹");
+            Lcd_printf20x20(120 - 20 * 3, 0, "·ÅµçÇúÏßĞŞ¸Ä");
             Mppt_DischarCurve_Display(&RoterData.Mppt_ConSetPara_Info);
         }
         void Mppt_CurvePara_Modify_Menu_Operation(uint8_t key)
@@ -2014,25 +2155,24 @@ void Mppt_Ble_con_Menu_Operation(uint8_t key)
         void Mppt_Modify_Menu(void)
         {
             Lcd_Clear(BLACK);
-            Lcd_printf20x20(120 - 20 * 2, 0, "å‚æ•°ä¿®æ”¹");
-            Lcd_printf20x20(30,30,"ç¡®è®¤ä¿®æ”¹");
-            Lcd_printf20x20(5, 30 * MenuData.index[MenuData.current_id], "ï¼");
+            Lcd_printf20x20(120 - 20 * 2, 0, "²ÎÊıĞŞ¸Ä");
+            Lcd_printf20x20(30,30,"È·ÈÏĞŞ¸Ä");
+            Lcd_printf20x20(5, 30 * MenuData.index[MenuData.current_id], "->");
         }
         void Mppt_Modify_Menu_Operation(uint8_t key)
         {
             Mppt_Normal_Menu_Select(key);
             if(key == KEY_VALUE_TYPE_RIGHT)
             {
-                MenuData.current_id = ENTRY_MODIFY;
-                Modify_Info_Timer = sys_timer_add(&RoterData.Mppt_ConSetPara_Info,Mppt_Set_Para_Send,1000);
-                Menu_Tab[MenuData.current_id].display_operation();
+                Lcd_SwitchWindows(ENTRY_MODIFY);
+                Modify_Info_Timer = sys_timer_add(&RoterData.Mppt_ConSetPara_Info,Mppt_Set_Para_Send,1000);    
             }
         }
 
         void Mppt_Comfir_Modify_Menu(void)
         {
             Lcd_Clear(BLACK);
-            Lcd_printf20x20(120 - 20 * 3, 120 - 20, "ä¿®æ”¹ä¸­......");     
+            Lcd_printf20x20(120 - 20 * 3, 120 - 20, "ĞŞ¸ÄÖĞ......");     
         }
         void Mppt_Comfir_Modify_Menu_Operation(uint8_t key)
             {
@@ -2040,7 +2180,7 @@ void Mppt_Ble_con_Menu_Operation(uint8_t key)
                 {
                     if(Modify_Info_Timer)sys_timer_del(Modify_Info_Timer);
                      Lcd_Clear(BLACK);
-                    Lcd_printf20x20(120 - 10 * 30, 120 - 20, "ä¿®æ”¹OK."); 
+                    Lcd_printf20x20(120 - 10 * 30, 120 - 20, "ĞŞ¸ÄOK."); 
                 }
                 if(key == KEY_VALUE_TYPE_LEFT)
                 {
@@ -2052,14 +2192,14 @@ void Mppt_Ble_con_Menu_Operation(uint8_t key)
 void Mppt_Ir_Set_Menu(void)
 {
     Lcd_Clear(BLACK);   
-    Lcd_printf20x20(120 - 24 * 3, 0, "çº¢å¤–å‚æ•°è®¾ç½®");
-    Lcd_printf20x20(30, 30,  "å¸¸è§„é¥æ§å™¨");
-    Lcd_printf20x20(30, 60,  "å·¥ç¨‹é¥æ§å™¨");
-    Lcd_printf20x20(30, 90,  "ç”¨æˆ·ç è®¾ç½®");
-    Lcd_printf20x20(30, 120, "æ”¾ç”µæ›²çº¿æ¨¡å¼ï¼š%s",Curve_Mode_Str[RoterData.Mppt_SetPara.DischarCurve_Moed]);
-    Lcd_printf20x20(30, 150, "æ›²çº¿è®¾ç½®");
-    Lcd_printf20x20(30, 180, "æ›²çº¿ç¡®è®¤");
-    Lcd_printf20x20(5, 30 * MenuData.index[MenuData.current_id], "ï¼");
+    Lcd_printf20x20(120 - 24 * 3, 0, "ºìÍâ²ÎÊıÉèÖÃ");
+    Lcd_printf20x20(30, 30,  "³£¹æÒ£¿ØÆ÷");
+    Lcd_printf20x20(30, 60,  "¹¤³ÌÒ£¿ØÆ÷");
+    Lcd_printf20x20(30, 90,  "ÓÃ»§ÂëÉèÖÃ");
+    Lcd_printf20x20(30, 120, "·ÅµçÇúÏßÄ£Ê½:%s",Curve_Mode_Str[RoterData.Mppt_SetPara.DischarCurve_Moed]);
+    Lcd_printf20x20(30, 150, "ÇúÏßÉèÖÃ");
+    Lcd_printf20x20(30, 180, "ÇúÏßÈ·ÈÏ");
+    Lcd_printf20x20(5, 30 * MenuData.index[MenuData.current_id], "->");
 }
 void Mppt_Ir_Set_Menu_Operation(uint8_t key)  
 {
@@ -2074,37 +2214,33 @@ void Mppt_Ir_Set_Menu_Operation(uint8_t key)
             switch (MenuData.index[MenuData.current_id])
             {
                 case 1:
-                    MenuData.current_id = IR_NORMAL_MENU; // åˆ‡æ¢åˆ°ä¸‹çº§èœå•
-                    Menu_Tab[MenuData.current_id].display_operation();  
+                    Lcd_SwitchWindows(IR_NORMAL_MENU);
                     break;
-                case 2:
-                     MenuData.current_id = IR_ENGINEER_MENU; // åˆ‡æ¢åˆ°ä¸‹çº§èœå•
-                     Menu_Tab[MenuData.current_id].display_operation();  
+                case 2:            
+                    Lcd_SwitchWindows(IR_ENGINEER_MENU);
                     break;
                 case 3:
-                     MenuData.current_id = IR_USERCODE_MENU; // åˆ‡æ¢åˆ°ä¸‹çº§èœå•
-                     Menu_Tab[MenuData.current_id].display_operation();  
+                    Lcd_SwitchWindows(IR_USERCODE_MENU);
                     break;
                 case 4:
                     if(++RoterData.Mppt_SetPara.DischarCurve_Moed>2)RoterData.Mppt_SetPara.DischarCurve_Moed = 0;
-                     Lcd_printf20x20(30, 120, "æ”¾ç”µæ›²çº¿æ¨¡å¼ï¼š%s",Curve_Mode_Str[RoterData.Mppt_SetPara.DischarCurve_Moed]);
+                     Lcd_printf20x20(30, 120, "·ÅµçÇúÏßÄ£Ê½:%s",Curve_Mode_Str[RoterData.Mppt_SetPara.DischarCurve_Moed]);
                     break;
-                case 5:
-                     MenuData.current_id = IR_CRUVESET_MENU; // åˆ‡æ¢åˆ°ä¸‹çº§èœå•
-                     Menu_Tab[MenuData.current_id].display_operation();  
+                case 5:                  
+                    Lcd_SwitchWindows(IR_CRUVESET_MENU);
                     break;
-                case 6: //çº¢å¤–æ•°æ®å‘é€
-                    memset(&ir_tx_data,0,sizeof(ir_tx_data)) ;    //æ¸…ç©ºæ•°æ®
+                case 6: //ºìÍâÊı¾İ·¢ËÍ
+                    memset(&ir_tx_data,0,sizeof(ir_tx_data)) ;    //Çå¿ÕÊı¾İ
                     
                     if(RoterData.Mppt_SetPara.DischarCurve_Moed == 2)
                     {
-                        ir_tx_data[0] = 0X5F; ir_tx_data[1] = 0XFA;  //å¤´ç 
-                        ir_tx_data[2] = 0X00; ir_tx_data[3] = 0X0f;  //å¤´ç 
+                        ir_tx_data[0] = 0X5F; ir_tx_data[1] = 0XFA;  //Í·Âë
+                        ir_tx_data[2] = 0X00; ir_tx_data[3] = 0X0f;  //Í·Âë
                     }
                     else 
                     {
-                        ir_tx_data[0] = 0X5F; ir_tx_data[1] = 0XF5;  //å¤´ç 
-                        for(i=0;i<=8;i++)   //æ›²çº¿æ•°æ®å‘é€
+                        ir_tx_data[0] = 0X5F; ir_tx_data[1] = 0XF5;  //Í·Âë
+                        for(i=0;i<=8;i++)   //ÇúÏßÊı¾İ·¢ËÍ
                         {
                             ir_tx_data[2 + i*2] = (uint8_t)(RoterData.Mppt_SetPara.Curv_Data[i][0] * 10);
                             ir_tx_data[2 + i*2 + 1] = (uint8_t)(RoterData.Mppt_SetPara.Curv_Data[i][1]);
@@ -2113,13 +2249,11 @@ void Mppt_Ir_Set_Menu_Operation(uint8_t key)
                     
                     Check_Sum = 0;
                     for(i=0;i<18;i++)Check_Sum += ir_tx_data[i];
-                    ir_tx_data[18] = Check_Sum >> 8;    // é«˜ä½
-                    ir_tx_data[19] = Check_Sum & 0xff;  //åœ°ä½
+                    ir_tx_data[18] = Check_Sum >> 8;    // ¸ßÎ»
+                    ir_tx_data[19] = Check_Sum & 0xff;  //µØÎ»
                     Ir_tx_star_x(ir_tx_data,sizeof(ir_tx_data));
                     break; 
-            }           
-            //if (Menu_Tab[MenuData.current_id].display_operation != NULL)
-               //  Menu_Tab[MenuData.current_id].display_operation();                                
+            }                                   
             break;
     }
 }
@@ -2127,7 +2261,7 @@ void Mppt_Ir_Set_Menu_Operation(uint8_t key)
     void IR_Normal_Menu(void)
     {
         Lcd_Clear(BLACK);   
-        Lcd_printf20x20( 120 - 10 * 5 , 0, "å¸¸è§„é¥æ§å™¨");
+        Lcd_printf20x20( 120 - 10 * 5 , 0, "³£¹æÒ£¿ØÆ÷");
         Lcd_printf20x20(30, 30, "1:0N   2:0FF");
         Lcd_printf20x20(30, 60, "3:FULL 4:HALF");
         Lcd_printf20x20(30, 90,"+:PWM+ -:PWM-");
@@ -2183,12 +2317,12 @@ void Mppt_Ir_Set_Menu_Operation(uint8_t key)
     void IR_Engineer_Menu(void)
     {
         Lcd_Clear(BLACK);   
-        Lcd_printf20x20(120 - 10 * 5 , 0, "å·¥ç¨‹é¥æ§å™¨");
+        Lcd_printf20x20(120 - 10 * 5 , 0, "¹¤³ÌÒ£¿ØÆ÷");
         Lcd_printf20x20(30, 60, "1:0N 2:0FF");
         Lcd_printf20x20(30, 90, "2:IR On 3:IR Off");
         Lcd_printf20x20(30, 120,"Rader 4: On 5: Off");
         Lcd_printf20x20(30, 150,"6:Current Gare:%d",Ir_current_Gear);
-        Lcd_printf20x20(0, 30 *5 , "ï¼");
+        Lcd_printf20x20(0, 30 *5 , "->");
     }
     void IR_Engineer_Menu_Operation(uint8_t key)
     {
@@ -2218,20 +2352,20 @@ void Mppt_Ir_Set_Menu_Operation(uint8_t key)
     void IR_Usercode_Menu(void)
     {
         Lcd_Clear(BLACK);   
-        Lcd_printf20x20( 120 - 12 * 5 , 0, "ç”¨æˆ·ç è®¾ç½®");
-        Lcd_printf20x20( 30 , 30, "ç”¨æˆ·ç è®¾ç½®:%d",RoterData.Mppt_SetPara.Usercode);
-        Lcd_printf20x20( 30 , 60, "ç¡®è®¤ä¿®æ”¹");
-        Lcd_printf20x20(5, 30 * MenuData.index[MenuData.current_id], "ï¼");
+        Lcd_printf20x20( 120 - 12 * 5 , 0, "ÓÃ»§ÂëÉèÖÃ");
+        Lcd_printf20x20( 30 , 30, "ÓÃ»§ÂëÉèÖÃ:%d",RoterData.Mppt_SetPara.Usercode);
+        Lcd_printf20x20( 30 , 60, "È·ÈÏĞŞ¸Ä");
+        Lcd_printf20x20(5, 30 * MenuData.index[MenuData.current_id], "->");
     }
     void IR_Usercode_Menu_Operation(uint8_t key)
     {
-        int num_key = Get_Num_Map(key);
+        int num_key = Key_NumberMap(key);
         float indata;
-        if(num_key != -1) // æœ‰æ•°å­—è¾“å…¥ ç¬¬ä¸€ä¸ªç‚¹ä¸èƒ½æ˜¯å­—ç¬¦ä¸²è¾“å…¥
+        if(num_key != -1) // ÓĞÊı×ÖÊäÈë µÚÒ»¸öµã²»ÄÜÊÇ×Ö·û´®ÊäÈë
         {
             if(!InputMode  )
             {
-                InputMode = 1; //  è¾“å…¥æ¨¡å¼
+                InputMode = 1; //  ÊäÈëÄ£Ê½
                 InputFlash_Timer = sys_timer_add(NULL,Mppt_Normal_InPutFlash,300);
                 input_index = 0;
                 memset(instr,0,sizeof(instr));
@@ -2246,7 +2380,7 @@ void Mppt_Ir_Set_Menu_Operation(uint8_t key)
             }
             switch (key)
             {
-                case KEY_VALUE_TYPE_BACKSPACE: // é€€æ ¼
+                case KEY_VALUE_TYPE_BACKSPACE: // ÍË¸ñ
                     if(input_index)
                     {   
                         if(input_index == 1)instr[input_index - 1] = '0';
@@ -2255,7 +2389,7 @@ void Mppt_Ir_Set_Menu_Operation(uint8_t key)
                     }
                     break;
                 case KEY_VALUE_TYPE_ENTRE:
-                    indata = string_to_float(instr);
+                    indata = stringtofloat(instr);
                     switch (MenuData.index[MenuData.current_id])
                     {
                         case 1:
@@ -2277,10 +2411,10 @@ void Mppt_Ir_Set_Menu_Operation(uint8_t key)
                     break;
                 
             }
-            Lcd_printf20x20( 30 , 30, "ç”¨æˆ·ç è®¾ç½®:%s     ",instr);
+            Lcd_printf20x20( 30 , 30, "ÓÃ»§ÂëÉèÖÃ:%s     ",instr);
              
             log_info("KEY %d NUMKRY %d input_index %d",key,num_key,input_index);
-            log_info("instr %s value: %d",instr,(uint32_t)(string_to_float(instr)*100));
+            log_info("instr %s value: %d",instr,(uint32_t)(stringtofloat(instr)*100));
 
         }
         else  
@@ -2316,33 +2450,33 @@ void Mppt_Ir_Set_Menu_Operation(uint8_t key)
 void Mppt_Version_Info_menu(void)
 {
     Lcd_Clear(BLACK);
-    Lcd_printf20x20(120 - 24 * 3, 0, "ç³»ç»Ÿä¿¡æ¯æŸ¥è¯¢");
-    Lcd_printf20x20(30, 60, "ç”¨æˆ·ç :%d",RoterData.Mppt_SetPara.Usercode);
-    Lcd_printf20x20(30, 90, "é¥æ§å™¨ç‰ˆæœ¬:1.0V");
-    Lcd_printf20x20(30, 120, "å‡ºå‚æ—¥æœŸ:2023:11:30");
+    Lcd_printf20x20(120 - 24 * 3, 0, "ÏµÍ³ĞÅÏ¢²éÑ¯");
+    Lcd_printf20x20(30, 60, "ÓÃ»§Âë:%d",RoterData.Mppt_SetPara.Usercode);
+    Lcd_printf20x20(30, 90, "Ò£¿ØÆ÷°æ±¾:1.0V");
+    Lcd_printf20x20(30, 120, "³ö³§ÈÕÆÚ:2023:11:30");
 }
 
 void SYS_Set_Menu(void)
 {
     Lcd_Clear(BLACK);
-    Lcd_printf20x20(120 - 10 * 6, 0, "ç³»ç»Ÿå‚æ•°æŸ¥è¯¢");
+    Lcd_printf20x20(120 - 10 * 6, 0, "ÏµÍ³²ÎÊı²éÑ¯");
     Lcd_printf20x20(30, 30, "Power Auto Off: 120s");
     Lcd_printf20x20(30, 60, "Led Backlight: 100%%");
     Lcd_printf20x20(30, 90, "Beep: OFF");
     Lcd_printf20x20(30, 120, "BLE TX POWER: 3dB");
-   // Lcd_printf20x20(5, 30 * MenuData.index[MenuData.current_id], "ï¼");
+   // Lcd_printf20x20(5, 30 * MenuData.index[MenuData.current_id], "->");
 }
 
 void Mppt_Version_Select_Menu(void)
 {
     Lcd_Clear(BLACK);
-    Lcd_printf20x20(120 - 20 * 4, 0, "ï¼­ï¼°ï¼°ï¼´ç‰ˆæœ¬è®¾ç½®");
+    Lcd_printf20x20(120 - 20 * 4, 0, "MPPT°æ±¾ÉèÖÃ");
     Lcd_printf20x20(30, 30, "SQ20P75SA-B");
-    Lcd_printf20x20(5, 30 * MenuData.index[MenuData.current_id], "ï¼");
+    Lcd_printf20x20(5, 30 * MenuData.index[MenuData.current_id], "->");
 }
 
 
-// æµ‹è¯•è“ç‰™é‡å¤ä½ç½®
+// ²âÊÔÀ¶ÑÀÖØ¸´Î»ÖÃ
 uint8_t Ble_Find_Mac_RepAddr(Ble_Adv_Rp_t *adv, uint8_t len, uint8_t *mac)
 {
     uint32_t i, j;
@@ -2364,7 +2498,7 @@ uint8_t Ble_Find_Mac_RepAddr(Ble_Adv_Rp_t *adv, uint8_t len, uint8_t *mac)
     return 255;
 }
 
-// æŸ¥æ‰¾ç©ºåœ°å€
+// ²éÕÒ¿ÕµØÖ·
 uint8_t Ble_Check_NonAddr(Ble_Adv_Rp_t *adv, uint8_t len)
 {
     uint32_t i, j;
@@ -2388,7 +2522,7 @@ void Ble_Timeout_Check(void)
             if (++RoterData.Ble_Adv_rp[i].Timeout > 30)
             {
                 RoterData.Ble_Adv_rp[i].Timeout = 0;
-                RoterData.Ble_Adv_rp[i].useflag = 0; // æ¸…é™¤ä½¿ç”¨æ ‡å¿—
+                RoterData.Ble_Adv_rp[i].useflag = 0; // Çå³ıÊ¹ÓÃ±êÖ¾
                 RoterData.Ble_Adv_rp[i].rssi = -99;
                 for(j=0;j<6;j++)RoterData.Ble_Adv_rp[i].mac[j] = 0;
                 RoterData.Ble_Adv_Rp_Count -- ;

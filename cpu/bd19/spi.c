@@ -46,8 +46,7 @@
 #define SPI1_ENABLE   1   //是否使能SPI1，使能后需定义spi1_p_data
 #define SPI2_ENABLE   1   //是否使能SPI2，使能后需定义spi2_p_data
 
-#define SPI1_ENABLE   1   //是否使能SPI1，使能后需定义spi1_p_data
-#define SPI2_ENABLE   0   //是否使能SPI2，使能后需定义spi2_p_data
+
 
 #if SPI1_ENABLE
 const struct spi_platform_data spi1_p_data = 
@@ -61,20 +60,24 @@ const struct spi_platform_data spi1_p_data =
         -1,    //DI
     },
     .mode = SPI_MODE_BIDIR_1BIT,
-    .clk = 20000000,
+    .clk = 48000000,
     .role = SPI_ROLE_MASTER,
 };
 #endif
 #if SPI2_ENABLE
 const struct spi_platform_data spi2_p_data = {
     .port = {
-        IO_PORTB_01,    //CLK
-        IO_PORTB_02,    //DO
-        IO_PORTB_03,    //DI
+        IO_PORTB_07,    //CLK
+        IO_PORTB_06,    //DO
+        IO_PORTB_05,    //DI
+        -1,    //DI
+        -1,    //DI
+      //  IO_PORTB_04,    //D2(WP)
+      // IO_PORTB_08,    //D3(HOLD)
     },
     .mode = SPI_MODE_BIDIR_1BIT,
-    .clk = 1000000,
-    .role = SPI_ROLE_SLAVE,
+    .clk = 48000000,
+    .role = SPI_ROLE_MASTER,
 };
 #endif
 

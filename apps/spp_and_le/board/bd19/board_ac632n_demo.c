@@ -268,16 +268,22 @@ LED_PLATFORM_DATA_END()
 NORFLASH_DEV_PLATFORM_DATA_BEGIN(norflash_fat_dev_data)
     .spi_hw_num     = TCFG_FLASH_DEV_SPI_HW_NUM,
     .spi_cs_port    = TCFG_FLASH_DEV_SPI_CS_PORT,
-    .spi_read_width = 4,
+    .spi_read_width = 1,
 #if (TCFG_FLASH_DEV_SPI_HW_NUM == 1)
     .spi_pdata      = &spi1_p_data,
 #elif (TCFG_FLASH_DEV_SPI_HW_NUM == 2)
     .spi_pdata      = &spi2_p_data,
 #endif
     .start_addr     = 0,
-    .size           = 16*1024*1024,
+    .size           = 512*1024,
+   // .size           = 1*1024*1024,
 NORFLASH_DEV_PLATFORM_DATA_END()
 
+REGISTER_DEVICES(norspi_table1) = {
+
+   "lcdtxt", &norfs_dev_ops, (void *)&norflash_fat_dev_data ,
+
+};
 
 
 /************************** otg data****************************/

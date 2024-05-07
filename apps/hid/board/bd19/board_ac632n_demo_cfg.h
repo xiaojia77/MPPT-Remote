@@ -76,10 +76,10 @@
 //*********************************************************************************//
 //                                 FLASH 配置                                      //
 //*********************************************************************************//
-#define TCFG_CODE_FLASH_ENABLE				DISABLE_THIS_MOUDLE
-#define TCFG_FLASH_DEV_SPI_HW_NUM			1// 1: SPI1    2: SPI2
-#define TCFG_FLASH_DEV_SPI_CS_PORT	    	IO_PORTB_06
-#define TCFG_NORFLASH_DEV_ENABLE            DISABLE_THIS_MOUDLE
+#define TCFG_CODE_FLASH_ENABLE				ENABLE_THIS_MOUDLE
+#define TCFG_FLASH_DEV_SPI_HW_NUM			2// 1: SPI1    2: SPI2
+#define TCFG_FLASH_DEV_SPI_CS_PORT	    	IO_PORTB_09
+#define TCFG_NORFLASH_DEV_ENABLE            ENABLE_THIS_MOUDLE
 
 
 //*********************************************************************************//

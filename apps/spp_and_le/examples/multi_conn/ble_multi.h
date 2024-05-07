@@ -53,4 +53,5 @@ void Mppt_Set_Para_Send(void *priv);
 void Get_Mppt_Report(void);
 void Get_Mppt_Report1(void);
 void MPPT_Get_Info_Timer_Star(void);
+void Mppt_CmdSend(uint8_t cmd);
 #endif

@@ -70,7 +70,8 @@ static int _norflash_write_pages(u32 addr, u8 *buf, u32 len);
 #define spi_dma_write(x, y)         spi_dma_send(_norflash.spi_num, x, y)
 #define spi_set_width(x)            spi_set_bit_mode(_norflash.spi_num, x)
 
-static struct norflash_partition *norflash_find_part(const char *name)
+//找到对应的分区
+static struct norflash_partition *norflash_find_part(const char *name)  
 {
     struct norflash_partition *part = NULL;
     u32 idx;
@@ -85,7 +86,7 @@ static struct norflash_partition *norflash_find_part(const char *name)
     }
     return NULL;
 }
-
+//新建对应分区
 static struct norflash_partition *norflash_new_part(const char *name, u32 addr, u32 size)
 {
     struct norflash_partition *part;
@@ -110,7 +111,7 @@ static struct norflash_partition *norflash_new_part(const char *name, u32 addr, 
     _norflash.part_num++;
     return part;
 }
-
+//删除对应分区
 static void norflash_delete_part(const char *name)
 {
     struct norflash_partition *part;
@@ -126,7 +127,7 @@ static void norflash_delete_part(const char *name)
         }
     }
 }
-
+//验证对应分区
 static int norflash_verify_part(struct norflash_partition *p)
 {
     struct norflash_partition *part = NULL;
@@ -281,7 +282,7 @@ void norflash_exit_4byte_addr()
     spi_write_byte(0xe9);
     spi_cs_h();
 }
-int _norflash_open(void *arg)
+int _norflash_open(void *arg)   // 打开norflash
 {
     int reg = 0;
     os_mutex_pend(&_norflash.mutex, 0);
@@ -671,7 +672,7 @@ __exit:
 /*************************************************************************************
  *                                  挂钩 device_api
  ************************************************************************************/
-
+//注册设备节点
 static int norflash_dev_init(const struct dev_node *node, void *arg)
 {
     struct norflash_dev_platform_data *pdata = arg;
@@ -846,7 +847,7 @@ static int norfs_dev_read(struct device *device, void *buf, u32 len, u32 offset)
         return -EFAULT;
     }
     offset += part->start_addr;
-    reg = _norflash_read(offset, buf, len, 0);
+    reg = _norflash_read(offset, buf, len, 1);
     if (reg) {
         r_printf(">>>[r error]:\n");
         len = 0;
@@ -859,12 +860,14 @@ static int norfs_dev_write(struct device *device, void *buf, u32 len, u32 offset
     /* printf("flash write sector = %d, num = %d\n", offset, len); */
     int reg = 0;
     struct norflash_partition *part = device->private_data;
+      log_info("norfs_dev_write \n");
+      log_info("part-> name %s\n",part->name);
     if (!part) {
         log_error("norflash partition invalid\n");
         return -EFAULT;
     }
     offset += part->start_addr;
-    reg = _norflash_write(offset, buf, len, 0);
+    reg = _norflash_write(offset, buf, len, 1);
     if (reg) {
         r_printf(">>>[w error]:\n");
         len = 0;

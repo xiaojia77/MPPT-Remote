@@ -370,6 +370,37 @@ void Mppt_Set_Para_Send(void *priv) // 发MPPT的设置参数
   
 }
 
+void Mppt_CmdSend(uint8_t cmd) // 获取MPPT 信息的指令
+{
+    uint32_t i, ret = 0;
+    uint32_t encry_key[4] ;     //通过+MAC地址来改变密钥
+    uint16_t offset = 0;
+    uint16_t tmp_handle;
+
+    uint8_t data[8]  = //发送查询指令
+    {
+        0XDD,0X55,0x00,0x00,0x00,0x00,0x00,0x00
+    };
+    for(i=0;i<4;i++) encry_key[i] = bl_ckey[i];
+    for(i=0;i<6;i++) encry_key[i%4] += RoterData.Ble_Connect_Mac[i];
+
+    data[0] = 0xDD; //包头
+    data[1] = 0X55;//包尾
+    data[2] = cmd;//包尾
+
+    btea(data,2,encry_key); //加密数据
+
+    for (i = 0; i < SUPPORT_MAX_GATT_CLIENT; i++) 
+    {
+        tmp_handle = ble_comm_dev_get_handle(i, GATT_ROLE_CLIENT); //获取连接的handle
+        if (tmp_handle && multi_ble_client_write_handle) 
+        {
+            ret = ble_comm_att_send_data(tmp_handle, multi_ble_client_write_handle, data, 8, ATT_OP_WRITE_WITHOUT_RESPOND);
+            log_info("test_write:%04x,%d", tmp_handle, ret);
+        }
+    }
+}
+
 static u16 Get_Info_Timer = 0;
 static void  MPPT_Get_Info_Timer_Star(void)
 {
