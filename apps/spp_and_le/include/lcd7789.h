@@ -39,7 +39,7 @@ typedef struct
 typedef struct 
 {
     uint8_t current_id; //当前ID
-    uint8_t index[30]; //选择的菜单
+    uint8_t index[40]; //选择的菜单
 }MenuData_t;
 
 typedef struct 
@@ -158,75 +158,81 @@ void Mppt_Ble_BatchSet_MenuOps(uint8_t key);
 void Mppt_Ble_BatchSet_Menu(void);
 
     //充电参数设置
-    void Mppt_Charge_Set_Menu(void);
-    void Mppt_Charge_Set_MenuOps(uint8_t key);
+    void Mppt_ChargeSet_Menu(void);
+    void Mppt_ChargeSet_MenuOps(uint8_t key);
 
     //放电参数设置
     void Mppt_ChargePara_Display(Mppt_Set_Parm_t *SetPara);
-    void Mppt_Dischar_Set_Menu(void);
-    void Mppt_Dischar_Set_Menu_Operation(uint8_t key);
+    void Mppt_DischarSet_Menu(void);
+    void Mppt_DischarSet_MenuOps(uint8_t key);
 
-    void Mppt_Curce_Set_Menu(void);
-    void Mppt_Curce_Set_MenuOps(uint8_t key);
+    void Mppt_CurceSet_Menu(void);
+    void Mppt_CurceSet_MenuOps(uint8_t key);
 
     //放电曲线设置
-    void Mppt_Dischar_Curve_Set_Menu(void);
-    void Mppt_Dischar_Curve_Set_Operation(uint8_t key);
+    void Mppt_DischarCurveSet_Menu(void);
+    void Mppt_DischarCurveSet_MenuOps(uint8_t key);
 
     //MPPT 批量设置菜单
-    void Mppt_Ble_AutoConnect_set_Menu(void);
-    void Mppt_Ble_AutoConnect_set_Menu_Operation(uint8_t key);
+    void Mppt_BleAutoConnSet_Menu(void);
+    void Mppt_BleAutoConnSet_MenuOps(uint8_t key);
 
 //MPPT 蓝牙选择连接
-void Mppt_Ble_con_Select_Menu(void);
-void Mppt_Ble_con_Select_Menu_Operation(uint8_t key);
+void Mppt_BleConnSelect_Menu(void);
+void Mppt_BleConnSelect_MenuOps(uint8_t key);
         //蓝牙连接界面
     void Mppt_Ble_con_Menu(void);
-    void Mppt_Ble_con_Menu_Operation(uint8_t key);
+    void Mppt_Ble_con_MenuOps(uint8_t key);
 
         void Mppt_Ble_Set_Menu(void);
-        void Mppt_Ble_Set_Operation(uint8_t key);
+        void Mppt_Ble_Set_Ops(uint8_t key);
 
             void Mppt_Info_Display(void *priv); // MPPT参数配置
             void Mppt_Info_Menu(void); //充电信息配置
-            void Mppt_Info_Menu_Operation(uint8_t key);
+            void Mppt_Info_MenuOps(uint8_t key);
+
+                void Mppt_InfoChargePara_Menu(void); //充电参数显示
+                void Mppt_InfoChargePara_MenuOps(uint8_t key); //充电参数显示
+
+                void Mppt_InfoDischarPara_Menu(void);
+                void Mppt_InfoDischarPara_MenuOps(uint8_t key) ;
 
             void Mppt_BleCtr_Menu(void); 
-            void Mppt_BleCtr_Menu_Ops(uint8_t key);
+            void Mppt_BleCtr_MenuOps(uint8_t key);
 
-            void Mppt_ChargePara_Modify_Menu(void);
-            void Mppt_ChargePara_Modify_Menu_Operation(uint8_t key);
+            void Mppt_ChargeParaM_Menu(void);
+            void Mppt_ChargeParaM_MenuOps(uint8_t key);
 
-            void Mppt_DischarPara_Modify_Menu(void);
-            void Mppt_DischarPara_Modify_Menu_Operation(uint8_t key);
+            void Mppt_DischarParaM_Menu(void);
+            void Mppt_DischarParaM_MenuOps(uint8_t key);
             
             void Mppt_Curce_Modify_Menu(void);
-            void Mppt_Curce_Modify_Menu_Operation(uint8_t key);
+            void Mppt_Curce_Modify_MenuOps(uint8_t key);
 
             void Mppt_CurvePara_Modify_Menu(void);
-            void Mppt_CurvePara_Modify_Menu_Operation(uint8_t key);
+            void Mppt_CurvePara_Modify_MenuOps(uint8_t key);
 
             void Mppt_Modify_Menu(void);
-            void Mppt_Modify_Menu_Operation(uint8_t key);
+            void Mppt_Modify_MenuOps(uint8_t key);
        
             void Mppt_Comfir_Modify_Menu(void);
-            void Mppt_Comfir_Modify_Menu_Operation(uint8_t key);
+            void Mppt_Comfir_Modify_MenuOps(uint8_t key);
         
 
 void Mppt_Ir_Set_Menu(void);
-void Mppt_Ir_Set_Menu_Operation(uint8_t key) ; 
+void Mppt_Ir_Set_MenuOps(uint8_t key) ; 
 
     void IR_Normal_Menu(void);
-    void IR_Normal_Menu_Operation(uint8_t key) ;
+    void IR_Normal_MenuOps(uint8_t key) ;
 
     void IR_Engineer_Menu(void);
-    void IR_Engineer_Menu_Operation(uint8_t key);
+    void IR_Engineer_MenuOps(uint8_t key);
 
     void IR_Usercode_Menu(void);
-    void IR_Usercode_Menu_Operation(uint8_t key);
+    void IR_Usercode_MenuOps(uint8_t key);
 
     void IR_CruveSet_Menu(void);
-    void IR_CruveSet_Menu_Operation(uint8_t key);
+    void IR_CruveSet_MenuOps(uint8_t key);
 
 void Mppt_Version_Info_menu(void);
 
@@ -250,8 +256,11 @@ enum
 
     BL_CON_MENU,
         BL_CON_SELECT_MENU,
-            BL_CON_SET_MENU,
+            BLE_CONNSET_MENU,
                 MPPT_INFO,
+                INFO_CHARGEPARA,
+                INFO_DISCHARGEPARA,
+                INFO_CURPARA,
                 BLE_CTR,
                 CHAEGE_PARA_MODIFY,
                 DISCHAR_PARA_MODIFY,
@@ -283,31 +292,34 @@ static Menu_Tab_t const Menu_Tab[]=
     {MAIN_MENU,LOG_MENU,6,Mppt_Main_Menu_Operation,Mppt_Main_Menu}, //主菜单 次级菜单
 
     {BLE_BATCHSET_MENU,MAIN_MENU,6,Mppt_Ble_BatchSet_MenuOps,Mppt_Ble_BatchSet_Menu}, // 批量设置菜单
-        {CHAEGE_SET_MENU,MAIN_MENU,4,Mppt_Charge_Set_MenuOps,Mppt_Charge_Set_Menu}, // 次级菜单
-        {DISCHAR_SET_MENU,CHAEGE_SET_MENU,6,Mppt_Dischar_Set_Menu_Operation,Mppt_Dischar_Set_Menu},
-        {CURVE_SET_MENU,DISCHAR_SET_MENU,2,Mppt_Curce_Set_MenuOps,Mppt_Curce_Set_Menu},
-        {DISCHAR_CURVE_SET_MENU,CURVE_SET_MENU,16,Mppt_Dischar_Curve_Set_Operation,Mppt_Dischar_Curve_Set_Menu},
-        {BL_ATCON_SET_MENU,CURVE_SET_MENU,3,Mppt_Ble_AutoConnect_set_Menu_Operation,Mppt_Ble_AutoConnect_set_Menu},
+        {CHAEGE_SET_MENU,MAIN_MENU,3,Mppt_ChargeSet_MenuOps,Mppt_ChargeSet_Menu}, // 次级菜单
+        {DISCHAR_SET_MENU,CHAEGE_SET_MENU,6,Mppt_DischarSet_MenuOps,Mppt_DischarSet_Menu},
+        {CURVE_SET_MENU,DISCHAR_SET_MENU,2,Mppt_CurceSet_MenuOps,Mppt_CurceSet_Menu},
+        {DISCHAR_CURVE_SET_MENU,DISCHAR_SET_MENU,16,Mppt_DischarCurveSet_MenuOps,Mppt_DischarCurveSet_Menu},
+        {BL_ATCON_SET_MENU,CURVE_SET_MENU,3,Mppt_BleAutoConnSet_MenuOps,Mppt_BleAutoConnSet_Menu},
 
     
-    {BL_CON_MENU,MAIN_MENU,NULL,Mppt_Ble_con_Menu_Operation,Mppt_Ble_con_Menu},
-        {BL_CON_SELECT_MENU,MAIN_MENU,8,Mppt_Ble_con_Select_Menu_Operation,Mppt_Ble_con_Select_Menu},
-            {BL_CON_SET_MENU,MAIN_MENU,3,Mppt_Ble_Set_Operation,Mppt_Ble_Set_Menu},
-                {MPPT_INFO,BL_CON_SET_MENU,2,Mppt_Info_Menu_Operation,Mppt_Info_Menu},
-                {BLE_CTR,BL_CON_SET_MENU,2,Mppt_BleCtr_Menu_Ops,Mppt_BleCtr_Menu},
-                {CHAEGE_PARA_MODIFY,BL_CON_SET_MENU,4,Mppt_ChargePara_Modify_Menu_Operation,Mppt_ChargePara_Modify_Menu},
-                {DISCHAR_PARA_MODIFY,BL_CON_SET_MENU,6,Mppt_DischarPara_Modify_Menu_Operation,Mppt_DischarPara_Modify_Menu},    
-                {CURVE_MODIFY,DISCHAR_PARA_MODIFY,2,Mppt_Curce_Modify_Menu_Operation,Mppt_Curce_Modify_Menu},
-                {CURVE_PARAT_MENU,CURVE_MODIFY,16,Mppt_CurvePara_Modify_Menu_Operation,Mppt_CurvePara_Modify_Menu},
-                {MODIFY_MENU,CURVE_MODIFY,1,Mppt_Modify_Menu_Operation,Mppt_Modify_Menu},
-                {ENTRY_MODIFY,BL_CON_SET_MENU,2,Mppt_Comfir_Modify_Menu_Operation,Mppt_Comfir_Modify_Menu},
+    {BL_CON_MENU,MAIN_MENU,NULL,Mppt_Ble_con_MenuOps,Mppt_Ble_con_Menu},
+        {BL_CON_SELECT_MENU,MAIN_MENU,8,Mppt_BleConnSelect_MenuOps,Mppt_BleConnSelect_Menu},
+            {BLE_CONNSET_MENU,MAIN_MENU,3,Mppt_Ble_Set_Ops,Mppt_Ble_Set_Menu},
+                {MPPT_INFO,BLE_CONNSET_MENU,2,Mppt_Info_MenuOps,Mppt_Info_Menu},
+                    {INFO_CHARGEPARA,MPPT_INFO,2,Mppt_InfoChargePara_MenuOps,Mppt_InfoChargePara_Menu},
+                    {INFO_DISCHARGEPARA,INFO_CHARGEPARA,2,Mppt_InfoDischarPara_MenuOps,Mppt_InfoDischarPara_Menu},
+                    {INFO_CURPARA,INFO_DISCHARGEPARA,2,Mppt_Info_MenuOps,Mppt_Info_Menu},
+                {BLE_CTR,BLE_CONNSET_MENU,2,Mppt_BleCtr_MenuOps,Mppt_BleCtr_Menu},
+                {CHAEGE_PARA_MODIFY,BLE_CONNSET_MENU,3,Mppt_ChargeParaM_MenuOps,Mppt_ChargeParaM_Menu},
+                {DISCHAR_PARA_MODIFY,BLE_CONNSET_MENU,6,Mppt_DischarParaM_MenuOps,Mppt_DischarParaM_Menu},    
+                {CURVE_MODIFY,DISCHAR_PARA_MODIFY,2,Mppt_Curce_Modify_MenuOps,Mppt_Curce_Modify_Menu},
+                {CURVE_PARAT_MENU,CURVE_MODIFY,16,Mppt_CurvePara_Modify_MenuOps,Mppt_CurvePara_Modify_Menu},
+                {MODIFY_MENU,CURVE_MODIFY,1,Mppt_Modify_MenuOps,Mppt_Modify_Menu},
+                {ENTRY_MODIFY,BLE_CONNSET_MENU,2,Mppt_Comfir_Modify_MenuOps,Mppt_Comfir_Modify_Menu},
         
 
-    {IR_SET_MENU,MAIN_MENU,6,Mppt_Ir_Set_Menu_Operation,Mppt_Ir_Set_Menu},
-        {IR_NORMAL_MENU,IR_SET_MENU,NULL,IR_Normal_Menu_Operation,IR_Normal_Menu},
-        {IR_ENGINEER_MENU,IR_SET_MENU,NULL,IR_Engineer_Menu_Operation,IR_Engineer_Menu},
-        {IR_USERCODE_MENU,IR_SET_MENU,2,IR_Usercode_Menu_Operation,IR_Usercode_Menu},
-        {IR_CRUVESET_MENU,IR_SET_MENU,16,IR_CruveSet_Menu_Operation,IR_CruveSet_Menu},
+    {IR_SET_MENU,MAIN_MENU,6,Mppt_Ir_Set_MenuOps,Mppt_Ir_Set_Menu},
+        {IR_NORMAL_MENU,IR_SET_MENU,NULL,IR_Normal_MenuOps,IR_Normal_Menu},
+        {IR_ENGINEER_MENU,IR_SET_MENU,NULL,IR_Engineer_MenuOps,IR_Engineer_Menu},
+        {IR_USERCODE_MENU,IR_SET_MENU,2,IR_Usercode_MenuOps,IR_Usercode_Menu},
+        {IR_CRUVESET_MENU,IR_SET_MENU,16,IR_CruveSet_MenuOps,IR_CruveSet_Menu},
 
 
     {VERSION_CHECK_MENU,MAIN_MENU,NULL,Mppt_Normal_Menu_Select,Mppt_Version_Info_menu},
@@ -315,8 +327,6 @@ static Menu_Tab_t const Menu_Tab[]=
     {SYS_SET_MENU,MAIN_MENU,NULL,Mppt_Normal_Menu_Select,SYS_Set_Menu},
 
     {MPPT_VERSION_SELECT_MENU,MAIN_MENU,1,Mppt_Normal_Menu_Select,Mppt_Version_Select_Menu},
-
-    
 };
 
 //蓝牙参数设置 

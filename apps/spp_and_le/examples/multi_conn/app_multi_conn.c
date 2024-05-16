@@ -356,7 +356,6 @@ static void multi_app_start()
         log_info("Norflash_Device = %d", Norflash_Device);
         // dev_bulk_write(Norflash_Device,&ttemp,0,sizeof(ttemp));    // 第一次烧进 225300
         // dev_bulk_write(Norflash_Device,&ttemp,225300,sizeof(ttemp)); // 180480
-        // dev_bulk_write(Norflash_Device,&ttemp,225300,sizeof(ttemp)); // 180480
         // dev_bulk_write(Norflash_Device,&gImage_image,405780,sizeof(gImage_image)); // 180480
         // dev_bulk_read(Norflash_Device,Rtemp,225300-60,512);
         
