@@ -58,6 +58,7 @@
   "C_Cpp_Runner.msvcSecureNoWarnings": false,
   "files.associations": {
     "mcpwm.h": "c",
-    "lcd7789.h": "c"
+    "lcd7789.h": "c",
+    "lcd_data.h": "c"
   }
 }

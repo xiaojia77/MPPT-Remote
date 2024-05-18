@@ -579,6 +579,14 @@ void Mppt_Data_Decode(u8 *packet,u16 size) // MPPT 信息解码
         case 0xCC:  // 返回设置的信息
             log_info("find data head 0xCC\r\n");
             Get_Info_Timer_Del(); 
+            
+            e.type = SYS_KEY_EVENT;
+            e.u.key.init = 1;
+            e.u.key.type = KEY_DRIVER_TYPE_AD;//区分按键类型
+            e.u.key.event = 0;
+            e.u.key.value = KEY_VALUE_TYPE_INFO_OK;
+            e.arg  = (void *)DEVICE_EVENT_FROM_KEY;
+            sys_event_notify(&e);
             while(data_i<size)
             {
                 next_len = data[data_i] + 1; //长度

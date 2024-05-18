@@ -36,6 +36,9 @@ typedef enum __KEY_VALUE_TYPE
     //反馈等功能
 
     KEY_VALUE_TYPE_MODIFY_OK,
+
+    
+    KEY_VALUE_TYPE_INFO_OK,
    
     KEY_VALUE_TYPE_ON_OFF,
 
