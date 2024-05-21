@@ -80,7 +80,8 @@ typedef struct
 
 typedef struct 
 {
-    float Charge_Capcity;          
+    float Charge_Capcity;  
+    float DisCharge_Capcity;          
     float Charge_Current;   
     float Charge_Power; 
     float Dischar_Current;         
@@ -89,6 +90,7 @@ typedef struct
     uint8_t  OutPut_Staus;        // unit:   
     float Bat_Voltage;           // unit: V 
     float Temp;           // unit: V 
+    float MaxTemp;           // unit: V 
 }Mppt_Info_Para_t;
 
 typedef struct 
@@ -301,7 +303,6 @@ static Menu_Tab_t const Menu_Tab[]=
     {BLE_BATCHSET_MENU,MAIN_MENU,6,Mppt_Ble_BatchSet_MenuOps,Mppt_Ble_BatchSet_Menu}, // 批量设置菜单
         {CHAEGE_SET_MENU,MAIN_MENU,3,Mppt_ChargeSet_MenuOps,Mppt_ChargeSet_Menu}, // 次级菜单
         {DISCHAR_SET_MENU,CHAEGE_SET_MENU,6,Mppt_DischarSet_MenuOps,Mppt_DischarSet_Menu},
-       // {CURVE_SET_MENU,DISCHAR_SET_MENU,2,Mppt_CurceSet_MenuOps,Mppt_CurceSet_Menu},
         {DISCHAR_CURVE_SET_MENU,DISCHAR_SET_MENU,16,Mppt_DischarCurveSet_MenuOps,Mppt_DischarCurveSet_Menu},
         {BL_ATCON_SET_MENU,DISCHAR_CURVE_SET_MENU,3,Mppt_BleAutoConnSet_MenuOps,Mppt_BleAutoConnSet_Menu},
 
@@ -317,7 +318,6 @@ static Menu_Tab_t const Menu_Tab[]=
                     {BLE_CTR,BLE_CONNSET_MENU,2,Mppt_BleCtr_MenuOps,Mppt_BleCtr_Menu},
                     {CHAEGE_PARA_MODIFY,BLE_CONNSET_MENU,3,Mppt_ChargeParaM_MenuOps,Mppt_ChargeParaM_Menu},
                     {DISCHAR_PARA_MODIFY,BLE_CONNSET_MENU,6,Mppt_DischarParaM_MenuOps,Mppt_DischarParaM_Menu},    
-                // {CURVE_MODIFY,DISCHAR_PARA_MODIFY,2,Mppt_Curce_Modify_MenuOps,Mppt_Curce_Modify_Menu},
                     {CURVE_PARAT_MENU,DISCHAR_PARA_MODIFY,16,Mppt_CurvePara_Modify_MenuOps,Mppt_CurvePara_Modify_Menu},
                     {MODIFY_MENU,CURVE_PARAT_MENU,0,Mppt_Modify_MenuOps,Mppt_Modify_Menu},
                     {ENTRY_MODIFY,BLE_CONNSET_MENU,0,Mppt_Comfir_Modify_MenuOps,Mppt_Comfir_Modify_Menu},
@@ -327,7 +327,7 @@ static Menu_Tab_t const Menu_Tab[]=
         {IR_NORMAL_MENU,IR_SET_MENU,NULL,IR_Normal_MenuOps,IR_Normal_Menu},
         {IR_ENGINEER_MENU,IR_SET_MENU,NULL,IR_Engineer_MenuOps,IR_Engineer_Menu},
         {IR_USERCODE_MENU,IR_SET_MENU,2,IR_Usercode_MenuOps,IR_Usercode_Menu},
-        {IR_CRUVESET_MENU,IR_SET_MENU,16,IR_CruveSet_MenuOps,IR_CruveSet_Menu},
+        //{IR_CRUVESET_MENU,IR_SET_MENU,16,IR_CruveSet_MenuOps,IR_CruveSet_Menu},
 
 
     {VERSION_CHECK_MENU,MAIN_MENU,NULL,Mppt_Normal_Menu_Select,Mppt_Version_Info_menu},

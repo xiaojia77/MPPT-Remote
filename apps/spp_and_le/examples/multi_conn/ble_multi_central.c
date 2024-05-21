@@ -570,6 +570,20 @@ void Mppt_Data_Decode(u8 *packet,u16 size) // MPPT 信息解码
                         if(RoterData.Mppt_Info.Temp)
                             RoterData.Mppt_Info.Temp /= 1000;
                         break;
+                    case 0x0A: 
+                        temp = little_endian_read_32(&data[data_position],0);  
+                        log_info("temperature :%dR ",temp);
+                        RoterData.Mppt_Info.DisCharge_Capcity = temp;                               
+                        if(RoterData.Mppt_Info.DisCharge_Capcity)
+                            RoterData.Mppt_Info.DisCharge_Capcity /= 1000;
+                        break;
+                    case 0x0B: 
+                        temp = little_endian_read_32(&data[data_position],0);  
+                        log_info("temperature :%dR ",temp);
+                        RoterData.Mppt_Info.MaxTemp = temp;                               
+                        if(RoterData.Mppt_Info.MaxTemp)
+                            RoterData.Mppt_Info.MaxTemp /= 1000;
+                        break;
                     default:    
                         break;
                 }
