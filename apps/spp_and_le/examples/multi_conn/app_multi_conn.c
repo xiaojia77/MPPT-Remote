@@ -389,12 +389,15 @@ static void multi_app_start()
 
         RoterData.Mppt_SetPara.Current_Gear = 20;
         RoterData.Mppt_SetPara.Ledar_Dly_Time = 15;
+        RoterData.Mppt_SetPara.Ledar_Dly_On = 6;
+        RoterData.Mppt_SetPara.Ledar_Dly_IsOn = 1;
         RoterData.Mppt_SetPara.Ledar_Pwm = 10;
         RoterData.Mppt_SetPara.Led_Set_Pwm = 100;
         RoterData.Mppt_SetPara.Low_voltage_Protect = 2.65f;
+        
 
         RoterData.Mppt_SetPara.Lock_Mode = 0;
-
+        RoterData.Mppt_SetPara.DischarCurve_Moed = 2;
         RoterData.Mppt_SetPara.Curv_Data[0][0] = 2;
         RoterData.Mppt_SetPara.Curv_Data[0][1] = 80;
 

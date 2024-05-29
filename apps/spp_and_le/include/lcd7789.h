@@ -63,6 +63,8 @@ typedef struct
     uint32_t Ledar_Pwm; // 0 - 20 电压挡位
     uint32_t Ledar_Dly_Time; // 0 - 20 电压挡位
     uint32_t Led_Set_Pwm; 
+    float Ledar_Dly_On; 
+    uint32_t Ledar_Dly_IsOn; 
    
     uint32_t DischarCurve_Moed; // 0 pwm模式 电流 AI
 
@@ -152,6 +154,10 @@ void Mppt_Log_MenuOps(uint8_t key);
 
 //主菜单
 void Mppt_Normal_Menu_Select(uint8_t key);
+
+void Mppt_MenuSelect_Dis(void);
+void Mppt_Menu_Select(uint8_t key);
+
 void Mppt_Main_Menu(void);
 void Mppt_Main_Menu_Operation(uint8_t key);
 
@@ -256,10 +262,10 @@ enum
     MAIN_MENU,
 
     BLE_BATCHSET_MENU,
-        CHAEGE_SET_MENU,
-        DISCHAR_SET_MENU,
-       // CURVE_SET_MENU,
         DISCHAR_CURVE_SET_MENU,
+        DISCHAR_SET_MENU,
+        CHAEGE_SET_MENU,
+        
         BL_ATCON_SET_MENU,
 
     BL_CON_MENU,
@@ -267,14 +273,13 @@ enum
             BL_CONNECTING_MENU,  
               BLE_CONNSET_MENU,
                     MPPT_INFO,
-                        INFO_CHARGEPARA,
-                        INFO_DISCHARGEPARA,
                         INFO_CURPARA,
+                        INFO_DISCHARGEPARA,   
+                        INFO_CHARGEPARA,                  
                     BLE_CTR,
-                    CHAEGE_PARA_MODIFY,
-                    DISCHAR_PARA_MODIFY,
-                // CURVE_MODIFY,
                     CURVE_PARAT_MENU,
+                    DISCHAR_PARA_MODIFY,
+                    CHAEGE_PARA_MODIFY,             
                     MODIFY_MENU,
                     ENTRY_MODIFY,    
                 
@@ -282,7 +287,6 @@ enum
         IR_NORMAL_MENU,
         IR_ENGINEER_MENU,
         IR_USERCODE_MENU,
-        IR_CRUVESET_MENU,
 
     VERSION_CHECK_MENU,
     
@@ -298,35 +302,35 @@ static Menu_Tab_t const Menu_Tab[]=
     
     {LOG_MENU,NULL,NULL,Mppt_Log_MenuOps,Mppt_Log_Menu}, //主菜单 次级菜单
 
-    {MAIN_MENU,LOG_MENU,6,Mppt_Main_Menu_Operation,Mppt_Main_Menu}, //主菜单 次级菜单
+    {MAIN_MENU,LOG_MENU,7,Mppt_Main_Menu_Operation,Mppt_Main_Menu}, //主菜单 次级菜单
 
     {BLE_BATCHSET_MENU,MAIN_MENU,6,Mppt_Ble_BatchSet_MenuOps,Mppt_Ble_BatchSet_Menu}, // 批量设置菜单
-        {CHAEGE_SET_MENU,MAIN_MENU,3,Mppt_ChargeSet_MenuOps,Mppt_ChargeSet_Menu}, // 次级菜单
-        {DISCHAR_SET_MENU,CHAEGE_SET_MENU,6,Mppt_DischarSet_MenuOps,Mppt_DischarSet_Menu},
-        {DISCHAR_CURVE_SET_MENU,DISCHAR_SET_MENU,16,Mppt_DischarCurveSet_MenuOps,Mppt_DischarCurveSet_Menu},
-        {BL_ATCON_SET_MENU,DISCHAR_CURVE_SET_MENU,3,Mppt_BleAutoConnSet_MenuOps,Mppt_BleAutoConnSet_Menu},
+        {DISCHAR_CURVE_SET_MENU,MAIN_MENU,16,Mppt_DischarCurveSet_MenuOps,Mppt_DischarCurveSet_Menu},
+        {DISCHAR_SET_MENU,DISCHAR_CURVE_SET_MENU,8,Mppt_DischarSet_MenuOps,Mppt_DischarSet_Menu},
+        {CHAEGE_SET_MENU,DISCHAR_SET_MENU,3,Mppt_ChargeSet_MenuOps,Mppt_ChargeSet_Menu}, // 次级菜单
+        {BL_ATCON_SET_MENU,MAIN_MENU,3,Mppt_BleAutoConnSet_MenuOps,Mppt_BleAutoConnSet_Menu},
 
     
     {BL_CON_MENU,MAIN_MENU,NULL,Mppt_Ble_con_MenuOps,Mppt_Ble_con_Menu},
-        {BL_CON_SELECT_MENU,MAIN_MENU,8,Mppt_BleConnSelect_MenuOps,Mppt_BleConnSelect_Menu},  
+        {BL_CON_SELECT_MENU,MAIN_MENU,12,Mppt_BleConnSelect_MenuOps,Mppt_BleConnSelect_Menu},  
            {BL_CONNECTING_MENU,MAIN_MENU,0,Mppt_BleConnecting_MenuOps,Mppt_BleConnecting_Menu},
                 {BLE_CONNSET_MENU,MAIN_MENU,3,Mppt_Ble_Set_Ops,Mppt_Ble_Set_Menu},
                     {MPPT_INFO,BLE_CONNSET_MENU,2,Mppt_Info_MenuOps,Mppt_Info_Menu},
-                        {INFO_CHARGEPARA,MPPT_INFO,2,Mppt_InfoChargePara_MenuOps,Mppt_InfoChargePara_Menu},
-                        {INFO_DISCHARGEPARA,INFO_CHARGEPARA,2,Mppt_InfoDischarPara_MenuOps,Mppt_InfoDischarPara_Menu},
-                        {INFO_CURPARA,INFO_DISCHARGEPARA,2,Mppt_InfoCurvePara_MenuOps,Mppt_InfoCurvePara_Menu},
+                        {INFO_CURPARA,MPPT_INFO,2,Mppt_InfoCurvePara_MenuOps,Mppt_InfoCurvePara_Menu},
+                        {INFO_DISCHARGEPARA,INFO_CURPARA,2,Mppt_InfoDischarPara_MenuOps,Mppt_InfoDischarPara_Menu},
+                        {INFO_CHARGEPARA,INFO_DISCHARGEPARA,2,Mppt_InfoChargePara_MenuOps,Mppt_InfoChargePara_Menu}, 
                     {BLE_CTR,BLE_CONNSET_MENU,2,Mppt_BleCtr_MenuOps,Mppt_BleCtr_Menu},
-                    {CHAEGE_PARA_MODIFY,BLE_CONNSET_MENU,3,Mppt_ChargeParaM_MenuOps,Mppt_ChargeParaM_Menu},
-                    {DISCHAR_PARA_MODIFY,BLE_CONNSET_MENU,6,Mppt_DischarParaM_MenuOps,Mppt_DischarParaM_Menu},    
-                    {CURVE_PARAT_MENU,DISCHAR_PARA_MODIFY,16,Mppt_CurvePara_Modify_MenuOps,Mppt_CurvePara_Modify_Menu},
-                    {MODIFY_MENU,CURVE_PARAT_MENU,0,Mppt_Modify_MenuOps,Mppt_Modify_Menu},
+                    {CURVE_PARAT_MENU,BLE_CONNSET_MENU,16,Mppt_CurvePara_Modify_MenuOps,Mppt_CurvePara_Modify_Menu},
+                    {DISCHAR_PARA_MODIFY,CURVE_PARAT_MENU,8,Mppt_DischarParaM_MenuOps,Mppt_DischarParaM_Menu},
+                    {CHAEGE_PARA_MODIFY,DISCHAR_PARA_MODIFY,3,Mppt_ChargeParaM_MenuOps,Mppt_ChargeParaM_Menu},                     
+                    {MODIFY_MENU,CHAEGE_PARA_MODIFY,0,Mppt_Modify_MenuOps,Mppt_Modify_Menu},
                     {ENTRY_MODIFY,BLE_CONNSET_MENU,0,Mppt_Comfir_Modify_MenuOps,Mppt_Comfir_Modify_Menu},
         
 
     {IR_SET_MENU,MAIN_MENU,3,Mppt_Ir_Set_MenuOps,Mppt_Ir_Set_Menu},
-        {IR_NORMAL_MENU,IR_SET_MENU,NULL,IR_Normal_MenuOps,IR_Normal_Menu},
-        {IR_ENGINEER_MENU,IR_SET_MENU,NULL,IR_Engineer_MenuOps,IR_Engineer_Menu},
-        {IR_USERCODE_MENU,IR_SET_MENU,2,IR_Usercode_MenuOps,IR_Usercode_Menu},
+        {IR_NORMAL_MENU,MAIN_MENU,NULL,IR_Normal_MenuOps,IR_Normal_Menu},
+        {IR_ENGINEER_MENU,MAIN_MENU,NULL,IR_Engineer_MenuOps,IR_Engineer_Menu},
+        {IR_USERCODE_MENU,MAIN_MENU,2,IR_Usercode_MenuOps,IR_Usercode_Menu},
         //{IR_CRUVESET_MENU,IR_SET_MENU,16,IR_CruveSet_MenuOps,IR_CruveSet_Menu},
 
 

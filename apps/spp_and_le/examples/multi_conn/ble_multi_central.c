@@ -334,17 +334,19 @@ void Mppt_Set_Para_Send(void *priv) // 发MPPT的设置参数
             offset += make_packet_val(&data[offset],offset,0x03,SetParm->Charge_Power_Max*1000,4); // 发50W 
             offset += make_packet_val(&data[offset],offset,0x04,SetParm->Trickle_Current*1000,4);   // 发500mah
             offset += make_packet_val(&data[offset],offset,0x05,SetParm->Low_voltage_Protect*1000,4);  // 发2600MV
-            offset += make_packet_val(&data[offset],offset,0x06,SetParm->Current_Gear,4);       // 发20挡位
-            offset += make_packet_val(&data[offset],offset,0x07,SetParm->Ledar_Pwm,4);          // 雷达10%
+            offset += make_packet_val(&data[offset],offset,0x06,SetParm->Current_Gear,4);            // 发20挡位
+            offset += make_packet_val(&data[offset],offset,0x07,SetParm->Ledar_Pwm,4);              // 雷达10%
             offset += make_packet_val(&data[offset],offset,0x08,SetParm->Ledar_Dly_Time,4);     // 雷达延迟15S
             offset += make_packet_val(&data[offset],offset,0x09,SetParm->Led_Set_Pwm,4);        // 默认亮度100%
             offset += make_packet_val(&data[offset],offset,0x0A,SetParm->DischarCurve_Moed,4);  // 曲线模式0 pwm模式
-            offset += make_packet_data(&data[offset],offset,0x0B,&Curv_Data,sizeof(Curv_Data));               // 默认曲线
+            offset += make_packet_data(&data[offset],offset,0x0B,&Curv_Data,sizeof(Curv_Data)); // 默认曲线
             offset += make_packet_val(&data[offset],offset,0x0C,SetParm->Lock_Mode,4);          // 锁定模式
             offset += make_packet_val(&data[offset],offset,0x0D,SetParm->Usercode,4);           // 用户数据
-            offset += make_packet_data(&data[offset],offset,0x0E,&Time_Data,sizeof(Time_Data));               // 时间参数
+            offset += make_packet_data(&data[offset],offset,0x0E,&Time_Data,sizeof(Time_Data)); // 时间参数
             offset += make_packet_val(&data[offset],offset,0x0F,SetParm->Solar_Mode,4);         // 太阳能模式
             offset += make_packet_val(&data[offset],offset,0x10,SetParm->Extern_Mode,4);        // 外部通信方式
+            offset += make_packet_val(&data[offset],offset,0x11,3600*SetParm->Ledar_Dly_On,4);  // 外部通信方式
+            offset += make_packet_val(&data[offset],offset,0x12,SetParm->Ledar_Dly_IsOn,4);     // 外部通信方式
 
             data[offset++] = 0X55;//包尾
             for(i=0;i<offset%4;i++)
@@ -410,7 +412,7 @@ static void  MPPT_Get_Info_Timer_Star(void)
         sys_timer_del(Get_Info_Timer);
         Get_Info_Timer = 0; 
     }   
-    Get_Info_Timer = sys_timer_add(NULL, Get_Mppt_Report1, 1000);
+    Get_Info_Timer = sys_timer_add(NULL, Get_Mppt_Report1, 600);
 }
 
 static void Get_Info_Timer_Del(void)

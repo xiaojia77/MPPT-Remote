@@ -60,6 +60,11 @@
     "mcpwm.h": "c",
     "lcd7789.h": "c",
     "lcd_data.h": "c",
-    "key_driver.h": "c"
+    "key_driver.h": "c",
+    "stdarg.h": "c",
+    "spi.h": "c",
+    "includes.h": "c",
+    "app_core.h": "c",
+    "clock.h": "c"
   }
 }
