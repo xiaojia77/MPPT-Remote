@@ -345,8 +345,9 @@ void Mppt_Set_Para_Send(void *priv) // 发MPPT的设置参数
             offset += make_packet_data(&data[offset],offset,0x0E,&Time_Data,sizeof(Time_Data)); // 时间参数
             offset += make_packet_val(&data[offset],offset,0x0F,SetParm->Solar_Mode,4);         // 太阳能模式
             offset += make_packet_val(&data[offset],offset,0x10,SetParm->Extern_Mode,4);        // 外部通信方式
-            offset += make_packet_val(&data[offset],offset,0x11,3600*SetParm->Ledar_Dly_On,4);  // 外部通信方式
-            offset += make_packet_val(&data[offset],offset,0x12,SetParm->Ledar_Dly_IsOn,4);     // 外部通信方式
+            offset += make_packet_val(&data[offset],offset,0x11,3600*SetParm->Ledar_Dly_On,4);  // 雷达延迟时间
+            offset += make_packet_val(&data[offset],offset,0x12,SetParm->Ledar_Dly_IsOn,4);     // 雷达自启功能
+            offset += make_packet_val(&data[offset],offset,0x13,SetParm->Ledar_sens,4);         // 外部通信方式
 
             data[offset++] = 0X55;//包尾
             for(i=0;i<offset%4;i++)
@@ -707,7 +708,17 @@ void Mppt_Data_Decode(u8 *packet,u16 size) // MPPT 信息解码
                         break;
                     case 0x11:
                         break;
-
+                        temp = little_endian_read_32(&data[data_position],0);  
+                        RoterData.Mppt_ConSetPara_Info.Extern_Mode = temp;
+                        break;
+                    case 0x12:
+                        temp = little_endian_read_32(&data[data_position],0);  
+                        RoterData.Mppt_ConSetPara_Info.Ledar_Dly_On = RoterData.Mppt_ConSetPara_Info.Ledar_Dly_On/3600;
+                        break;
+                    case 0x13:
+                        temp = little_endian_read_32(&data[data_position],0);  
+                        RoterData.Mppt_ConSetPara_Info.Ledar_Dly_IsOn = temp;
+                        break;
                     default:    
                         break;
                 }

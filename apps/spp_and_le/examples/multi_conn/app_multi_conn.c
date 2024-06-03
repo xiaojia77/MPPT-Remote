@@ -381,9 +381,9 @@ static void multi_app_start()
         for(i=0;i<sizeof(RoterData.Ble_Adv_rp)/sizeof(RoterData.Ble_Adv_rp[0]);i++)
             RoterData.Ble_Adv_rp[i].rssi = -99;
 
-        RoterData.Mppt_SetPara.Bat_Capcity = 7.5;
-        RoterData.Mppt_SetPara.Charge_Current_Max = 10;
-        RoterData.Mppt_SetPara.Charge_Power_Max = 75;
+        RoterData.Mppt_SetPara.Bat_Capcity = 60;
+        RoterData.Mppt_SetPara.Charge_Current_Max = 20;
+        RoterData.Mppt_SetPara.Charge_Power_Max = 80;
         RoterData.Mppt_SetPara.Trickle_Current = 0.5f;
         RoterData.Mppt_SetPara.DischarCurve_Moed = 0;
 

@@ -1112,14 +1112,14 @@ void Mppt_Ble_BatchSet_MenuOps(uint8_t key)
         char str[7] = "";      
         Lcd_printf20x20(120 - 24 * 3, 0, "放电参数设置"); 
         floatToString(SetPara->Low_voltage_Protect,2,str);
-        Lcd_printf20x20(30, 24*1, "电池低压保护:%sv    ",str);
+        Lcd_printf20x20(30, 24*1, "电池低压保护:%sV    ",str);
         Lcd_printf20x20(30, 24*2, "放电电流挡位:%d     ",SetPara->Current_Gear);
-        Lcd_printf20x20(30, 24*3, "雷达感应亮度:%d%%   ",SetPara->Ledar_Pwm);
-        Lcd_printf20x20(30, 24*4, "雷达延迟时间:%dS   ",SetPara->Ledar_Dly_Time);
-        Lcd_printf20x20(30, 24*5, "雷达自启时间:%dH   ",SetPara->Ledar_Dly_On);
-        Lcd_printf20x20(30, 24*6, "雷达自启功能:%s   ",AotoSetStr[SetPara->Ledar_Dly_IsOn]);
-        Lcd_printf20x20(30, 24*7, "光控模式:%s   ",SolarModeStr[SetPara->Solar_Mode]);
-        Lcd_printf20x20(30, 24*8, "通信模式:%s   ",Connect_Mode_Str[SetPara->Extern_Mode]);
+        // Lcd_printf20x20(30, 24*3, "雷达感应亮度:%d%%   ",SetPara->Ledar_Pwm);
+        // Lcd_printf20x20(30, 24*4, "雷达延迟时间:%dS   ",SetPara->Ledar_Dly_Time);
+        // Lcd_printf20x20(30, 24*5, "雷达自启时间:%dH   ",SetPara->Ledar_Dly_On);
+        // Lcd_printf20x20(30, 24*6, "雷达自启功能:%s   ",AotoSetStr[SetPara->Ledar_Dly_IsOn]);
+        Lcd_printf20x20(30, 24*3, "光控模式:%s   ",SolarModeStr[SetPara->Solar_Mode]);
+        Lcd_printf20x20(30, 24*4, "通信模式:%s   ",Connect_Mode_Str[SetPara->Extern_Mode]);
        
     }
     void Mppt_DischarSet_Menu(void)
@@ -1137,7 +1137,7 @@ void Mppt_Ble_BatchSet_MenuOps(uint8_t key)
         float indata; 
         if(num_key != -1) // 有数字输入 第一个点不能是字符串输入
         {
-            if(!InputMode && MenuData.index[MenuData.current_id]<=5)
+            if(!InputMode && MenuData.index[MenuData.current_id]<=2)
             {
                 InputMode = 1; //  输入模式
                 InputFlash_Timer = sys_timer_add(NULL,Mppt_InPutFlash,300);
@@ -1183,21 +1183,6 @@ void Mppt_Ble_BatchSet_MenuOps(uint8_t key)
                             if(indata>20)indata = 20;
                             SetPara->Current_Gear=indata;
                             break;
-                        case 3:
-                            if(indata<0)indata = 0;
-                            if(indata>30)indata = 30;
-                            SetPara->Ledar_Pwm=indata;
-                            break;
-                        case 4:
-                            if(indata<0)indata = 0;
-                            if(indata>60)indata = 60;
-                            SetPara->Ledar_Dly_Time=indata;
-                            break; 
-                        case 5:
-                            if(indata<1)indata = 1;
-                            if(indata>10)indata = 10;
-                            SetPara->Ledar_Dly_On=indata;
-                            break;   
                     }    
                     InputMode = 0;
                     sys_timer_del(InputFlash_Timer);
@@ -1231,36 +1216,6 @@ void Mppt_Ble_BatchSet_MenuOps(uint8_t key)
                 }
                 Lcd_printf20x20(30, 24*2,"放电电流挡位:%s     ",instr);
             }
-            else if(MenuData.index[MenuData.current_id] == 3)
-            {
-                if( input_num > 30)
-                {
-                    strcpy(instr,"30"); 
-                    input_index = sizeof("30") - 1;
-                }
-                Lcd_printf20x20(30, 24*3,"雷达感应亮度:%s%%    ",instr);
-            }
-            else if(MenuData.index[MenuData.current_id] == 4)
-            {
-                if( input_num > 60)
-                {
-                    strcpy(instr,"60"); 
-                    input_index = sizeof("60") - 1;
-                }
-                Lcd_printf20x20(30, 24*4,"雷达延迟时间:%sS   ",instr);
-            }
-            else if(MenuData.index[MenuData.current_id] == 5)
-            { 
-                if( input_num > 10)
-                {
-                    strcpy(instr,"10"); 
-                    input_index = sizeof("10") - 1;
-                }
-                Lcd_printf20x20(30, 24*5,"雷达自启时间:%sh   ",instr);
-            }        
-            log_info("KEY %d NUMKRY %d input_index %d",key,num_key,input_index);
-            log_info("instr %s  value: %d",instr,(uint32_t)(stringtofloat(instr)*100));
-
         }
         else
         {
@@ -1269,21 +1224,14 @@ void Mppt_Ble_BatchSet_MenuOps(uint8_t key)
             {
                 
                 case KEY_VALUE_TYPE_RIGHT:
-                    if(MenuData.index[MenuData.current_id] == 6)
-                    {
-
-                        if(SetPara->Ledar_Dly_IsOn) SetPara->Ledar_Dly_IsOn= 0;
-                        else SetPara->Ledar_Dly_IsOn = 1;
-                        Mppt_DischarPara_Dis(SetPara);
-                    }       
-                    else if(MenuData.index[MenuData.current_id] == 7)
+                    if(MenuData.index[MenuData.current_id] == 3)
                     {
 
                         if(SetPara->Solar_Mode) SetPara->Solar_Mode= 0;
                         else SetPara->Solar_Mode = 1;
                         Mppt_DischarPara_Dis(SetPara);
                     }       
-                    else if(MenuData.index[MenuData.current_id] == 8)
+                    else if(MenuData.index[MenuData.current_id] == 4)
                     {
                         if(SetPara->Extern_Mode) SetPara->Extern_Mode = 0;
                         else SetPara->Extern_Mode = 1;
@@ -1301,15 +1249,7 @@ void Mppt_Ble_BatchSet_MenuOps(uint8_t key)
                             case 2:
                                 if(++SetPara->Current_Gear > 20) SetPara->Current_Gear = 1;
                                 break;
-                            case 3:
-                                if(++SetPara->Ledar_Pwm > 30) SetPara->Ledar_Pwm = 10;
-                                break;                          
-                            case 4:
-                                if(++SetPara->Ledar_Dly_Time>15)SetPara->Ledar_Dly_Time = 5;
-                                break;      
-                            case 5:
-                                if(++SetPara->Ledar_Dly_On>10)SetPara->Ledar_Dly_On = 1;
-                                break;
+
                         }
                         Mppt_DischarPara_Dis(SetPara);
                     break;
@@ -1322,15 +1262,6 @@ void Mppt_Ble_BatchSet_MenuOps(uint8_t key)
                                 break;
                             case 2:
                                 if(--SetPara->Current_Gear <= 0) SetPara->Current_Gear = 20;
-                                break;
-                            case 3:
-                                if(--SetPara->Ledar_Pwm < 10) SetPara->Ledar_Pwm = 30;
-                                break;
-                            case 4:
-                                if(--SetPara->Ledar_Dly_Time<5)SetPara->Ledar_Dly_Time = 15;
-                                break;      
-                            case 5:
-                                if(--SetPara->Ledar_Dly_On<=0)SetPara->Ledar_Dly_On = 10;
                                 break;
                         }
                         Mppt_DischarPara_Dis(SetPara);
@@ -1356,10 +1287,10 @@ void Mppt_Ble_BatchSet_MenuOps(uint8_t key)
                 Mppt_MenuSelect_Dis();
                 break;
             case KEY_VALUE_TYPE_DOWN: // 下
-                if (MenuData.index[MenuData.current_id] < 8)
+                if (MenuData.index[MenuData.current_id] < 4)
                     MenuData.index[MenuData.current_id]++;
                 else{
-                    Lcd_SwitchWindows(CHAEGE_SET_MENU);
+                    Lcd_SwitchWindows(RADARPARA_SET_MENU);
                     return ;
                 }
                 //Mppt_Menu_Select_Display();
@@ -1370,6 +1301,229 @@ void Mppt_Ble_BatchSet_MenuOps(uint8_t key)
                 break;
         }
     }
+
+    void Mppt_RadarPara_Dis(Mppt_Set_Parm_t *SetPara)
+    {
+        char str[7] = "";  
+        Lcd_printf20x20(120 - 24 * 3, 0, "雷达参数设置"); 
+        Lcd_printf20x20(30, 24*1, "雷达感应亮度:%d%%   ",SetPara->Ledar_Pwm);
+        Lcd_printf20x20(30, 24*2, "雷达延迟时间:%dS   ",SetPara->Ledar_Dly_Time);
+        floatToString(SetPara->Ledar_Dly_On,1,str);
+        Lcd_printf20x20(30, 24*3, "雷达自启时间:%sH   ",str);
+        Lcd_printf20x20(30, 24*4, "雷达灵敏挡位:%d   ",SetPara->Ledar_sens);
+        Lcd_printf20x20(30, 24*5, "雷达自启功能:%s   ",AotoSetStr[SetPara->Ledar_Dly_IsOn]);
+    }
+    void Mppt_RadarPara_Menu(void)
+    {
+        Lcd_Clear(BLACK);
+        MenuData.index[MenuData.current_id] = 1;
+        Mppt_RadarPara_Dis(&RoterData.Mppt_SetPara);
+        Lcd_printf20x20(5, 24 * MenuData.index[MenuData.current_id], "->");
+        Lcd_printf20x20(30, 24*9, "下一页");
+        Lcd_Show20x20(90,24*9,SpecialDot[0]);
+    }
+    void Mppt_RadarPara_Ops(Mppt_Set_Parm_t *SetPara,uint8_t key)
+    {
+        int num_key = Key_NumberMap(key);
+        float indata; 
+        if(num_key != -1) // 有数字输入 第一个点不能是字符串输入
+        {
+            if(!InputMode && MenuData.index[MenuData.current_id]<=5)
+            {
+                InputMode = 1; //  输入模式
+                InputFlash_Timer = sys_timer_add(NULL,Mppt_InPutFlash,300);
+                input_index = 0;
+                memset(instr,0,sizeof(instr));
+            }  
+        }
+        if(InputMode)
+        {
+            if(num_key != -1)
+            {
+                if(input_index<4)input_index++;
+                instr[input_index - 1] = num_key + '0';
+            }
+            
+            switch (key)
+            {
+
+                case KEY_VALUE_TYPE_DOT: // 输入小数点
+                    if(input_index<6)input_index++;
+                    instr[input_index - 1] = '.';
+                    break;
+                
+                case KEY_VALUE_TYPE_BACKSPACE: // 退格
+                    if(input_index)
+                    {   
+                        if(input_index == 1)instr[input_index - 1] = '0';
+                        else instr[input_index - 1] = 0; 
+                        input_index --;       
+                    }
+                    break;
+                case KEY_VALUE_TYPE_ENTRE:
+                    indata = stringtofloat(instr);
+                    switch (MenuData.index[MenuData.current_id])
+                    {
+                        case 1:
+                            if(indata<0)indata = 0;
+                            if(indata>30)indata = 30;
+                            SetPara->Ledar_Pwm=indata;
+                            break;
+                        case 2:
+                            if(indata<0)indata = 0;
+                            if(indata>60)indata = 60;
+                            SetPara->Ledar_Dly_Time=indata;
+                            break; 
+                        case 3:
+                            if(indata<0)indata = 0;
+                            if(indata>10)indata = 10;
+                            SetPara->Ledar_Dly_On=indata;
+                            break;   
+                        case 4:
+                            if(indata<0)indata = 0;
+                            if(indata>10)indata = 10;
+                            SetPara->Ledar_sens=indata;
+                            break;   
+                    }    
+                    InputMode = 0;
+                    sys_timer_del(InputFlash_Timer);
+                    Mppt_RadarPara_Dis(SetPara);
+                    return;
+                    break;       
+                 case KEY_VALUE_TYPE_LEFT:
+                    InputMode = 0;
+                    sys_timer_del(InputFlash_Timer);
+                    Mppt_RadarPara_Dis(SetPara);
+                    return;
+                    break;
+            }
+            
+            float input_num = stringtofloat(instr);      
+            if(MenuData.index[MenuData.current_id] == 1)
+            {
+                if( input_num > 30)
+                {
+                    strcpy(instr,"30"); 
+                    input_index = sizeof("30") - 1;
+                }
+                Lcd_printf20x20(30, 24*1,"雷达感应亮度:%s%%    ",instr);
+            }
+            else if(MenuData.index[MenuData.current_id] == 2)
+            {
+                if( input_num > 60)
+                {
+                    strcpy(instr,"60"); 
+                    input_index = sizeof("60") - 1;
+                }
+                Lcd_printf20x20(30, 24*2,"雷达延迟时间:%sS   ",instr);
+            }
+            else if(MenuData.index[MenuData.current_id] == 3)
+            { 
+                if( input_num > 10)
+                {
+                    strcpy(instr,"10"); 
+                    input_index = sizeof("10") - 1;
+                }
+                Lcd_printf20x20(30, 24*3,"雷达自启时间:%sh   ",instr);
+            }        
+            else if(MenuData.index[MenuData.current_id] == 4)
+            { 
+                if( input_num > 10)
+                {
+                    strcpy(instr,"10"); 
+                    input_index = sizeof("10") - 1;
+                }
+                Lcd_printf20x20(30, 24*4,"雷达灵敏挡位:%s   ",instr);
+            }        
+            log_info("KEY %d NUMKRY %d input_index %d",key,num_key,input_index);
+            log_info("instr %s  value: %d",instr,(uint32_t)(stringtofloat(instr)*100));
+
+        }
+        else
+        {
+            switch (key)
+            {
+                
+                case KEY_VALUE_TYPE_RIGHT:
+                    if(MenuData.index[MenuData.current_id] == 5)
+                    {
+                        if(SetPara->Ledar_Dly_IsOn) SetPara->Ledar_Dly_IsOn = 0;
+                        else SetPara->Ledar_Dly_IsOn = 1;
+                       
+                        Mppt_RadarPara_Dis(SetPara);
+                    }                
+                    break;
+                case KEY_VALUE_TYPE_INCRE: // 
+                        switch (MenuData.index[MenuData.current_id])
+                        {
+                            case 1:
+                                if(++SetPara->Ledar_Pwm > 30) SetPara->Ledar_Pwm = 10;
+                                break;                          
+                            case 2:
+                                if(++SetPara->Ledar_Dly_Time>15)SetPara->Ledar_Dly_Time = 5;
+                                break;      
+                            case 3:
+                                if(++SetPara->Ledar_Dly_On>10)SetPara->Ledar_Dly_On = 1;
+                                break;
+                            case 4:
+                                if(++SetPara->Ledar_sens>10)SetPara->Ledar_sens = 1;
+                                break;
+                        }
+                        Mppt_RadarPara_Dis(SetPara);
+                    break;
+                case KEY_VALUE_TYPE_DECRE:
+                        switch (MenuData.index[MenuData.current_id])
+                        {
+
+                            case 1:
+                                if(--SetPara->Ledar_Pwm < 10) SetPara->Ledar_Pwm = 30;
+                                break;
+                            case 2:
+                                if(--SetPara->Ledar_Dly_Time<5)SetPara->Ledar_Dly_Time = 15;
+                                break;      
+                            case 3:
+                                if(--SetPara->Ledar_Dly_On<=0)SetPara->Ledar_Dly_On = 10;
+                                break;     
+                            case 4:
+                                if(--SetPara->Ledar_sens<=0)SetPara->Ledar_sens = 10;
+                                break;
+                        }
+                        Mppt_RadarPara_Dis(SetPara);
+                    break;
+            }   
+        }
+    }
+    void Mppt_RadarPara_MenuOps(uint8_t key)
+    {
+        Mppt_RadarPara_Ops(&RoterData.Mppt_SetPara,key);
+        if(InputMode)return ;
+        switch (key)
+        {
+            case KEY_VALUE_TYPE_UP: // 上
+                if (MenuData.index[MenuData.current_id] > 1)
+                    MenuData.index[MenuData.current_id]--;
+                else
+                {
+                    Lcd_BackPreWindows();
+                    return ;
+                }      
+                Mppt_MenuSelect_Dis();
+                break;
+            case KEY_VALUE_TYPE_DOWN: // 下
+                if (MenuData.index[MenuData.current_id] < 5)
+                    MenuData.index[MenuData.current_id]++;
+                else{
+                    Lcd_SwitchWindows(CHAEGE_SET_MENU);
+                    return ;
+                }
+                Mppt_MenuSelect_Dis();
+                break;
+            case KEY_VALUE_TYPE_LEFT: // ←
+                Lcd_BackPreWindows();
+                break;
+        }
+    }
+
 
     void Mppt_CurceSet_Menu(void)
     {
@@ -2253,7 +2407,7 @@ void Mppt_BleConnSelect_MenuOps(uint8_t key)
             }
             if(key == KEY_VALUE_TYPE_DOWN)
             {
-                Lcd_SwitchWindows(INFO_CHARGEPARA);
+                Lcd_SwitchWindows(INFO_RADARPARA);
             }
         }
 
@@ -2274,6 +2428,25 @@ void Mppt_BleConnSelect_MenuOps(uint8_t key)
             if(key == KEY_VALUE_TYPE_DOWN)
             {
                 Lcd_SwitchWindows(INFO_DISCHARGEPARA);
+            }
+        }
+
+        void Mppt_InfoRadarPara_Menu(void)
+        {
+            Lcd_Clear(BLACK);
+            MenuData.index[MenuData.current_id] = 1;
+            Mppt_RadarPara_Dis(&RoterData.Mppt_SetPara);
+            Lcd_printf20x20(30, 24*9, "下一页");
+            Lcd_Show20x20(90,24*9,SpecialDot[0]);
+        }
+        void Mppt_InfoRadarPara_MenuOps(uint8_t key)
+        {
+            if(key == KEY_VALUE_TYPE_UP || key == KEY_VALUE_TYPE_LEFT ){
+                Lcd_BackPreWindows();
+            }
+            if(key == KEY_VALUE_TYPE_DOWN)
+            {
+                Lcd_SwitchWindows(INFO_CHARGEPARA);
             }
         }
 
@@ -2354,10 +2527,10 @@ void Mppt_BleConnSelect_MenuOps(uint8_t key)
                     break;
                 case KEY_VALUE_TYPE_DOWN: // 下
                     if(!Menu_Tab[MenuData.current_id].max_menu_num)return;
-                    if (MenuData.index[MenuData.current_id] < Menu_Tab[MenuData.current_id].max_menu_num)
+                    if (MenuData.index[MenuData.current_id] < 4)
                         MenuData.index[MenuData.current_id]++;
                     else{
-                        Lcd_SwitchWindows(CHAEGE_PARA_MODIFY);
+                        Lcd_SwitchWindows(RADAR_PARA_MODIFY);
                         return ;
                     }
                    // Mppt_Menu_Select_Display();
@@ -2370,6 +2543,46 @@ void Mppt_BleConnSelect_MenuOps(uint8_t key)
                /* case KEY_VALUE_TYPE_RIGHT:
                     Lcd_SwitchWindows(CURVE_MODIFY);
                     break;*/
+            }
+        }
+
+        void Mppt_RadarParaM_Menu(void)
+        {
+            Lcd_Clear(BLACK);
+            MenuData.index[MenuData.current_id] = 1;
+            Mppt_RadarPara_Dis(&RoterData.Mppt_ConSetPara_Info);
+            Lcd_printf20x20(5, 24 * MenuData.index[MenuData.current_id], "->");
+            Lcd_printf20x20(30, 24*9, "下一页");
+            Lcd_Show20x20(90,24*9,SpecialDot[0]);
+        }
+        void Mppt_RadarParaM_MenuOps(uint8_t key)
+        {
+            Mppt_RadarPara_Ops(&RoterData.Mppt_ConSetPara_Info,key);
+            if(InputMode)return ;
+            switch (key)
+            {
+                case KEY_VALUE_TYPE_UP: // 上
+                    if (MenuData.index[MenuData.current_id] > 1)
+                        MenuData.index[MenuData.current_id]--;
+                    else
+                    {
+                        Lcd_BackPreWindows();
+                        return ;
+                    }      
+                    Mppt_MenuSelect_Dis();
+                    break;
+                case KEY_VALUE_TYPE_DOWN: // 下
+                    if (MenuData.index[MenuData.current_id] < 5)
+                        MenuData.index[MenuData.current_id]++;
+                    else{
+                        Lcd_SwitchWindows(CHAEGE_PARA_MODIFY);
+                        return ;
+                    }
+                    Mppt_MenuSelect_Dis();
+                    break;
+                case KEY_VALUE_TYPE_LEFT: // ←
+                    Lcd_BackPreWindows();
+                    break;
             }
         }
 
@@ -2438,8 +2651,8 @@ void Mppt_BleConnSelect_MenuOps(uint8_t key)
         {
             Lcd_Clear(BLACK);
             MenuData.index[MenuData.current_id] = 0;
+            Mppt_Curve_MenuIndexDis();
             Mppt_DischarCurve_Display(&RoterData.Mppt_ConSetPara_Info);
-             Mppt_Curve_MenuIndexDis();
             Lcd_printf20x20(30,210,"下一页");
             Lcd_Show20x20(30+60,210,SpecialDot[0]);
         }
