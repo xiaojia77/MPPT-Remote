@@ -3282,8 +3282,6 @@ objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o
 -r=objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o,Mppt_Log_MenuOps,l
 -r=objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o,Mppt_Main_Menu_Operation,l
 -r=objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o,Mppt_Main_Menu,l
--r=objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o,Mppt_Ble_BatchSet_MenuOps,l
--r=objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o,Mppt_Ble_BatchSet_Menu,l
 -r=objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o,Mppt_DischarCurveSet_MenuOps,l
 -r=objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o,Mppt_DischarCurveSet_Menu,l
 -r=objs/apps/spp_and_le/examples/multi_conn/app_multi_conn.c.o,Mppt_DischarSet_MenuOps,l
@@ -3465,17 +3463,17 @@ objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o
 -r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,pow,l
 -r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Lcd_ShowPicture,pl
 -r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Key_NumberMap,pl
+-r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Mppt_ExitTimerCallback,pl
 -r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Mppt_Log_Menu,pl
+-r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,sys_timeout_add,l
 -r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Mppt_Log_MenuOps,pl
+-r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,sys_timer_del,l
 -r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Mppt_Menu_Select_Display,pl
 -r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Mppt_Normal_Menu_Select,pl
 -r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Mppt_MenuSelect_Dis,pl
 -r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Mppt_Menu_Select,pl
 -r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Mppt_Main_Menu,pl
 -r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Mppt_Main_Menu_Operation,pl
--r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Mppt_Ble_BatchSet_Display,pl
--r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Mppt_Ble_BatchSet_Menu,pl
--r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Mppt_Ble_BatchSet_MenuOps,pl
 -r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Mppt_InPutFlash,pl
 -r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Mppt_Normal_InPutFlash,pl
 -r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Mppt_ChargePara_Display,pl
@@ -3483,7 +3481,6 @@ objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o
 -r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Mppt_ChargeSet_Ops,pl
 -r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,sys_timer_add,l
 -r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,memset,l
--r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,sys_timer_del,l
 -r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,strcpy,l
 -r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,printf,l
 -r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Mppt_ChargeSet_MenuOps,pl
@@ -3551,8 +3548,6 @@ objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o
 -r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Mppt_DischarParaM_MenuOps,pl
 -r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Mppt_RadarParaM_Menu,pl
 -r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Mppt_RadarParaM_MenuOps,pl
--r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Mppt_Curce_Modify_Menu,pl
--r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Mppt_Curce_Modify_MenuOps,pl
 -r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Mppt_CurvePara_Modify_Menu,pl
 -r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Mppt_CurvePara_Modify_MenuOps,pl
 -r=objs/apps/spp_and_le/examples/multi_conn/lcd7789.c.o,Mppt_Modify_Menu,pl

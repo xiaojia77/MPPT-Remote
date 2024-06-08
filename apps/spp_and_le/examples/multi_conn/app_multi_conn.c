@@ -385,39 +385,44 @@ static void multi_app_start()
         RoterData.Mppt_SetPara.Charge_Current_Max = 20;
         RoterData.Mppt_SetPara.Charge_Power_Max = 80;
         RoterData.Mppt_SetPara.Trickle_Current = 0.5f;
-        RoterData.Mppt_SetPara.DischarCurve_Moed = 0;
+        RoterData.Mppt_SetPara.DischarCurve_Moed = 0; 
+        
+        RoterData.Mppt_SetPara.Extern_Mode = 0;
 
         RoterData.Mppt_SetPara.Current_Gear = 20;
-        RoterData.Mppt_SetPara.Ledar_Dly_Time = 15;
+        RoterData.Mppt_SetPara.Ledar_Dly_Time = 10;
         RoterData.Mppt_SetPara.Ledar_Dly_On = 6;
-        RoterData.Mppt_SetPara.Ledar_Dly_IsOn = 1;
+        RoterData.Mppt_SetPara.Ledar_Dly_IsOn = 0;
+       
         RoterData.Mppt_SetPara.Ledar_Pwm = 10;
+        RoterData.Mppt_SetPara.Ledar_sens = 1;
         RoterData.Mppt_SetPara.Led_Set_Pwm = 100;
-        RoterData.Mppt_SetPara.Low_voltage_Protect = 2.65f;
+        RoterData.Mppt_SetPara.Low_voltage_Protect = 2.50f;
+        RoterData.Mppt_SetPara.Ledar_Fliter_Gear = 3;
         
 
-        RoterData.Mppt_SetPara.Lock_Mode = 0;
+        RoterData.Mppt_SetPara.Lock_Mode = 1;
         RoterData.Mppt_SetPara.DischarCurve_Moed = 2;
-        RoterData.Mppt_SetPara.Curv_Data[0][0] = 2;
-        RoterData.Mppt_SetPara.Curv_Data[0][1] = 80;
+        RoterData.Mppt_SetPara.Curv_Data[0][0] = 0.16;
+        RoterData.Mppt_SetPara.Curv_Data[0][1] = 100;
 
-        RoterData.Mppt_SetPara.Curv_Data[1][0] = 4.5f;
-        RoterData.Mppt_SetPara.Curv_Data[1][1] = 60;
+        RoterData.Mppt_SetPara.Curv_Data[1][0] = 0.66f;
+        RoterData.Mppt_SetPara.Curv_Data[1][1] = 85;
         
-        RoterData.Mppt_SetPara.Curv_Data[2][0] = 7;
-        RoterData.Mppt_SetPara.Curv_Data[2][1] = 40; 
+        RoterData.Mppt_SetPara.Curv_Data[2][0] = 1;
+        RoterData.Mppt_SetPara.Curv_Data[2][1] = 70; 
 
-        RoterData.Mppt_SetPara.Curv_Data[3][0] = 8.5f;
-        RoterData.Mppt_SetPara.Curv_Data[3][1] = 20;
+        RoterData.Mppt_SetPara.Curv_Data[3][0] = 2;
+        RoterData.Mppt_SetPara.Curv_Data[3][1] = 60;
         
-        RoterData.Mppt_SetPara.Curv_Data[4][0] = 0;
-        RoterData.Mppt_SetPara.Curv_Data[4][1] = 0;
+        RoterData.Mppt_SetPara.Curv_Data[4][0] = 4;
+        RoterData.Mppt_SetPara.Curv_Data[4][1] = 50;
         
-        RoterData.Mppt_SetPara.Curv_Data[5][0] = 0;
-        RoterData.Mppt_SetPara.Curv_Data[5][1] = 0;
+        RoterData.Mppt_SetPara.Curv_Data[5][0] = 6;
+        RoterData.Mppt_SetPara.Curv_Data[5][1] = 35;
         
-        RoterData.Mppt_SetPara.Curv_Data[6][0] = 0;
-        RoterData.Mppt_SetPara.Curv_Data[6][1] = 0;
+        RoterData.Mppt_SetPara.Curv_Data[6][0] = 12;
+        RoterData.Mppt_SetPara.Curv_Data[6][1] = 20;
         
         RoterData.Mppt_SetPara.Curv_Data[7][0] = 0;
         RoterData.Mppt_SetPara.Curv_Data[7][1] = 0;

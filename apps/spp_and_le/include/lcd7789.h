@@ -66,6 +66,7 @@ typedef struct
     float Ledar_Dly_On; 
     uint32_t Ledar_Dly_IsOn; 
     uint32_t Ledar_sens; 
+    uint32_t Ledar_Fliter_Gear; 
    
     uint32_t DischarCurve_Moed; // 0 pwm模式 电流 AI
 
@@ -78,6 +79,8 @@ typedef struct
     uint32_t Extern_Mode; //控制模式
 
     uint16_t Usercode; //用户码
+
+    uint8_t datahead;
 
 }Mppt_Set_Parm_t ;
 
@@ -162,10 +165,6 @@ void Mppt_Menu_Select(uint8_t key);
 void Mppt_Main_Menu(void);
 void Mppt_Main_Menu_Operation(uint8_t key);
 
-//蓝牙批量设置菜单
-void Mppt_Ble_BatchSet_MenuOps(uint8_t key);
-void Mppt_Ble_BatchSet_Menu(void);
-
     //充电参数设置
     void Mppt_ChargeSet_Menu(void);
     void Mppt_ChargeSet_MenuOps(uint8_t key);
@@ -232,9 +231,6 @@ void Mppt_BleConnSelect_MenuOps(uint8_t key);
             void Mppt_RadarParaM_Menu(void);
             void Mppt_RadarParaM_MenuOps(uint8_t key);
             
-            void Mppt_Curce_Modify_Menu(void);
-            void Mppt_Curce_Modify_MenuOps(uint8_t key);
-
             void Mppt_CurvePara_Modify_Menu(void);
             void Mppt_CurvePara_Modify_MenuOps(uint8_t key);
 
@@ -273,7 +269,6 @@ enum
 
     MAIN_MENU,
 
-    BLE_BATCHSET_MENU,
         DISCHAR_CURVE_SET_MENU,
         DISCHAR_SET_MENU,
         RADARPARA_SET_MENU,
@@ -318,9 +313,7 @@ static Menu_Tab_t const Menu_Tab[]=
 
     {MAIN_MENU,LOG_MENU,7,Mppt_Main_Menu_Operation,Mppt_Main_Menu}, //主菜单 次级菜单
 
-    {BLE_BATCHSET_MENU,MAIN_MENU,6,Mppt_Ble_BatchSet_MenuOps,Mppt_Ble_BatchSet_Menu}, // 批量设置菜单
         {DISCHAR_CURVE_SET_MENU,MAIN_MENU,16,Mppt_DischarCurveSet_MenuOps,Mppt_DischarCurveSet_Menu},
-       
         {DISCHAR_SET_MENU,DISCHAR_CURVE_SET_MENU,9,Mppt_DischarSet_MenuOps,Mppt_DischarSet_Menu}, 
         {RADARPARA_SET_MENU,DISCHAR_SET_MENU,9,Mppt_RadarPara_MenuOps,Mppt_RadarPara_Menu}, 
         {CHAEGE_SET_MENU,DISCHAR_SET_MENU,3,Mppt_ChargeSet_MenuOps,Mppt_ChargeSet_Menu}, // 次级菜单

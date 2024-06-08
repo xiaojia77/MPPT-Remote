@@ -297,8 +297,6 @@ void Mppt_Set_Para_Send(void *priv) // 发MPPT的设置参数
         return;
     }
 
-    
-
     uint16_t  Curv_Data[8][2]=   // 曲线数据  单位S 占空比%
     {
        // {60*60*1,90},{60*60*2,80},{60*60*3,70},{60*60*4,60},
@@ -328,26 +326,28 @@ void Mppt_Set_Para_Send(void *priv) // 发MPPT的设置参数
             for(i=0;i<4;i++) encry_key[i] = bl_ckey[i]; // 密码获取
             for(i=0;i<6;i++) encry_key[i%4] += RoterData.Ble_Connect_Mac[i]; //加密密钥
 
-            data[offset++] = 0xAA; //包头
-            offset += make_packet_val(&data[offset],offset,0x01,SetParm->Bat_Capcity*1000,4); // 发10A
-            offset += make_packet_val(&data[offset],offset,0x02,SetParm->Charge_Current_Max*1000,4); // 发5A  0.5C;
-            offset += make_packet_val(&data[offset],offset,0x03,SetParm->Charge_Power_Max*1000,4); // 发50W 
-            offset += make_packet_val(&data[offset],offset,0x04,SetParm->Trickle_Current*1000,4);   // 发500mah
-            offset += make_packet_val(&data[offset],offset,0x05,SetParm->Low_voltage_Protect*1000,4);  // 发2600MV
-            offset += make_packet_val(&data[offset],offset,0x06,SetParm->Current_Gear,4);            // 发20挡位
-            offset += make_packet_val(&data[offset],offset,0x07,SetParm->Ledar_Pwm,4);              // 雷达10%
-            offset += make_packet_val(&data[offset],offset,0x08,SetParm->Ledar_Dly_Time,4);     // 雷达延迟15S
-            offset += make_packet_val(&data[offset],offset,0x09,SetParm->Led_Set_Pwm,4);        // 默认亮度100%
-            offset += make_packet_val(&data[offset],offset,0x0A,SetParm->DischarCurve_Moed,4);  // 曲线模式0 pwm模式
-            offset += make_packet_data(&data[offset],offset,0x0B,&Curv_Data,sizeof(Curv_Data)); // 默认曲线
-            offset += make_packet_val(&data[offset],offset,0x0C,SetParm->Lock_Mode,4);          // 锁定模式
-            offset += make_packet_val(&data[offset],offset,0x0D,SetParm->Usercode,4);           // 用户数据
-            offset += make_packet_data(&data[offset],offset,0x0E,&Time_Data,sizeof(Time_Data)); // 时间参数
-            offset += make_packet_val(&data[offset],offset,0x0F,SetParm->Solar_Mode,4);         // 太阳能模式
-            offset += make_packet_val(&data[offset],offset,0x10,SetParm->Extern_Mode,4);        // 外部通信方式
-            offset += make_packet_val(&data[offset],offset,0x11,3600*SetParm->Ledar_Dly_On,4);  // 雷达延迟时间
-            offset += make_packet_val(&data[offset],offset,0x12,SetParm->Ledar_Dly_IsOn,4);     // 雷达自启功能
-            offset += make_packet_val(&data[offset],offset,0x13,SetParm->Ledar_sens,4);         // 外部通信方式
+           // data[offset++] = 0xAA; //包头
+            data[offset++] = SetParm->datahead; //包头
+            offset += make_packet_val(&data[offset],offset,0x01,SetParm->Bat_Capcity*1000,4);           // 发10A
+            offset += make_packet_val(&data[offset],offset,0x02,SetParm->Charge_Current_Max*1000,4);    // 发5A  0.5C;
+            offset += make_packet_val(&data[offset],offset,0x03,SetParm->Charge_Power_Max*1000,4);      // 发50W 
+            offset += make_packet_val(&data[offset],offset,0x04,SetParm->Trickle_Current*1000,4);       // 发500mah
+            offset += make_packet_val(&data[offset],offset,0x05,SetParm->Low_voltage_Protect*1000,4);   // 发2600MV
+            offset += make_packet_val(&data[offset],offset,0x06,SetParm->Current_Gear,4);               // 发20挡位
+            offset += make_packet_val(&data[offset],offset,0x07,SetParm->Ledar_Pwm,4);                  // 雷达10%
+            offset += make_packet_val(&data[offset],offset,0x08,SetParm->Ledar_Dly_Time,4);             // 雷达延迟15S
+            offset += make_packet_val(&data[offset],offset,0x09,SetParm->Led_Set_Pwm,4);                // 默认亮度100%
+            offset += make_packet_val(&data[offset],offset,0x0A,SetParm->DischarCurve_Moed,4);          // 曲线模式0 pwm模式
+            offset += make_packet_data(&data[offset],offset,0x0B,&Curv_Data,sizeof(Curv_Data));         // 默认曲线
+            offset += make_packet_val(&data[offset],offset,0x0C,SetParm->Lock_Mode,4);                  // 锁定模式
+            offset += make_packet_val(&data[offset],offset,0x0D,SetParm->Usercode,4);                   // 用户数据
+            offset += make_packet_data(&data[offset],offset,0x0E,&Time_Data,sizeof(Time_Data));         // 时间参数
+            offset += make_packet_val(&data[offset],offset,0x0F,SetParm->Solar_Mode,4);                 // 太阳能模式
+            offset += make_packet_val(&data[offset],offset,0x10,SetParm->Extern_Mode,4);                // 外部通信方式
+            offset += make_packet_val(&data[offset],offset,0x11,3600*SetParm->Ledar_Dly_On,4);          // 雷达延迟时间
+            offset += make_packet_val(&data[offset],offset,0x12,SetParm->Ledar_Dly_IsOn,4);             // 雷达自启功能
+            offset += make_packet_val(&data[offset],offset,0x13,SetParm->Ledar_sens,4);                 // 外部通信方式
+            offset += make_packet_val(&data[offset],offset,0x14,SetParm->Ledar_Fliter_Gear,4);                 // 外部通信方式
 
             data[offset++] = 0X55;//包尾
             for(i=0;i<offset%4;i++)
@@ -454,6 +454,7 @@ void Mppt_Data_Decode(u8 *packet,u16 size) // MPPT 信息解码
     switch (data[data_i++])
     {
         case 0xAA:  // 设置参数返回
+        case 0xAB:
             log_info("find data head 0xAA\r\n");
             if(data[data_i] == 0x00) 
             {
@@ -707,17 +708,29 @@ void Mppt_Data_Decode(u8 *packet,u16 size) // MPPT 信息解码
                          RoterData.Mppt_ConSetPara_Info.Extern_Mode = temp;
                         break;
                     case 0x11:
-                        break;
                         temp = little_endian_read_32(&data[data_position],0);  
-                        RoterData.Mppt_ConSetPara_Info.Extern_Mode = temp;
+                        RoterData.Mppt_ConSetPara_Info.Ledar_Dly_On = temp /3600;
+                        log_info("Ledar_Dly_On s:%d%% ",temp);
+                        log_info("Ledar_Dly_On h:%d%% ",(uint32_t)(RoterData.Mppt_ConSetPara_Info.Ledar_Dly_On * 10));
                         break;
                     case 0x12:
                         temp = little_endian_read_32(&data[data_position],0);  
-                        RoterData.Mppt_ConSetPara_Info.Ledar_Dly_On = RoterData.Mppt_ConSetPara_Info.Ledar_Dly_On/3600;
+                        RoterData.Mppt_ConSetPara_Info.Ledar_Dly_IsOn = temp;
+                        log_info("Ledar_Dly_IsOn Mode:%d%% ",temp);
                         break;
                     case 0x13:
                         temp = little_endian_read_32(&data[data_position],0);  
-                        RoterData.Mppt_ConSetPara_Info.Ledar_Dly_IsOn = temp;
+                        RoterData.Mppt_ConSetPara_Info.Ledar_sens = temp;
+                        if(!RoterData.Mppt_ConSetPara_Info.Ledar_sens )
+                            RoterData.Mppt_ConSetPara_Info.Ledar_sens  = 1;
+                        log_info("Ledar_sens Mode:%d%% ",temp);
+                        break;
+                    case 0x14:
+                        temp = little_endian_read_32(&data[data_position],0);  
+                        RoterData.Mppt_ConSetPara_Info.Ledar_Fliter_Gear = temp;
+                        if(!RoterData.Mppt_ConSetPara_Info.Ledar_Fliter_Gear )
+                            RoterData.Mppt_ConSetPara_Info.Ledar_Fliter_Gear  = 1;
+                        log_info("Ledar_sens Mode:%d%% ",temp);
                         break;
                     default:    
                         break;

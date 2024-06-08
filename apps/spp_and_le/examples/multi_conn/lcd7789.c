@@ -601,29 +601,14 @@ static void Lcd_IndexInc()
 
 }
 
+static uint16_t Log_Timer = 0;
+void Mppt_ExitTimerCallback()
+{
+    Lcd_SwitchWindows(MAIN_MENU); 
+}
 void Mppt_Log_Menu(void)
 {
-   //Lcd_ShowPicture(0,0,240,240,gImage_image);
-  //Lcd_printf20x20(0,0,"你好世界作坐座亍丌兀");
-    // u16 i,j;
-	// u32 k=0;
-    // u8 length = 240;
-    // u8 width = 240;
-	// Lcd_Address_Set(0,0,0+length-1,0+width-1);
-    // u8 data;
-	// for(i=0;i<length;i++)
-	// {
-	// 	for(j=0;j<width;j++)
-	// 	{
-    //         dev_bulk_read(spiflashdevice,&data,405780+(k*2+1),1);
-	// 		Lcd_WriteData(data);
-    //         dev_bulk_read(spiflashdevice,&data,405780+(k*2),1);
-    //         Lcd_WriteData(data);
-	// 		k++;
-	// 	}
-	// }		
-
-     u16 i,j;
+    u16 i,j;
 	u32 k=0;
     u8 length = 240;
     u8 width  = 240;
@@ -640,8 +625,9 @@ void Mppt_Log_Menu(void)
 			k++;
 		}
 	}		
-    free(data);
-   // Lcd_SwitchWindows(DISCHAR_CURVE_SET_MENU);
+    free(data);  
+   
+   Log_Timer = sys_timeout_add(NULL,Mppt_ExitTimerCallback,4000);
 }
 void Mppt_Log_MenuOps(uint8_t key)
 {
@@ -650,6 +636,7 @@ void Mppt_Log_MenuOps(uint8_t key)
         case KEY_VALUE_TYPE_ENTRE:
         case KEY_VALUE_TYPE_RIGHT: 
             Lcd_SwitchWindows (MAIN_MENU); 
+            if(Log_Timer)sys_timer_del(Log_Timer);
             break;
     }   
 }
@@ -799,77 +786,11 @@ void Mppt_Main_Menu_Operation(uint8_t key)
 }
 
 const char *Curve_Mode_Str[]={"PWM ","电流","AI  "};
-const char *Connect_Mode_Str[]={"IO","串口"}; 
+const char *Connect_Mode_Str[]={"串口","IO"}; 
 const char *AotoSetStr[]={"关","开"};
 const char *Lock_Mode_Str[]={"关","开"}; 
 const char *SolarModeStr[]={"自动亮灯","手动控制"};
 const char *Dischar_Curve_Str[]={"PWM","Cur","AI"};
-
-void Mppt_Ble_BatchSet_Display()
-{
-    Lcd_printf20x20(120 - 20 * 3, 0, "蓝牙批量设置");
-    Lcd_printf20x20(30, 30, "充电参数设置");
-    /*Lcd_printf20x20(30, 60, "放电参数设置");
-    Lcd_printf20x20(30, 90, "放电曲线模式：%s",Curve_Mode_Str[RoterData.Mppt_SetPara.DischarCurve_Moed]);
-    Lcd_printf20x20(30, 120,"放电曲线设置");
-    Lcd_printf20x20(30, 150,"锁定模式：%s",Lock_Mode_Str[RoterData.Mppt_SetPara.Lock_Mode]);
-    Lcd_printf20x20(30, 180,"批量设置");*/
-    Lcd_printf20x20(5, 30 * MenuData.index[BLE_BATCHSET_MENU], "->");
-}
-void Mppt_Ble_BatchSet_Menu(void)
-{
-    Lcd_Clear(BLACK);
-    Mppt_Ble_BatchSet_Display();
-}
-void Mppt_Ble_BatchSet_MenuOps(uint8_t key)
-{
-    Mppt_Normal_Menu_Select(key);
-    switch (key)
-    {
-        case KEY_VALUE_TYPE_ENTRE:
-        case KEY_VALUE_TYPE_RIGHT: // 
-                switch (MenuData.index[MenuData.current_id])
-                {
-                    case 1:
-                        MenuData.current_id = CHAEGE_SET_MENU; // 切换到下级菜单
-                        if (Menu_Tab[MenuData.current_id].display_operation != NULL)
-                                Menu_Tab[MenuData.current_id].display_operation();
-                        return ;
-                         break;
-                    case 2:
-                        MenuData.current_id = DISCHAR_SET_MENU; // 切换到下级菜单
-                        if (Menu_Tab[MenuData.current_id].display_operation != NULL)
-                             Menu_Tab[MenuData.current_id].display_operation();
-                        return ;
-                        break;
-                    case 3:
-                        if(++RoterData.Mppt_SetPara.DischarCurve_Moed>2)RoterData.Mppt_SetPara.DischarCurve_Moed = 0;
-                        Mppt_Ble_BatchSet_Display();
-                        break;
-                    case 4:
-                        MenuData.current_id = DISCHAR_CURVE_SET_MENU; // 切换到下级菜单
-                        if (Menu_Tab[MenuData.current_id].display_operation != NULL)
-                             Menu_Tab[MenuData.current_id].display_operation();
-                         return ;
-                    break;
-                    case 5:
-                        RoterData.Mppt_SetPara.Lock_Mode = !RoterData.Mppt_SetPara.Lock_Mode;
-                        Mppt_Ble_BatchSet_Display();
-                        break;
-                    case 6:
-                        MenuData.current_id = BL_ATCON_SET_MENU; // 切换到下级菜单
-                        if (Menu_Tab[MenuData.current_id].display_operation != NULL)
-                             Menu_Tab[MenuData.current_id].display_operation();
-                         return ;
-                    break;
-                }
-               // Mppt_DischarPara_Dis();
-            break;
-        case KEY_VALUE_TYPE_DECRE:    
-               // Mppt_DischarPara_Dis();
-            break;
-    }   
-}
 
     void Mppt_InPutFlash(void)
     {
@@ -975,12 +896,14 @@ void Mppt_Ble_BatchSet_MenuOps(uint8_t key)
                     InputMode = 0;
                     sys_timer_del(InputFlash_Timer);
                     Mppt_ChargePara_Display(SetPara);
+                    Mppt_Menu_Select_Display();
                     return;
                     break;
                 case KEY_VALUE_TYPE_LEFT:
                     InputMode = 0;
                     sys_timer_del(InputFlash_Timer);
                     Mppt_ChargePara_Display(SetPara);
+                    Mppt_Menu_Select_Display();
                     return;
                     break;
             }
@@ -1186,13 +1109,15 @@ void Mppt_Ble_BatchSet_MenuOps(uint8_t key)
                     }    
                     InputMode = 0;
                     sys_timer_del(InputFlash_Timer);
-                    Mppt_DischarPara_Dis(SetPara);
+                    Mppt_DischarPara_Dis(SetPara);      
+                    Mppt_MenuSelect_Dis();
                     return;
                     break;       
                  case KEY_VALUE_TYPE_LEFT:
                     InputMode = 0;
                     sys_timer_del(InputFlash_Timer);
                     Mppt_DischarPara_Dis(SetPara);
+                    Mppt_MenuSelect_Dis();
                     return;
                     break;
             }
@@ -1311,7 +1236,9 @@ void Mppt_Ble_BatchSet_MenuOps(uint8_t key)
         floatToString(SetPara->Ledar_Dly_On,1,str);
         Lcd_printf20x20(30, 24*3, "雷达自启时间:%sH   ",str);
         Lcd_printf20x20(30, 24*4, "雷达灵敏挡位:%d   ",SetPara->Ledar_sens);
-        Lcd_printf20x20(30, 24*5, "雷达自启功能:%s   ",AotoSetStr[SetPara->Ledar_Dly_IsOn]);
+        Lcd_printf20x20(30, 24*5, "雷达抗干扰等级:%d   ",SetPara->Ledar_Fliter_Gear);
+        Lcd_printf20x20(30, 24*6, "雷达定时启功能:%s   ",AotoSetStr[SetPara->Ledar_Dly_IsOn]);
+        
     }
     void Mppt_RadarPara_Menu(void)
     {
@@ -1377,23 +1304,30 @@ void Mppt_Ble_BatchSet_MenuOps(uint8_t key)
                         case 3:
                             if(indata<0)indata = 0;
                             if(indata>10)indata = 10;
-                            SetPara->Ledar_Dly_On=indata;
+                            SetPara->Ledar_Dly_On =indata;
                             break;   
                         case 4:
-                            if(indata<0)indata = 0;
+                            if(indata<=1)indata = 1;
                             if(indata>10)indata = 10;
-                            SetPara->Ledar_sens=indata;
+                            SetPara->Ledar_sens = indata;
                             break;   
+                        case 5:
+                            if(indata<=1)indata = 1;
+                            if(indata>5)indata = 5;
+                            SetPara->Ledar_Fliter_Gear = indata ;
+                            break;
                     }    
                     InputMode = 0;
                     sys_timer_del(InputFlash_Timer);
                     Mppt_RadarPara_Dis(SetPara);
+                    Mppt_MenuSelect_Dis();
                     return;
                     break;       
                  case KEY_VALUE_TYPE_LEFT:
                     InputMode = 0;
                     sys_timer_del(InputFlash_Timer);
                     Mppt_RadarPara_Dis(SetPara);
+                    Mppt_MenuSelect_Dis();
                     return;
                     break;
             }
@@ -1435,6 +1369,15 @@ void Mppt_Ble_BatchSet_MenuOps(uint8_t key)
                 }
                 Lcd_printf20x20(30, 24*4,"雷达灵敏挡位:%s   ",instr);
             }        
+            else if(MenuData.index[MenuData.current_id] == 5)
+            { 
+                if( input_num > 5)
+                {
+                    strcpy(instr,"5"); 
+                    input_index = sizeof("5") - 1;
+                }
+                Lcd_printf20x20(30, 24*5,"雷达抗干扰等级:%s   ",instr);
+            }        
             log_info("KEY %d NUMKRY %d input_index %d",key,num_key,input_index);
             log_info("instr %s  value: %d",instr,(uint32_t)(stringtofloat(instr)*100));
 
@@ -1445,7 +1388,7 @@ void Mppt_Ble_BatchSet_MenuOps(uint8_t key)
             {
                 
                 case KEY_VALUE_TYPE_RIGHT:
-                    if(MenuData.index[MenuData.current_id] == 5)
+                    if(MenuData.index[MenuData.current_id] == 6)
                     {
                         if(SetPara->Ledar_Dly_IsOn) SetPara->Ledar_Dly_IsOn = 0;
                         else SetPara->Ledar_Dly_IsOn = 1;
@@ -1468,6 +1411,9 @@ void Mppt_Ble_BatchSet_MenuOps(uint8_t key)
                             case 4:
                                 if(++SetPara->Ledar_sens>10)SetPara->Ledar_sens = 1;
                                 break;
+                            case 5:
+                                if(++SetPara->Ledar_Fliter_Gear>5)SetPara->Ledar_Fliter_Gear = 1;
+                                break;
                         }
                         Mppt_RadarPara_Dis(SetPara);
                     break;
@@ -1486,6 +1432,9 @@ void Mppt_Ble_BatchSet_MenuOps(uint8_t key)
                                 break;     
                             case 4:
                                 if(--SetPara->Ledar_sens<=0)SetPara->Ledar_sens = 10;
+                                break;
+                            case 5:
+                                if(--SetPara->Ledar_Fliter_Gear<=0)SetPara->Ledar_Fliter_Gear = 1;
                                 break;
                         }
                         Mppt_RadarPara_Dis(SetPara);
@@ -1510,7 +1459,7 @@ void Mppt_Ble_BatchSet_MenuOps(uint8_t key)
                 Mppt_MenuSelect_Dis();
                 break;
             case KEY_VALUE_TYPE_DOWN: // 下
-                if (MenuData.index[MenuData.current_id] < 5)
+                if (MenuData.index[MenuData.current_id] < 6)
                     MenuData.index[MenuData.current_id]++;
                 else{
                     Lcd_SwitchWindows(CHAEGE_SET_MENU);
@@ -1923,6 +1872,7 @@ void Mppt_Ble_BatchSet_MenuOps(uint8_t key)
                 
         if(!RoterData.Ble_Adv_rp[location].IsModifyFlag)
         {
+            RoterData.Mppt_SetPara.datahead =0xaa;
             Mppt_Set_Para_Send(&RoterData.Mppt_SetPara);
         }
         Lcd_printf20x20(120 - 24 * 3, 0, "蓝牙批量设置");
@@ -2423,7 +2373,7 @@ void Mppt_BleConnSelect_MenuOps(uint8_t key)
         {
             if(key == KEY_VALUE_TYPE_UP || key == KEY_VALUE_TYPE_LEFT ){
                 Lcd_BackPreWindows();
-                MPPT_Get_Info_Timer_Star();
+        
             }
             if(key == KEY_VALUE_TYPE_DOWN)
             {
@@ -2435,7 +2385,7 @@ void Mppt_BleConnSelect_MenuOps(uint8_t key)
         {
             Lcd_Clear(BLACK);
             MenuData.index[MenuData.current_id] = 1;
-            Mppt_RadarPara_Dis(&RoterData.Mppt_SetPara);
+            Mppt_RadarPara_Dis(&RoterData.Mppt_ConSetPara_Info);
             Lcd_printf20x20(30, 24*9, "下一页");
             Lcd_Show20x20(90,24*9,SpecialDot[0]);
         }
@@ -2585,68 +2535,7 @@ void Mppt_BleConnSelect_MenuOps(uint8_t key)
                     break;
             }
         }
-
-        void Mppt_Curce_Modify_Menu(void)
-        {
-            Lcd_Clear(BLACK);
-            MenuData.index[MenuData.current_id] = 1;
-            Lcd_printf20x20(120 - 20 * 3, 0, "曲线参数设置");
-            Lcd_printf20x20(30, 30, "放电曲线模式:%s",Curve_Mode_Str[RoterData.Mppt_ConSetPara_Info.DischarCurve_Moed]);
-            Lcd_printf20x20(30, 60,"放电曲线设置");
-            Lcd_printf20x20(5, 30 * MenuData.index[MenuData.current_id], "->");
-        }
-        void Mppt_Curce_Modify_MenuOps(uint8_t key)
-        {
-            switch (key)
-            {
-                case KEY_VALUE_TYPE_UP: // 上
-                    if (MenuData.index[MenuData.current_id] > 1)
-                        MenuData.index[MenuData.current_id]--;
-                    else
-                    {
-                        Lcd_BackPreWindows();
-                    }
-                        
-                    Mppt_Menu_Select_Display();
-                    break;
-                case KEY_VALUE_TYPE_DOWN: // 下
-                    if(!Menu_Tab[MenuData.current_id].max_menu_num)return;
-                    if (MenuData.index[MenuData.current_id] < Menu_Tab[MenuData.current_id].max_menu_num)
-                        MenuData.index[MenuData.current_id]++;
-                    else{
-                            Lcd_SwitchWindows(MODIFY_MENU);
-                    }
-                    Mppt_Menu_Select_Display();
-                    break;
-                case KEY_VALUE_TYPE_LEFT: // ←
-                    Lcd_BackPreWindows();
-                    break;
-            }
-            switch (key)
-            {
-                case KEY_VALUE_TYPE_ENTRE:
-                    switch (MenuData.index[MenuData.current_id])
-                    {
-                        case 2:
-                            Lcd_SwitchWindows(CURVE_PARAT_MENU);
-                            return ;
-                            break;
-                    }  
-                case KEY_VALUE_TYPE_INCRE:
-                    switch (MenuData.index[MenuData.current_id])
-                    {
-                        case 1:
-                            if(++RoterData.Mppt_SetPara.DischarCurve_Moed>2)RoterData.Mppt_SetPara.DischarCurve_Moed = 0;
-                            Mppt_CurceSet_Menu();
-                            return ;
-                            break;      
-                    }  
-                /*case KEY_VALUE_TYPE_RIGHT: // 
-                    Lcd_SwitchWindows(CURVE_PARAT_MENU);
-                    break;*/
-            }   
-        }
-
+    
         void Mppt_CurvePara_Modify_Menu(void)
         {
             Lcd_Clear(BLACK);
@@ -2668,6 +2557,7 @@ void Mppt_BleConnSelect_MenuOps(uint8_t key)
                     if(*Menu_Index == 0)
                     {
                         Lcd_BackPreWindows();
+                        MPPT_Get_Info_Timer_Star();
                         return;
                     }
                     if(Para->DischarCurve_Moed > 1)return;
@@ -2716,6 +2606,7 @@ void Mppt_BleConnSelect_MenuOps(uint8_t key)
             if(key == KEY_VALUE_TYPE_ENTRE)
             {
                 Lcd_SwitchWindows(ENTRY_MODIFY);
+                RoterData.Mppt_ConSetPara_Info.datahead = 0xAB;//指定连接修改
                 Modify_Info_Timer = sys_timer_add(&RoterData.Mppt_ConSetPara_Info,Mppt_Set_Para_Send,1000);    
             }
            // MPPT_Get_Info_Timer_Star();
@@ -3048,7 +2939,6 @@ uint8_t Ble_Find_Mac_RepAddr(Ble_Adv_Rp_t *adv, uint8_t len, uint8_t *mac)
     }
     return 255;
 }
-
 // 查找空地址
 uint8_t Ble_Check_NonAddr(Ble_Adv_Rp_t *adv, uint8_t len)
 {
