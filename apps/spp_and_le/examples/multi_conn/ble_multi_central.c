@@ -350,10 +350,13 @@ void Mppt_Set_Para_Send(void *priv) // 发MPPT的设置参数
             offset += make_packet_val(&data[offset],offset,0x14,SetParm->Ledar_Fliter_Gear,4);                 // 外部通信方式
 
             data[offset++] = 0X55;//包尾
-            for(i=0;i<offset%4;i++)
+           // if(offset/4)
             {
-                data[offset] = 0;//补0
-                offset++;
+                for(i=0;i<offset%4;i++)
+                {
+                    data[offset] = 0;//补0
+                    offset++;
+                }
             }
             log_info("MPPT Set Para Data len:%d \r\n",offset);
             put_buf(RoterData.Ble_Connect_Mac,6); // 蓝牙地址
@@ -588,6 +591,40 @@ void Mppt_Data_Decode(u8 *packet,u16 size) // MPPT 信息解码
                         if(RoterData.Mppt_Info.MaxTemp)
                             RoterData.Mppt_Info.MaxTemp /= 1000;
                         break;
+                    case 0x0C: 
+                        temp = little_endian_read_32(&data[data_position],0);  
+                        log_info("temperature :%dR ",temp);
+                        RoterData.Mppt_Info.SolarVoltage = temp/1000.;                               
+                        break;
+                    case 0x0D: 
+                        temp = little_endian_read_32(&data[data_position],0);  
+                        log_info("temperature :%dR ",temp);
+                        RoterData.Mppt_Info.DichargeTime = temp/3600.;                               
+                        break;
+                    case 0x0E:
+                        RoterData.Mppt_Info.Temp1 = little_endian_read_32(&data[data_position],0);  
+                        break;
+                    case 0x0F:
+                        RoterData.Mppt_Info.Temp2 = little_endian_read_32(&data[data_position],0);  
+                        break; 
+                    case 0x10:
+                        RoterData.Mppt_Info.Temp3 = little_endian_read_32(&data[data_position],0);  
+                        break; 
+                    case 0x11:
+                        RoterData.Mppt_Info.Temp4 = little_endian_read_32(&data[data_position],0);  
+                        break;  
+                    case 0x12:
+                        RoterData.Mppt_Info.Temp5 = little_endian_read_32(&data[data_position],0);  
+                        break; 
+                    case 0x13:
+                        RoterData.Mppt_Info.Temp6 = little_endian_read_32(&data[data_position],0);  
+                        break; 
+                    case 0x14:
+                        RoterData.Mppt_Info.Temp7 = little_endian_read_32(&data[data_position],0);  
+                        break; 
+                    case 0x15:
+                        RoterData.Mppt_Info.Temp8 = little_endian_read_32(&data[data_position],0);  
+                        break; 
                     default:    
                         break;
                 }

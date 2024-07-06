@@ -726,7 +726,11 @@ void Mppt_Menu_Select(uint8_t key)
     }
 }
 
-
+static u16 Main_Menu_Timer = 0;
+void Mppt_Main_Menu_TimerCallback()
+{
+    Lcd_printf20x20(30, 24*8, "控制器在线数:%d  ",RoterData.Ble_Adv_Rp_Count);
+}
 void Mppt_Main_Menu(void) // 主菜单
 {
     Lcd_Clear(BLACK);
@@ -738,17 +742,11 @@ void Mppt_Main_Menu(void) // 主菜单
     Lcd_printf20x20(30, 24*5, "红外用户码设置");
     Lcd_printf20x20(30, 24*6, "遥控器信息查询"); 
     Lcd_printf20x20(30, 24*7, "MPPT版本设置"); 
-    Lcd_printf20x20(30, 24*8, "控制器在线数:%d",RoterData.Ble_Adv_Rp_Count,RoterData.SetCount);
     Lcd_printf20x20(30, 24*9, "当前版本:%s","SQ20P75SA-B "); 
+    Lcd_printf20x20(30, 24*8, "控制器在线数:%d",RoterData.Ble_Adv_Rp_Count);
     
     Lcd_printf20x20(5, 24 * MenuData.index[MenuData.current_id], "->"); 
-    // Lcd_printf20x20(30, 210, "当前版本:%s","SQ20P75SA-B "); 
-    /*Lcd_printf20x20(30, 90, "红外参数设置");
-    Lcd_printf20x20(30, 120, "系统信息查询");
-    Lcd_printf20x20(30, 150, "系统参数查询");
-    Lcd_printf20x20(30, 180, "MPPT版本设置"); 
-    Lcd_printf20x20(30, 210, "当前版本:%s","SQ20P75SA-B "); 
-    Lcd_printf20x20(5, 30 * MenuData.index[MenuData.current_id], "->");*/
+    Main_Menu_Timer = sys_timer_add(NULL,Mppt_Main_Menu_TimerCallback,1000);
 }
 void Mppt_Main_Menu_Operation(uint8_t key)
 {
@@ -780,9 +778,11 @@ void Mppt_Main_Menu_Operation(uint8_t key)
                 case 7:
                     Lcd_SwitchWindows(MPPT_VERSION_SELECT_MENU);
                     break;
-            }                                      
-            break;
+            }    
+            sys_timer_del(Main_Menu_Timer);                                   
+        break;
     }
+    if(key == KEY_VALUE_TYPE_LEFT)sys_timer_del(Main_Menu_Timer);
 }
 
 const char *Curve_Mode_Str[]={"PWM ","电流","AI  "};
@@ -2112,6 +2112,7 @@ void Mppt_BleConnSelect_MenuOps(uint8_t key)
     static u16 Get_Info_Timer = 0;
     static u16 Modify_Info_Timer = 0;
     static u16 Display_Info_Timer = 0;
+    static uint8_t Info_Display_Index = 0;
     void Mppt_Ble_Set_Menu(void)
     {
         Lcd_Clear(BLACK);
@@ -2148,6 +2149,7 @@ void Mppt_BleConnSelect_MenuOps(uint8_t key)
                     {
                         case 1:
                             Lcd_SwitchWindows(MPPT_INFO);
+                            Info_Display_Index = 0;
                             break;
                         case 2: 
                             Lcd_SwitchWindows(BLE_CTR);                                         
@@ -2243,6 +2245,7 @@ void Mppt_BleConnSelect_MenuOps(uint8_t key)
             }
         }
 
+       
         void Mppt_Info_Display(void *priv)
         {
             Mppt_Info_Para_t *Info= priv;
@@ -2250,44 +2253,90 @@ void Mppt_BleConnSelect_MenuOps(uint8_t key)
             const char* OutPut_Status_Str[]={"正常，短路"};
             Timer_Auto_Off_ReCount();
             Lcd_printf20x20(120 - 20 * 2, 0, "MPPT信息");
-          //  Info->Charge_Capcity = 0.004;
-            floatToString(Info->Charge_Capcity,3,str);
-            Lcd_printf20x20(30, 20 * 1, "充电电量:%sAh   ",str);
-            floatToString(Info->DisCharge_Capcity,3,str);
-            Lcd_printf20x20(30, 20 * 2, "放电电量:%sAh   ",str);
-            floatToString(Info->Charge_Current,3,str);
-            Lcd_printf20x20(30, 20 * 3, "充电电流:%sA    ",str);
-            floatToString(Info->Dischar_Current,3,str);
-           // floatToString(0.118f,3,str);
-            Lcd_printf20x20(30, 20 * 4, "放电电流:%sA    ",str);
-            floatToString(Info->Charge_Power,3,str);
-            Lcd_printf20x20(30, 20 * 5, "充电功率:%sW    ",str);
-            Lcd_printf20x20(30, 20 * 6, "电池内阻:%dm    ",Info->Bat_Resistance);
-            Lcd_printf20x20(30, 20 * 7, "电池电量:%d%%   ",Info->Bat_Capcity);
-            floatToString(Info->Bat_Voltage,3,str);
-            Lcd_printf20x20(30, 20 * 8, "电池电压:%sV    ",str);
-            //Lcd_printf20x20(30, 25 * 8, "输出状态:%s     ",OutPut_Status_Str[Info->OutPut_Staus]);
-           
-            floatToString(RoterData.Mppt_ConSetPara_Info.Bat_Capcity,1,str);
-          //  Lcd_printf20x20(30,20 * 9,"电池容量:%sAh  ",str);
+         
+            if(!Info_Display_Index)
+            {
 
-            uint8_t len;
-            floatToString(Info->Temp,3,str);
-            len = strlen(str);
-            Lcd_printf20x20(30,20 * 9,"系统温度:%s",str);
-            Lcd_Show20x20(30+ 90 + len*10,20 * 9 ,SpecialDot[1]);
-
-            floatToString(Info->MaxTemp,3,str);
-            len = strlen(str);
-            Lcd_printf20x20(30,20 * 10,"峰值温度:%s",str);
-            Lcd_Show20x20(30+ 90 + len*10,20 * 10 ,SpecialDot[1]);
-
+                floatToString(Info->Charge_Capcity,3,str);
+                Lcd_printf20x20(30, 20 * 1, "充电电量:%sAh   ",str);
+                floatToString(Info->DisCharge_Capcity,3,str);
+                Lcd_printf20x20(30, 20 * 2, "放电电量:%sAh   ",str);
+                floatToString(Info->Charge_Current,3,str);
+                Lcd_printf20x20(30, 20 * 3, "充电电流:%sA    ",str);
+                floatToString(Info->Dischar_Current,3,str);
+        
+                Lcd_printf20x20(30, 20 * 4, "放电电流:%sA    ",str);
+                floatToString(Info->Charge_Power,3,str);
+                Lcd_printf20x20(30, 20 * 5, "充电功率:%sW    ",str);
+                Lcd_printf20x20(30, 20 * 6, "电池内阻:%dm    ",Info->Bat_Resistance);
+                Lcd_printf20x20(30, 20 * 7, "电池电量:%d%%   ",Info->Bat_Capcity);
+                floatToString(Info->Bat_Voltage,3,str);
+                Lcd_printf20x20(30, 20 * 8, "电池电压:%sV    ",str);
+                //Lcd_printf20x20(30, 25 * 8, "输出状态:%s     ",OutPut_Status_Str[Info->OutPut_Staus]);
             
-            
-            Lcd_printf20x20(30,20 * 11,"下一页",str);
-            Lcd_Show20x20(30+60,20*11,SpecialDot[0]);
+                floatToString(RoterData.Mppt_ConSetPara_Info.Bat_Capcity,1,str);
+            //  Lcd_printf20x20(30,20 * 9,"电池容量:%sAh  ",str);
+
+                uint8_t len;
+                floatToString(Info->Temp,3,str);
+                len = strlen(str);
+                Lcd_printf20x20(30,20 * 9,"系统温度:%s",str);
+                Lcd_Show20x20(30+ 90 + len*10,20 * 9 ,SpecialDot[1]);
+                Lcd_printf20x20(30+ 90 + len*10 + 20,20 * 9,"  ");
+
+                floatToString(Info->MaxTemp,3,str);
+                len = strlen(str);
+                Lcd_printf20x20(30,20 * 10,"峰值温度:%s",str);
+                Lcd_Show20x20(30+ 90 + len*10,20 * 10 ,SpecialDot[1]);
+                Lcd_printf20x20(30+ 90 + len*10 + 20,20 * 10,"  ");
+
+                
+                
+                //Lcd_printf20x20(30,20 * 11,"下一页",str);
+               // Lcd_Show20x20(30+60,20*11,SpecialDot[0]);
+
+            }
+            else
+            {
+                floatToString(Info->SolarVoltage,3,str);
+                Lcd_printf20x20(30, 20 * 1, "光伏板电压:%sW  ",str);
+                floatToString(Info->DichargeTime,3,str);
+                Lcd_printf20x20(30, 20 * 2, "放电时长:%sh  ",str);
+                
+
+                Lcd_printf20x20(30, 20 * 3, "测试用一:%d  ",Info->Temp1);
+                
+                Lcd_printf20x20(30, 20 * 4, "测试用二:%d  ",Info->Temp2);
+                
+                Lcd_printf20x20(30, 20 * 5, "测试用三:%d  ",Info->Temp3);
+
+                Lcd_printf20x20(30, 20 * 6, "测试用四:%d  ",Info->Temp4);
+
+                Lcd_printf20x20(30, 20 * 7, "测试用五:%d  ",Info->Temp5);
+                
+                Lcd_printf20x20(30, 20 * 8, "测试用六:%d  ",Info->Temp6);
+                
+                Lcd_printf20x20(30, 20 * 9, "测试用七:%d  ",Info->Temp7);
+                
+                Lcd_printf20x20(30, 20 * 10, "测试用八:%d  ",Info->Temp8);
+
+                //Lcd_printf20x20(30,20 * 11,"下一页",str);
+                //Lcd_Show20x20(30+60,20*11,SpecialDot[0]);
+            }
+            Lcd_printf20x20(30,20*11, "%02X %02X %02X %02X %02X %02X", 
+                RoterData.Ble_SetConnect_Mac[0],
+                RoterData.Ble_SetConnect_Mac[1],
+                RoterData.Ble_SetConnect_Mac[2],
+                RoterData.Ble_SetConnect_Mac[3],
+                RoterData.Ble_SetConnect_Mac[4],
+                RoterData.Ble_SetConnect_Mac[5]
+                );
+                
+                
+                
             
         }
+
         void Mppt_Info_Menu(void) //充电信息配置
         {
             Lcd_Clear(BLACK);
@@ -2312,12 +2361,29 @@ void Mppt_BleConnSelect_MenuOps(uint8_t key)
 
                 if(key == KEY_VALUE_TYPE_LEFT ||key == KEY_VALUE_TYPE_UP)
                 {
-                    Lcd_BackPreWindows();
+                    if(!Info_Display_Index)
+                    {
+                        Lcd_BackPreWindows();
+                    }
+                    else
+                    {
+                        Info_Display_Index = 0;
+                        Mppt_Info_Menu();
+                    }               
                 }
 
                 if(key == KEY_VALUE_TYPE_DOWN){
-                    Lcd_SwitchWindows(INFO_CURPARA);
+                    if(Info_Display_Index)
+                    {
+                        Lcd_SwitchWindows(INFO_CURPARA);
+                    }
+                    else
+                    {
+                        Info_Display_Index = 1;
+                        Mppt_Info_Menu();
+                    }
                 }
+
             }
 
             //Mppt_Normal_Menu_Select(key);
@@ -2522,7 +2588,7 @@ void Mppt_BleConnSelect_MenuOps(uint8_t key)
                     Mppt_MenuSelect_Dis();
                     break;
                 case KEY_VALUE_TYPE_DOWN: // 下
-                    if (MenuData.index[MenuData.current_id] < 5)
+                    if (MenuData.index[MenuData.current_id] < 6)
                         MenuData.index[MenuData.current_id]++;
                     else{
                         Lcd_SwitchWindows(CHAEGE_PARA_MODIFY);
@@ -2551,6 +2617,7 @@ void Mppt_BleConnSelect_MenuOps(uint8_t key)
             uint8_t *Menu_Index = &MenuData.index[Menu_Id];
             Mppt_Set_Parm_t *Para = &RoterData.Mppt_ConSetPara_Info;
             Mppt_CurveSet_Ops(Para,key);
+            if(InputMode)return ;
             switch (key)
             {
                 case KEY_VALUE_TYPE_UP: // 上
@@ -2960,13 +3027,13 @@ void Ble_Timeout_Check(void)
     {
         if(RoterData.Ble_Adv_rp[i].useflag)
         {
-            if (++RoterData.Ble_Adv_rp[i].Timeout > 30)
+            if (++RoterData.Ble_Adv_rp[i].Timeout > 60)
             {
                 RoterData.Ble_Adv_rp[i].Timeout = 0;
                 RoterData.Ble_Adv_rp[i].useflag = 0; // 清除使用标志
                 RoterData.Ble_Adv_rp[i].rssi = -99;
                 for(j=0;j<6;j++)RoterData.Ble_Adv_rp[i].mac[j] = 0;
-                RoterData.Ble_Adv_Rp_Count -- ;
+                if(RoterData.Ble_Adv_Rp_Count)RoterData.Ble_Adv_Rp_Count -- ;
             }
         }
         

@@ -97,6 +97,17 @@ typedef struct
     float Bat_Voltage;           // unit: V 
     float Temp;           // unit: V 
     float MaxTemp;           // unit: V 
+    float SolarVoltage;
+    float DichargeTime;
+
+    uint32_t Temp1;
+    uint32_t Temp2;
+    uint32_t Temp3;
+    uint32_t Temp4;
+    uint32_t Temp5;
+    uint32_t Temp6;
+    uint32_t Temp7;
+    uint32_t Temp8;
 }Mppt_Info_Para_t;
 
 typedef struct 
